@@ -14,5 +14,8 @@
   "bugs": {
     "url": "https://github.com/liquid-labs/ai-ready/issues"
   },
-  "homepage": "https://github.com/liquid-labs/ai-ready#readme"
+  "homepage": "https://github.com/liquid-labs/ai-ready#readme",
+  "dependencies": {
+    "commander": "^14.0.2"
+  }
 }
