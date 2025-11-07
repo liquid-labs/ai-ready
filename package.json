@@ -16,6 +16,13 @@
   },
   "homepage": "https://github.com/liquid-labs/ai-ready#readme",
   "dependencies": {
-    "commander": "^14.0.2"
+    "commander": "^14.0.2",
+    "gray-matter": "^4.0.3",
+    "js-yaml": "^4.1.0"
+  },
+  "devDependencies": {
+    "@liquid-labs/sdlc-resource-babel-and-rollup": "^1.0.0-alpha.12",
+    "@liquid-labs/sdlc-resource-jest": "^1.0.0-alpha.9",
+    "@sdlcforge/format-and-lint": "^1.0.0-alpha.28"
   }
 }
