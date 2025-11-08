@@ -103,121 +103,93 @@ describe('cache', () => {
       expect(isValid).toBe(false)
     })
 
-    it('should return true when timestamps match', async () => {
-      // Create package.json and package-lock.json
-      const packageJsonPath = path.join(tempDir, 'package.json')
-      const packageLockPath = path.join(tempDir, 'package-lock.json')
+    it.each([
+      {
+        description         : 'should return true when timestamps match',
+        createPackageLock   : true,
+        getPackageJsonMTime : async (packageJsonPath) => {
+          return Math.floor((await fs.stat(packageJsonPath)).mtimeMs)
+        },
+        getPackageLockMTime : async (packageLockPath) => {
+          return Math.floor((await fs.stat(packageLockPath)).mtimeMs)
+        },
+        expectedValid : true,
+      },
+      {
+        description         : 'should return false when package.json mtime differs',
+        createPackageLock   : true,
+        getPackageJsonMTime : async () => 999999999, // eslint-disable-line require-await
+        getPackageLockMTime : async (packageLockPath) => {
+          return Math.floor((await fs.stat(packageLockPath)).mtimeMs)
+        },
+        expectedValid : false,
+      },
+      {
+        description         : 'should return false when package-lock.json mtime differs',
+        createPackageLock   : true,
+        getPackageJsonMTime : async (packageJsonPath) => {
+          return Math.floor((await fs.stat(packageJsonPath)).mtimeMs)
+        },
+        getPackageLockMTime : async () => 999999999, // eslint-disable-line require-await
+        expectedValid       : false,
+      },
+      {
+        description :
+          'should handle missing package-lock.json when cache expects it',
+        createPackageLock   : false,
+        getPackageJsonMTime : async (packageJsonPath) => {
+          return Math.floor((await fs.stat(packageJsonPath)).mtimeMs)
+        },
+        // eslint-disable-next-line require-await
+        getPackageLockMTime : async () => 1234567890, // non-zero, expects lock file
+        expectedValid       : false,
+      },
+      {
+        description :
+          'should be valid when package-lock.json is missing and cache expects no lock file',
+        createPackageLock   : false,
+        getPackageJsonMTime : async (packageJsonPath) => {
+          return Math.floor((await fs.stat(packageJsonPath)).mtimeMs)
+        },
+        // eslint-disable-next-line require-await
+        getPackageLockMTime : async () => 0, // expects no lock file
+        expectedValid       : true,
+      },
+    ])(
+      '$description',
+      async ({
+        createPackageLock,
+        getPackageJsonMTime,
+        getPackageLockMTime,
+        expectedValid,
+      }) => {
+        const packageJsonPath = path.join(tempDir, 'package.json')
+        await fs.writeFile(
+          packageJsonPath,
+          JSON.stringify({ name : 'test' }),
+          'utf8'
+        )
 
-      await fs.writeFile(
-        packageJsonPath,
-        JSON.stringify({ name : 'test' }),
-        'utf8'
-      )
-      await fs.writeFile(
-        packageLockPath,
-        JSON.stringify({ version : '1.0.0' }),
-        'utf8'
-      )
+        let packageLockPath
+        if (createPackageLock) {
+          packageLockPath = path.join(tempDir, 'package-lock.json')
+          await fs.writeFile(
+            packageLockPath,
+            JSON.stringify({ version : '1.0.0' }),
+            'utf8'
+          )
+        }
 
-      // Get actual mtimes
-      const packageJsonStat = await fs.stat(packageJsonPath)
-      const packageLockStat = await fs.stat(packageLockPath)
+        const cache = {
+          ...validCacheData,
+          packageJsonMTime : await getPackageJsonMTime(packageJsonPath),
+          packageLockMTime : await getPackageLockMTime(packageLockPath),
+        }
 
-      const cache = {
-        ...validCacheData,
-        packageJsonMTime : Math.floor(packageJsonStat.mtimeMs),
-        packageLockMTime : Math.floor(packageLockStat.mtimeMs),
+        const isValid = await isCacheValid(cache, tempDir)
+        expect(isValid).toBe(expectedValid)
       }
-
-      const isValid = await isCacheValid(cache, tempDir)
-      expect(isValid).toBe(true)
-    })
-
-    it('should return false when package.json mtime differs', async () => {
-      const packageJsonPath = path.join(tempDir, 'package.json')
-      const packageLockPath = path.join(tempDir, 'package-lock.json')
-
-      await fs.writeFile(
-        packageJsonPath,
-        JSON.stringify({ name : 'test' }),
-        'utf8'
-      )
-      await fs.writeFile(
-        packageLockPath,
-        JSON.stringify({ version : '1.0.0' }),
-        'utf8'
-      )
-
-      const cache = {
-        ...validCacheData,
-        packageJsonMTime : 999999999,
-        packageLockMTime : Math.floor((await fs.stat(packageLockPath)).mtimeMs),
-      }
-
-      const isValid = await isCacheValid(cache, tempDir)
-      expect(isValid).toBe(false)
-    })
-
-    it('should return false when package-lock.json mtime differs', async () => {
-      const packageJsonPath = path.join(tempDir, 'package.json')
-      const packageLockPath = path.join(tempDir, 'package-lock.json')
-
-      await fs.writeFile(
-        packageJsonPath,
-        JSON.stringify({ name : 'test' }),
-        'utf8'
-      )
-      await fs.writeFile(
-        packageLockPath,
-        JSON.stringify({ version : '1.0.0' }),
-        'utf8'
-      )
-
-      const cache = {
-        ...validCacheData,
-        packageJsonMTime : Math.floor((await fs.stat(packageJsonPath)).mtimeMs),
-        packageLockMTime : 999999999,
-      }
-
-      const isValid = await isCacheValid(cache, tempDir)
-      expect(isValid).toBe(false)
-    })
-
-    it('should handle missing package-lock.json when cache expects it', async () => {
-      const packageJsonPath = path.join(tempDir, 'package.json')
-      await fs.writeFile(
-        packageJsonPath,
-        JSON.stringify({ name : 'test' }),
-        'utf8'
-      )
-
-      const cache = {
-        ...validCacheData,
-        packageJsonMTime : Math.floor((await fs.stat(packageJsonPath)).mtimeMs),
-        packageLockMTime : 1234567890, // non-zero, expects lock file
-      }
-
-      const isValid = await isCacheValid(cache, tempDir)
-      expect(isValid).toBe(false)
-    })
-
-    it('should be valid when package-lock.json is missing and cache expects no lock file', async () => {
-      const packageJsonPath = path.join(tempDir, 'package.json')
-      await fs.writeFile(
-        packageJsonPath,
-        JSON.stringify({ name : 'test' }),
-        'utf8'
-      )
-
-      const cache = {
-        ...validCacheData,
-        packageJsonMTime : Math.floor((await fs.stat(packageJsonPath)).mtimeMs),
-        packageLockMTime : 0, // expects no lock file
-      }
-
-      const isValid = await isCacheValid(cache, tempDir)
-      expect(isValid).toBe(true)
-    })
+    )
   })
 
   describe('createCacheData', () => {

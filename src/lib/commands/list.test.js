@@ -1,5 +1,4 @@
 import { cmdList } from './list'
-import * as scanner from '../core/scanner'
 import * as cache from '../core/cache'
 import * as registry from '../core/registry'
 import { INTEGRATION_TYPES } from '../core/types'
@@ -22,7 +21,7 @@ describe('list command', () => {
     // Default mock implementations
     cache.loadProvidersWithCache.mockResolvedValue([])
     registry.loadInstallationStatus.mockImplementation(
-      async (providers) => providers
+      async (providers) => providers // eslint-disable-line require-await
     )
   })
 

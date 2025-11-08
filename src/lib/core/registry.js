@@ -144,7 +144,7 @@ function parseMarkdownTable(content) {
 /**
  * Parses a single table row
  * @param {string} row - Table row like "| lib | integration | summary | installed |"
- * @returns {{library: string, integration: string}|null}
+ * @returns {{library: string, integration: string}|null} Parsed entry or null if invalid
  */
 function parseTableRow(row) {
   const cells = row

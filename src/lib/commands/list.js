@@ -123,7 +123,7 @@ function displayTable(results) {
  * Pads a string to a specific width
  * @param {string} str - String to pad
  * @param {number} width - Target width
- * @returns {string}
+ * @returns {string} Padded string
  */
 function pad(str, width) {
   return str.padEnd(width, ' ')
@@ -132,7 +132,7 @@ function pad(str, width) {
 /**
  * Formats types array for display
  * @param {string[]} types - Array of type strings
- * @returns {string}
+ * @returns {string} Formatted types string
  */
 function formatTypes(types) {
   if (types.length === 0) return '[]'

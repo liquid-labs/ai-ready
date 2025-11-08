@@ -89,7 +89,7 @@ export async function cmdRemove(libraryIntegration, options) {
 
 /**
  * Determines which types to remove based on options
- * @param {Integration} integration - Integration to remove
+ * @param {import('../core/types.js').Integration} integration - Integration to remove
  * @param {object} options - Command options
  * @returns {string[]} Array of types to remove
  */
