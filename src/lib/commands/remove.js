@@ -75,9 +75,9 @@ export async function cmdRemove(libraryIntegration, options) {
     console.log(`Removing ${libraryName}/${integrationName} ...`)
 
     // Remove each type
-    for (const type of typesToRemove) {
-      await removeType(libraryName, integrationName, type)
-    }
+    await Promise.all(
+      typesToRemove.map((type) => removeType(libraryName, integrationName, type))
+    )
 
     console.log('✔ Removal complete')
   }

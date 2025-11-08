@@ -78,25 +78,27 @@ export async function readGenericRegistry(
   genericFilePaths,
   baseDir = process.cwd()
 ) {
-  const entries = []
-
-  for (const filePath of genericFilePaths) {
+  const readPromises = genericFilePaths.map(async (filePath) => {
     const fullPath = path.resolve(baseDir, filePath)
 
     try {
       const content = await fs.readFile(fullPath, 'utf8')
-      const parsed = parseMarkdownTable(content)
-      entries.push(...parsed)
+
+      return parseMarkdownTable(content)
     }
     catch (error) {
       if (error.code !== 'ENOENT') {
         throw error
       }
-      // File doesn't exist, continue to next
-    }
-  }
 
-  return entries
+      // File doesn't exist, return empty array
+      return []
+    }
+  })
+
+  const results = await Promise.all(readPromises)
+
+  return results.flat()
 }
 
 /**

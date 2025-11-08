@@ -14,15 +14,14 @@ import { INTEGRATION_TYPES } from './types.js'
  * @returns {Promise<IntegrationProvider[]>} Array of discovered providers
  */
 export async function scanForProviders(scanPaths, baseDir = process.cwd()) {
-  const scans = []
-  for (const scanPath of scanPaths) {
+  const scanPathPromises = scanPaths.map(async (scanPath) => {
     const fullScanPath = path.resolve(baseDir, scanPath)
 
     try {
       const entries = await fs.readdir(fullScanPath, { withFileTypes : true })
 
-      for (const entry of entries) {
-        if (!entry.isDirectory()) continue
+      const libraryPromises = entries.map(async (entry) => {
+        if (!entry.isDirectory()) return null
 
         const libraryPath = path.join(fullScanPath, entry.name)
         const aiReadyPath = path.join(libraryPath, 'ai-ready', 'integrations')
@@ -30,25 +29,30 @@ export async function scanForProviders(scanPaths, baseDir = process.cwd()) {
         // Check if ai-ready/integrations exists
         try {
           const stat = await fs.stat(aiReadyPath)
-          if (!stat.isDirectory()) continue
+          if (!stat.isDirectory()) return null
         }
         catch {
-          continue // ai-ready directory doesn't exist
+          return null // ai-ready directory doesn't exist
         }
 
         // This library has ai-ready integrations
-        scans.push(scanLibrary(entry.name, libraryPath))
-      }
+        return scanLibrary(entry.name, libraryPath)
+      })
+
+      return Promise.all(libraryPromises)
     }
     catch (error) {
       // Scan path doesn't exist or can't be read
       if (error.code !== 'ENOENT') {
         throw error
       }
-    }
-  }
 
-  const providers = (await Promise.all(scans)).filter((provider) => !!provider)
+      return []
+    }
+  })
+
+  const results = await Promise.all(scanPathPromises)
+  const providers = results.flat().filter((provider) => !!provider)
 
   return providers
 }
