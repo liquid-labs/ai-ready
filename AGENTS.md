@@ -236,6 +236,6 @@ Cache is invalidated when:
 
 ## Related Documentation
 
-- `AIR_PROTOCOL_SPEC.md` - Protocol specification
-- `AIR_PROTOCOL_LIBRARY_AUTHOR_GUIDE.md` - Guide for package authors
+- `docs/AIR_PROTOCOL_SPEC.md` - Protocol specification
+- `docs/AIR_PROTOCOL_LIBRARY_AUTHOR_GUIDE.md` - Guide for package authors
 - `README.md` - User-facing documentation

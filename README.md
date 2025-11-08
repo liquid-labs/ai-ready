@@ -5,7 +5,7 @@
 [![npm version](https://img.shields.io/npm/v/ai-ready.svg)](https://www.npmjs.com/package/ai-ready)
 [![License](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](https://opensource.org/licenses/Apache-2.0)
 
-`ai-ready` is a CLI tool that helps developers discover, view, and install AI integrations (including Claude Skills) that are embedded in their npm dependencies. It implements the [AIR (AI Ready) Protocol](AIR_PROTOCOL_SPEC.md), enabling seamless integration between npm packages and AI coding assistants.
+`ai-ready` is a CLI tool that helps developers discover, view, and install AI integrations (including Claude Skills) that are embedded in their npm dependencies. It implements the [AIR (AI Ready) Protocol](docs/AIR_PROTOCOL_SPEC.md), enabling seamless integration between npm packages and AI coding assistants.
 
 ---
 
@@ -53,7 +53,7 @@ The `air` CLI solves this by providing a standardized discovery and management s
 
 - **Developers** using AI coding assistants who want to leverage integrations from their npm dependencies
 - **Teams** managing AI-assisted development workflows across projects
-- **Library authors** who want their AI integrations to be easily discoverable (see [Library Author Guide](AIR_PROTOCOL_LIBRARY_AUTHOR_GUIDE.md))
+- **Library authors** who want their AI integrations to be easily discoverable (see [Library Author Guide](docs/AIR_PROTOCOL_LIBRARY_AUTHOR_GUIDE.md))
 
 ---
 
@@ -616,8 +616,8 @@ air list
 
 ### Documentation
 
-- **[AIR Protocol Specification](AIR_PROTOCOL_SPEC.md)** - Complete protocol specification
-- **[Library Author Guide](AIR_PROTOCOL_LIBRARY_AUTHOR_GUIDE.md)** - How to create AIR-compatible packages
+- **[AIR Protocol Specification](docs/AIR_PROTOCOL_SPEC.md)** - Complete protocol specification
+- **[Library Author Guide](docs/AIR_PROTOCOL_LIBRARY_AUTHOR_GUIDE.md)** - How to create AIR-compatible packages
 
 ### Links
 
