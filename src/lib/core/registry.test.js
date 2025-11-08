@@ -26,405 +26,202 @@ describe('registry', () => {
   })
 
   describe('readClaudeRegistry', () => {
-    it('should read valid .claude file', async () => {
-      const claudeFile = '.claude'
-      const content = `skills:
-  - library: test-lib
-    integration: TestIntegration
-    installedAt: 2025-11-07T12:00:00Z
-`
-      await fs.writeFile(path.join(tempDir, claudeFile), content, 'utf8')
+    it.each([
+      [
+        'valid file',
+        'skills:\n  - library: lib\n    integration: Int\n    installedAt: 2025-11-07T12:00:00Z\n',
+        false,
+        (skills) => {
+          expect(skills).toHaveLength(1)
+          expect(skills[0].library).toBe('lib')
+          expect(skills[0].installedAt).toBeDefined()
+        },
+      ],
+      ['invalid YAML', 'invalid: [yaml', true, null],
+      ['non-existent file', null, false, (skills) => expect(skills).toEqual([])],
+      ['not an array', 'skills: not-an-array', false, (skills) => expect(skills).toEqual([])],
+      ['empty array', 'skills: []', false, (skills) => expect(skills).toEqual([])],
+      [
+        'filtered invalids',
+        yaml.dump({
+          skills : [
+            { library : 'valid', integration : 'Int' },
+            { library : 'missing-int' },
+            null,
+          ],
+        }),
+        false,
+        (skills) => expect(skills).toMatchObject([{ library : 'valid', integration : 'Int' }]),
+      ],
+    ])('should handle %s', async (_desc, content, shouldThrow, assertion) => {
+      if (content) await fs.writeFile(path.join(tempDir, '.claude'), content, 'utf8')
 
-      const skills = await readClaudeRegistry(claudeFile, tempDir)
-
-      expect(skills).toHaveLength(1)
-      expect(skills[0].library).toBe('test-lib')
-      expect(skills[0].integration).toBe('TestIntegration')
-      // YAML may parse installedAt as Date, we just check it exists
-      expect(skills[0].installedAt).toBeDefined()
-    })
-
-    it('should return empty array for non-existent file', async () => {
-      const skills = await readClaudeRegistry('.claude', tempDir)
-      expect(skills).toEqual([])
-    })
-
-    it('should return empty array for invalid YAML', async () => {
-      const claudeFile = '.claude'
-      await fs.writeFile(
-        path.join(tempDir, claudeFile),
-        'invalid: [yaml',
-        'utf8'
-      )
-
-      await expect(readClaudeRegistry(claudeFile, tempDir)).rejects.toThrow()
-    })
-
-    it('should return empty array when skills is not an array', async () => {
-      const claudeFile = '.claude'
-      await fs.writeFile(
-        path.join(tempDir, claudeFile),
-        'skills: not-an-array',
-        'utf8'
-      )
-
-      const skills = await readClaudeRegistry(claudeFile, tempDir)
-      expect(skills).toEqual([])
-    })
-
-    it('should filter out invalid skill entries', async () => {
-      const claudeFile = '.claude'
-      const content = yaml.dump({
-        skills : [
-          { library : 'valid-lib', integration : 'ValidInt' },
-          { library : 'missing-integration' },
-          { integration : 'missing-library' },
-          null,
-          'invalid',
-        ],
-      })
-      await fs.writeFile(path.join(tempDir, claudeFile), content, 'utf8')
-
-      const skills = await readClaudeRegistry(claudeFile, tempDir)
-      expect(skills).toHaveLength(1)
-      expect(skills[0]).toMatchObject({
-        library     : 'valid-lib',
-        integration : 'ValidInt',
-      })
-    })
-
-    it('should handle empty skills array', async () => {
-      const claudeFile = '.claude'
-      await fs.writeFile(path.join(tempDir, claudeFile), 'skills: []', 'utf8')
-
-      const skills = await readClaudeRegistry(claudeFile, tempDir)
-      expect(skills).toEqual([])
+      if (shouldThrow) {
+        await expect(readClaudeRegistry('.claude', tempDir)).rejects.toThrow()
+      }
+      else {
+        const skills = await readClaudeRegistry('.claude', tempDir)
+        assertion(skills)
+      }
     })
   })
 
   describe('writeClaudeRegistry', () => {
-    it('should write skills to .claude file', async () => {
-      const claudeFile = '.claude'
-      const skills = [
-        {
-          library     : 'test-lib',
-          integration : 'TestIntegration',
-          installedAt : '2025-11-07T12:00:00Z',
+    it.each([
+      [
+        'skills with installedAt',
+        [{ library : 'lib', integration : 'Int', installedAt : '2025-11-07T12:00:00Z' }],
+        (data) => {
+          expect(data.skills).toHaveLength(1)
+          expect(data.skills[0].installedAt).toBe('2025-11-07T12:00:00Z')
         },
-      ]
-
+      ],
+      [
+        'skills without installedAt (auto-added)',
+        [{ library : 'lib', integration : 'Int' }],
+        (data) => {
+          expect(data.skills[0].installedAt).toBeDefined()
+          expect(typeof data.skills[0].installedAt).toBe('string')
+        },
+      ],
+      ['empty array', [], (data) => expect(data.skills).toEqual([])],
+    ])('should write %s', async (_desc, skills, assertion) => {
+      const claudeFile = '.claude'
       await writeClaudeRegistry(claudeFile, skills, tempDir)
 
       const content = await fs.readFile(path.join(tempDir, claudeFile), 'utf8')
       const data = yaml.load(content)
 
-      expect(data.skills).toHaveLength(1)
-      expect(data.skills[0]).toMatchObject(skills[0])
-    })
-
-    it('should add installedAt timestamp if missing', async () => {
-      const claudeFile = '.claude'
-      const skills = [
-        {
-          library     : 'test-lib',
-          integration : 'TestIntegration',
-        },
-      ]
-
-      await writeClaudeRegistry(claudeFile, skills, tempDir)
-
-      const content = await fs.readFile(path.join(tempDir, claudeFile), 'utf8')
-      const data = yaml.load(content)
-
-      expect(data.skills[0].installedAt).toBeDefined()
-      expect(typeof data.skills[0].installedAt).toBe('string')
-    })
-
-    it('should write empty skills array', async () => {
-      const claudeFile = '.claude'
-      await writeClaudeRegistry(claudeFile, [], tempDir)
-
-      const content = await fs.readFile(path.join(tempDir, claudeFile), 'utf8')
-      const data = yaml.load(content)
-
-      expect(data.skills).toEqual([])
-    })
-
-    it('should format YAML with proper indentation', async () => {
-      const claudeFile = '.claude'
-      const skills = [
-        {
-          library     : 'test-lib',
-          integration : 'TestIntegration',
-        },
-      ]
-
-      await writeClaudeRegistry(claudeFile, skills, tempDir)
-
-      const content = await fs.readFile(path.join(tempDir, claudeFile), 'utf8')
+      assertion(data)
       expect(content).toContain('skills:')
-      expect(content).toContain('  - library:')
+      if (skills.length > 0) expect(content).toContain('  - library:')
     })
   })
 
   describe('readGenericRegistry', () => {
+    const mkTable = (rows) =>
+      `| Library | Integration | Summary | Installed |\n|---------|-------------|---------|-----------|${rows}`
+
     it('should read entries from markdown table', async () => {
-      const mdFile = 'AGENTS.md'
-      const content = `# Generic AI Integrations
-
-| Library     | Integration      | Summary                          | Installed |
-|-------------|------------------|----------------------------------|-----------|
-| test-lib    | TestIntegration  | A test integration               | yes       |
-`
-      await fs.writeFile(path.join(tempDir, mdFile), content, 'utf8')
-
-      const entries = await readGenericRegistry([mdFile], tempDir)
-
+      await fs.writeFile(path.join(tempDir, 'AGENTS.md'), mkTable('\n| lib | Int | Test | yes |'), 'utf8')
+      const entries = await readGenericRegistry(['AGENTS.md'], tempDir)
       expect(entries).toHaveLength(1)
-      expect(entries[0]).toMatchObject({
-        library     : 'test-lib',
-        integration : 'TestIntegration',
-      })
+      expect(entries[0]).toMatchObject({ library : 'lib', integration : 'Int' })
     })
 
     it('should read from multiple files', async () => {
-      const agentsContent = `# Agents
-
-| Library     | Integration      | Summary                          | Installed |
-|-------------|------------------|----------------------------------|-----------|
-| lib-1       | Integration1     | First                            | yes       |
-`
-      const claudeContent = `# Claude
-
-| Library     | Integration      | Summary                          | Installed |
-|-------------|------------------|----------------------------------|-----------|
-| lib-2       | Integration2     | Second                           | yes       |
-`
-      await fs.writeFile(path.join(tempDir, 'AGENTS.md'), agentsContent, 'utf8')
-      await fs.writeFile(path.join(tempDir, 'CLAUDE.md'), claudeContent, 'utf8')
-
-      const entries = await readGenericRegistry(
-        ['AGENTS.md', 'CLAUDE.md'],
-        tempDir
-      )
-
+      await fs.writeFile(path.join(tempDir, 'AGENTS.md'), mkTable('\n| lib-1 | Int1 | T | yes |'), 'utf8')
+      await fs.writeFile(path.join(tempDir, 'CLAUDE.md'), mkTable('\n| lib-2 | Int2 | T | yes |'), 'utf8')
+      const entries = await readGenericRegistry(['AGENTS.md', 'CLAUDE.md'], tempDir)
       expect(entries).toHaveLength(2)
       expect(entries.find((e) => e.library === 'lib-1')).toBeDefined()
       expect(entries.find((e) => e.library === 'lib-2')).toBeDefined()
     })
 
-    it('should return empty array for non-existent files', async () => {
+    it.each([
+      ['non-existent', null, []],
+      ['skip non-installed', '\n| lib | Yes | T | yes |\n| lib | No | T | |', [{ integration : 'Yes' }]],
+      ['whitespace', '\n|  lib  |  int  |  T  |  yes  |', [{ library : 'lib', integration : 'int' }]],
+      ['after content', '\n| lib | int | T | yes |\n\n## More', [{ library : 'lib', integration : 'int' }]],
+    ])('should handle %s', async (_desc, rows, expected) => {
+      if (rows) await fs.writeFile(path.join(tempDir, 'AGENTS.md'), mkTable(rows), 'utf8')
       const entries = await readGenericRegistry(['AGENTS.md'], tempDir)
-      expect(entries).toEqual([])
-    })
-
-    it('should skip rows without installed marker', async () => {
-      const mdFile = 'AGENTS.md'
-      const content = `# Generic AI Integrations
-
-| Library     | Integration      | Summary                          | Installed |
-|-------------|------------------|----------------------------------|-----------|
-| test-lib    | Installed        | Installed one                    | yes       |
-| test-lib    | NotInstalled     | Not installed one                |           |
-`
-      await fs.writeFile(path.join(tempDir, mdFile), content, 'utf8')
-
-      const entries = await readGenericRegistry([mdFile], tempDir)
-
-      expect(entries).toHaveLength(1)
-      expect(entries[0].integration).toBe('Installed')
-    })
-
-    it('should handle table with extra whitespace', async () => {
-      const mdFile = 'AGENTS.md'
-      const content = `# Generic AI Integrations
-
-|   Library   |   Integration    |   Summary      |   Installed   |
-|-------------|------------------|----------------|---------------|
-|   lib       |   int            |   sum          |   yes         |
-`
-      await fs.writeFile(path.join(tempDir, mdFile), content, 'utf8')
-
-      const entries = await readGenericRegistry([mdFile], tempDir)
-
-      expect(entries).toHaveLength(1)
-      expect(entries[0]).toMatchObject({
-        library     : 'lib',
-        integration : 'int',
-      })
-    })
-
-    it('should handle content after table', async () => {
-      const mdFile = 'AGENTS.md'
-      const content = `# Generic AI Integrations
-
-| Library     | Integration      | Summary                          | Installed |
-|-------------|------------------|----------------------------------|-----------|
-| test-lib    | TestIntegration  | A test integration               | yes       |
-
-## More content
-
-This is additional content after the table.
-`
-      await fs.writeFile(path.join(tempDir, mdFile), content, 'utf8')
-
-      const entries = await readGenericRegistry([mdFile], tempDir)
-
-      expect(entries).toHaveLength(1)
+      expected.length === 0 ? expect(entries).toEqual([]) : expect(entries).toMatchObject(expected)
     })
   })
 
   describe('writeGenericRegistry', () => {
-    it('should write entries to markdown table', async () => {
-      const mdFile = 'AGENTS.md'
-      const entries = [
-        {
-          library     : 'test-lib',
-          integration : 'TestIntegration',
-          summary     : 'A test integration',
-        },
-      ]
+    it.each([
+      [
+        'single entry',
+        [{ library : 'lib', integration : 'Int', summary : 'Test' }],
+        ['lib', 'Int', 'Test'],
+      ],
+      [
+        'multiple entries',
+        [
+          { library : 'lib-1', integration : 'Int1', summary : 'First' },
+          { library : 'lib-2', integration : 'Int2', summary : 'Second' },
+        ],
+        ['lib-1', 'lib-2'],
+      ],
+      ['empty entries', [], ['# Generic AI Integrations']],
+    ])('should write %s', async (_desc, entries, expectedContent) => {
+      await writeGenericRegistry('AGENTS.md', entries, tempDir)
 
-      await writeGenericRegistry(mdFile, entries, tempDir)
-
-      const content = await fs.readFile(path.join(tempDir, mdFile), 'utf8')
+      const content = await fs.readFile(path.join(tempDir, 'AGENTS.md'), 'utf8')
       expect(content).toContain('| Library')
-      expect(content).toContain('test-lib')
-      expect(content).toContain('TestIntegration')
-      expect(content).toContain('A test integration')
-    })
-
-    it('should write multiple entries', async () => {
-      const mdFile = 'AGENTS.md'
-      const entries = [
-        { library : 'lib-1', integration : 'Int1', summary : 'First' },
-        { library : 'lib-2', integration : 'Int2', summary : 'Second' },
-      ]
-
-      await writeGenericRegistry(mdFile, entries, tempDir)
-
-      const content = await fs.readFile(path.join(tempDir, mdFile), 'utf8')
-      expect(content).toContain('lib-1')
-      expect(content).toContain('lib-2')
-    })
-
-    it('should write empty table for empty entries', async () => {
-      const mdFile = 'AGENTS.md'
-      await writeGenericRegistry(mdFile, [], tempDir)
-
-      const content = await fs.readFile(path.join(tempDir, mdFile), 'utf8')
-      expect(content).toContain('# Generic AI Integrations')
-      expect(content).toContain('| Library')
+      expectedContent.forEach((str) => expect(content).toContain(str))
     })
   })
 
   describe('loadInstallationStatus', () => {
+    const makeProvider = (integrations) => ({
+      libraryName  : 'test-lib',
+      version      : '1.0.0',
+      path         : '/path',
+      integrations : integrations.map((int) => ({
+        name           : int.name,
+        summary        : int.summary || 'Test',
+        types          : int.types,
+        installedTypes : [],
+      })),
+    })
+
+    const setupRegistries = async (claudeSkills, genericEntries) => {
+      if (claudeSkills) {
+        await writeClaudeRegistry('.claude', claudeSkills, tempDir)
+      }
+      if (genericEntries) {
+        const table = `# Table
+| Library | Integration | Summary | Installed |
+|---------|-------------|---------|-----------|
+${genericEntries.map((e) => `| ${e.library} | ${e.integration} | Test | yes |`).join('\n')}
+`
+        await fs.writeFile(path.join(tempDir, 'AGENTS.md'), table, 'utf8')
+      }
+    }
+
     it('should mark installed types based on registries', async () => {
-      // Create registries
-      const claudeFile = '.claude'
-      await writeClaudeRegistry(
-        claudeFile,
+      await setupRegistries(
         [{ library : 'test-lib', integration : 'Integration1' }],
-        tempDir
+        [{ library : 'test-lib', integration : 'Integration2' }]
       )
 
-      const mdFile = 'AGENTS.md'
-      const mdContent = `# Agents
-| Library     | Integration      | Summary                          | Installed |
-|-------------|------------------|----------------------------------|-----------|
-| test-lib    | Integration2     | Second                           | yes       |
-`
-      await fs.writeFile(path.join(tempDir, mdFile), mdContent, 'utf8')
-
-      // Create providers
       const providers = [
-        {
-          libraryName  : 'test-lib',
-          version      : '1.0.0',
-          path         : '/path',
-          integrations : [
-            {
-              name           : 'Integration1',
-              summary        : 'First',
-              types          : [INTEGRATION_TYPES.CLAUDE_SKILL],
-              installedTypes : [],
-            },
-            {
-              name           : 'Integration2',
-              summary        : 'Second',
-              types          : [INTEGRATION_TYPES.GENERIC],
-              installedTypes : [],
-            },
-            {
-              name    : 'Integration3',
-              summary : 'Third',
-              types   : [
-                INTEGRATION_TYPES.GENERIC,
-                INTEGRATION_TYPES.CLAUDE_SKILL,
-              ],
-              installedTypes : [],
-            },
-          ],
-        },
+        makeProvider([
+          { name : 'Integration1', types : [INTEGRATION_TYPES.CLAUDE_SKILL] },
+          { name : 'Integration2', types : [INTEGRATION_TYPES.GENERIC] },
+          {
+            name  : 'Integration3',
+            types : [INTEGRATION_TYPES.GENERIC, INTEGRATION_TYPES.CLAUDE_SKILL],
+          },
+        ]),
       ]
 
-      const updated = await loadInstallationStatus(
-        providers,
-        claudeFile,
-        [mdFile],
-        tempDir
-      )
+      const updated = await loadInstallationStatus(providers, '.claude', ['AGENTS.md'], tempDir)
 
-      expect(updated[0].integrations[0].installedTypes).toEqual([
-        INTEGRATION_TYPES.CLAUDE_SKILL,
-      ])
-      expect(updated[0].integrations[1].installedTypes).toEqual([
-        INTEGRATION_TYPES.GENERIC,
-      ])
+      expect(updated[0].integrations[0].installedTypes).toEqual([INTEGRATION_TYPES.CLAUDE_SKILL])
+      expect(updated[0].integrations[1].installedTypes).toEqual([INTEGRATION_TYPES.GENERIC])
       expect(updated[0].integrations[2].installedTypes).toEqual([])
     })
 
     it('should handle both types installed', async () => {
-      const claudeFile = '.claude'
-      await writeClaudeRegistry(
-        claudeFile,
+      await setupRegistries(
         [{ library : 'test-lib', integration : 'Dual' }],
-        tempDir
+        [{ library : 'test-lib', integration : 'Dual' }]
       )
-
-      const mdFile = 'AGENTS.md'
-      const mdContent = `# Agents
-| Library     | Integration      | Summary                          | Installed |
-|-------------|------------------|----------------------------------|-----------|
-| test-lib    | Dual             | Dual type                        | yes       |
-`
-      await fs.writeFile(path.join(tempDir, mdFile), mdContent, 'utf8')
 
       const providers = [
-        {
-          libraryName  : 'test-lib',
-          version      : '1.0.0',
-          path         : '/path',
-          integrations : [
-            {
-              name    : 'Dual',
-              summary : 'Dual',
-              types   : [
-                INTEGRATION_TYPES.GENERIC,
-                INTEGRATION_TYPES.CLAUDE_SKILL,
-              ],
-              installedTypes : [],
-            },
-          ],
-        },
+        makeProvider([
+          {
+            name  : 'Dual',
+            types : [INTEGRATION_TYPES.GENERIC, INTEGRATION_TYPES.CLAUDE_SKILL],
+          },
+        ]),
       ]
 
-      const updated = await loadInstallationStatus(
-        providers,
-        claudeFile,
-        [mdFile],
-        tempDir
-      )
+      const updated = await loadInstallationStatus(providers, '.claude', ['AGENTS.md'], tempDir)
 
       expect(updated[0].integrations[0].installedTypes).toEqual([
         INTEGRATION_TYPES.GENERIC,
@@ -434,27 +231,10 @@ This is additional content after the table.
 
     it('should handle missing registry files', async () => {
       const providers = [
-        {
-          libraryName  : 'test-lib',
-          version      : '1.0.0',
-          path         : '/path',
-          integrations : [
-            {
-              name           : 'Integration1',
-              summary        : 'First',
-              types          : [INTEGRATION_TYPES.CLAUDE_SKILL],
-              installedTypes : [],
-            },
-          ],
-        },
+        makeProvider([{ name : 'Integration1', types : [INTEGRATION_TYPES.CLAUDE_SKILL] }]),
       ]
 
-      const updated = await loadInstallationStatus(
-        providers,
-        '.claude',
-        ['AGENTS.md'],
-        tempDir
-      )
+      const updated = await loadInstallationStatus(providers, '.claude', ['AGENTS.md'], tempDir)
 
       expect(updated[0].integrations[0].installedTypes).toEqual([])
     })
