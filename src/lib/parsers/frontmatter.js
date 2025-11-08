@@ -49,7 +49,7 @@ export function parseFrontmatterFromString(content) {
       summary : String(data.summary),
     }
   }
-  catch (error) { // eslint-disable-line no-unused-vars
+  catch {
     return null
   }
 }

@@ -3,6 +3,9 @@ import { loadProvidersWithCache } from '../core/cache'
 import { loadInstallationStatus } from '../core/registry'
 import { DEFAULT_CONFIG } from '../core/types'
 
+/**
+ * @import { IntegrationProvider } from './types.js'
+ */
 /* eslint-disable no-console, no-process-exit */
 
 /**
@@ -112,7 +115,7 @@ function displayIntegration(provider, integrationName) {
 /**
  * Formats types array for display
  * @param {string[]} types - Array of type strings
- * @returns {string}
+ * @returns {string} - Formatted types string
  */
 function formatTypes(types) {
   if (types.length === 0) return '(none)'

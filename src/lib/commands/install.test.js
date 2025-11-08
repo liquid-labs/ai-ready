@@ -1,11 +1,11 @@
-import { cmdInstall } from './install.js'
-import * as cache from '../core/cache.js'
-import * as registry from '../core/registry.js'
-import { INTEGRATION_TYPES } from '../core/types.js'
+import { cmdInstall } from './install'
+import * as cache from '../core/cache'
+import * as registry from '../core/registry'
+import { INTEGRATION_TYPES } from '../core/types'
 
-jest.mock('../core/scanner.js')
-jest.mock('../core/cache.js')
-jest.mock('../core/registry.js')
+jest.mock('../core/scanner')
+jest.mock('../core/cache')
+jest.mock('../core/registry')
 
 describe('install command', () => {
   let consoleLogSpy

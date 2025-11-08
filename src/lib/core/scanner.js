@@ -4,14 +4,17 @@ import { parseFrontmatter } from '../parsers/frontmatter.js'
 import { INTEGRATION_TYPES } from './types.js'
 
 /**
+ * @import { Integration, IntegrationProvider } from './types.js'
+ */
+
+/**
  * Scans a list of paths for ai-ready libraries
  * @param {string[]} scanPaths - Paths to scan (e.g., ['node_modules'])
  * @param {string} [baseDir=process.cwd()] - Base directory for relative paths
  * @returns {Promise<IntegrationProvider[]>} Array of discovered providers
  */
 export async function scanForProviders(scanPaths, baseDir = process.cwd()) {
-  const providers = []
-
+  const scans = []
   for (const scanPath of scanPaths) {
     const fullScanPath = path.resolve(baseDir, scanPath)
 
@@ -34,10 +37,7 @@ export async function scanForProviders(scanPaths, baseDir = process.cwd()) {
         }
 
         // This library has ai-ready integrations
-        const provider = await scanLibrary(entry.name, libraryPath)
-        if (provider) {
-          providers.push(provider)
-        }
+        scans.push(scanLibrary(entry.name, libraryPath))
       }
     }
     catch (error) {
@@ -47,6 +47,8 @@ export async function scanForProviders(scanPaths, baseDir = process.cwd()) {
       }
     }
   }
+
+  const providers = (await Promise.all(scans)).filter((provider) => !!provider)
 
   return providers
 }
@@ -92,8 +94,7 @@ async function scanLibrary(libraryName, libraryPath) {
  * @returns {Promise<Integration[]>} Array of integrations
  */
 async function scanIntegrations(integrationsPath) {
-  const integrations = []
-
+  const scans = []
   try {
     const entries = await fs.readdir(integrationsPath, { withFileTypes : true })
 
@@ -101,16 +102,16 @@ async function scanIntegrations(integrationsPath) {
       if (!entry.isDirectory()) continue
 
       const integrationPath = path.join(integrationsPath, entry.name)
-      const integration = await scanIntegration(entry.name, integrationPath)
-
-      if (integration) {
-        integrations.push(integration)
-      }
+      scans.push(scanIntegration(entry.name, integrationPath))
     }
   }
   catch {
     // integrations directory doesn't exist or can't be read
   }
+
+  const integrations = (await Promise.all(scans)).filter(
+    (integration) => !!integration
+  )
 
   return integrations
 }

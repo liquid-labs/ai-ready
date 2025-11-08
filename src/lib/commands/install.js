@@ -1,5 +1,5 @@
-import { scanForProviders } from '../core/scanner.js'
-import { loadProvidersWithCache } from '../core/cache.js'
+import { scanForProviders } from '../core/scanner'
+import { loadProvidersWithCache } from '../core/cache'
 import {
   loadInstallationStatus,
   createBackup,
@@ -7,8 +7,13 @@ import {
   writeClaudeRegistry,
   readGenericRegistry,
   writeGenericRegistry
-} from '../core/registry.js'
-import { DEFAULT_CONFIG, INTEGRATION_TYPES } from '../core/types.js'
+} from '../core/registry'
+import { DEFAULT_CONFIG, INTEGRATION_TYPES } from '../core/types'
+
+/**
+ * @import { Integration } from './types.js'
+ */
+/* eslint-disable no-console, no-process-exit */
 
 /**
  * Install command implementation
@@ -73,10 +78,10 @@ export async function cmdInstall(libraryIntegration, options) {
     console.log(`Installing ${libraryName}/${integrationName} ...`)
 
     // Install each type
-    for (const type of typesToInstall) {
-      await installType(libraryName, integrationName, integration, type)
-    }
+    const installations = typesToInstall.map((type) =>
+      installType(libraryName, integrationName, integration, type))
 
+    await Promise.all(installations)
     console.log('✔ Installation complete')
   }
   catch (error) {

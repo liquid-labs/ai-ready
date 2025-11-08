@@ -1,13 +1,13 @@
-import { cmdList } from './list.js'
-import * as scanner from '../core/scanner.js'
-import * as cache from '../core/cache.js'
-import * as registry from '../core/registry.js'
-import { INTEGRATION_TYPES } from '../core/types.js'
+import { cmdList } from './list'
+import * as scanner from '../core/scanner'
+import * as cache from '../core/cache'
+import * as registry from '../core/registry'
+import { INTEGRATION_TYPES } from '../core/types'
 
 // Mock modules
-jest.mock('../core/scanner.js')
-jest.mock('../core/cache.js')
-jest.mock('../core/registry.js')
+jest.mock('../core/scanner')
+jest.mock('../core/cache')
+jest.mock('../core/registry')
 
 describe('list command', () => {
   let consoleLogSpy

@@ -1,7 +1,11 @@
 import fs from 'fs/promises'
 import path from 'path'
 import yaml from 'js-yaml'
-import { INTEGRATION_TYPES } from './types.js'
+import { INTEGRATION_TYPES } from './types'
+
+/**
+ * @import { ClaudeSkillEntry, IntegrationProvider } from './types.js'
+ */
 
 /**
  * Reads the .claude file and returns Claude Skill entries

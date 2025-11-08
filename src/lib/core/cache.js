@@ -3,6 +3,10 @@ import path from 'path'
 import { isValidCache } from './types.js'
 
 /**
+ * @import { CacheData, IntegrationProvider } from './types.js'
+ */
+
+/**
  * Reads cache from file
  * @param {string} cacheFilePath - Path to cache file
  * @param {string} [baseDir=process.cwd()] - Base directory
