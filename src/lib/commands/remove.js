@@ -1,5 +1,5 @@
-import { scanForProviders } from '../core/scanner.js'
-import { loadProvidersWithCache } from '../core/cache.js'
+import { scanForProviders } from '../core/scanner'
+import { loadProvidersWithCache } from '../core/cache'
 import {
   loadInstallationStatus,
   createBackup,
@@ -7,8 +7,8 @@ import {
   writeClaudeRegistry,
   readGenericRegistry,
   writeGenericRegistry
-} from '../core/registry.js'
-import { DEFAULT_CONFIG, INTEGRATION_TYPES } from '../core/types.js'
+} from '../core/registry'
+import { DEFAULT_CONFIG, INTEGRATION_TYPES } from '../core/types'
 
 /* eslint-disable no-console, no-process-exit */
 
