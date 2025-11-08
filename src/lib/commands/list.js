@@ -3,6 +3,8 @@ import { loadProvidersWithCache } from '../core/cache.js'
 import { loadInstallationStatus } from '../core/registry.js'
 import { DEFAULT_CONFIG } from '../core/types.js'
 
+/* eslint-disable no-console, no-process-exit */
+
 /**
  * List command implementation
  * @param {object} options - Command options

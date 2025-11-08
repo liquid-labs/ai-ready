@@ -65,8 +65,8 @@ export const INTEGRATION_TYPES = {
 
 /**
  * Validates an Integration object
- * @param {Integration} integration
- * @returns {boolean}
+ * @param {Integration} integration - The Integration to validate
+ * @returns {boolean} - True if the Integration is valid, false otherwise
  */
 export function isValidIntegration(integration) {
   return !!(
@@ -82,8 +82,8 @@ export function isValidIntegration(integration) {
 
 /**
  * Validates an IntegrationProvider object
- * @param {IntegrationProvider} provider
- * @returns {boolean}
+ * @param {IntegrationProvider} provider - The IntegrationProvider to validate
+ * @returns {boolean} - True if the IntegrationProvider is valid, false otherwise
  */
 export function isValidProvider(provider) {
   return !!(
@@ -99,8 +99,8 @@ export function isValidProvider(provider) {
 
 /**
  * Validates cache data structure
- * @param {CacheData} cache
- * @returns {boolean}
+ * @param {CacheData} cache - The CacheData to validate
+ * @returns {boolean} - True if the CacheData is valid, false otherwise
  */
 export function isValidCache(cache) {
   return !!(

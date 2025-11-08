@@ -10,6 +10,8 @@ import {
 } from '../core/registry.js'
 import { DEFAULT_CONFIG, INTEGRATION_TYPES } from '../core/types.js'
 
+/* eslint-disable no-console, no-process-exit */
+
 /**
  * Remove command implementation
  * @param {string} libraryIntegration - Library/integration to remove

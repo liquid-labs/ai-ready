@@ -1,5 +1,6 @@
 import { scanForProviders } from './scanner.js'
 import { INTEGRATION_TYPES } from './types.js'
+import { createTestLibrary } from './test-lib.js'
 import fs from 'fs/promises'
 import path from 'path'
 import os from 'os'
@@ -17,65 +18,9 @@ describe('scanner', () => {
     }
   })
 
-  /**
-   * Helper to create a test library structure
-   */
-  async function createTestLibrary(libraryName, integrations) {
-    const libraryPath = path.join(tempDir, 'node_modules', libraryName)
-    await fs.mkdir(libraryPath, { recursive : true })
-
-    // Create package.json
-    await fs.writeFile(
-      path.join(libraryPath, 'package.json'),
-      JSON.stringify({ name : libraryName, version : '1.0.0' }, null, 2),
-      'utf8'
-    )
-
-    // Create integrations
-    for (const integration of integrations) {
-      const integrationPath = path.join(
-        libraryPath,
-        'ai-ready',
-        'integrations',
-        integration.dirName
-      )
-      await fs.mkdir(integrationPath, { recursive : true })
-
-      if (integration.generic) {
-        await fs.writeFile(
-          path.join(integrationPath, 'AI_INTEGRATION.md'),
-          `---
-name: ${integration.generic.name}
-summary: ${integration.generic.summary}
----
-
-# Generic Integration
-`,
-          'utf8'
-        )
-      }
-
-      if (integration.skill) {
-        const skillPath = path.join(integrationPath, 'claude-skill')
-        await fs.mkdir(skillPath, { recursive : true })
-        await fs.writeFile(
-          path.join(skillPath, 'SKILL.md'),
-          `---
-name: ${integration.skill.name}
-summary: ${integration.skill.summary}
----
-
-# Claude Skill
-`,
-          'utf8'
-        )
-      }
-    }
-  }
-
   describe('scanForProviders', () => {
     it('should discover library with generic integration', async () => {
-      await createTestLibrary('test-lib-1', [
+      await createTestLibrary(tempDir, 'test-lib-1', [
         {
           dirName : 'TestIntegration',
           generic : {
@@ -103,7 +48,7 @@ summary: ${integration.skill.summary}
     })
 
     it('should discover library with Claude Skill', async () => {
-      await createTestLibrary('test-lib-2', [
+      await createTestLibrary(tempDir, 'test-lib-2', [
         {
           dirName : 'SkillIntegration',
           skill   : {
@@ -125,7 +70,7 @@ summary: ${integration.skill.summary}
     })
 
     it('should discover library with both integration types', async () => {
-      await createTestLibrary('test-lib-3', [
+      await createTestLibrary(tempDir, 'test-lib-3', [
         {
           dirName : 'DualIntegration',
           generic : {
@@ -151,7 +96,7 @@ summary: ${integration.skill.summary}
     })
 
     it('should discover multiple integrations in one library', async () => {
-      await createTestLibrary('test-lib-4', [
+      await createTestLibrary(tempDir, 'test-lib-4', [
         {
           dirName : 'Integration1',
           generic : {
@@ -177,7 +122,7 @@ summary: ${integration.skill.summary}
     })
 
     it('should discover multiple libraries', async () => {
-      await createTestLibrary('lib-a', [
+      await createTestLibrary(tempDir, 'lib-a', [
         {
           dirName : 'IntegrationA',
           generic : {
@@ -187,7 +132,7 @@ summary: ${integration.skill.summary}
         },
       ])
 
-      await createTestLibrary('lib-b', [
+      await createTestLibrary(tempDir, 'lib-b', [
         {
           dirName : 'IntegrationB',
           skill   : {
@@ -266,7 +211,7 @@ summary: ${integration.skill.summary}
 
     it('should scan multiple scan paths', async () => {
       // Create library in first path
-      await createTestLibrary('lib-1', [
+      await createTestLibrary(tempDir, 'lib-1', [
         {
           dirName : 'Integration1',
           generic : { name : 'Integration1', summary : 'Test 1' },
@@ -323,7 +268,7 @@ summary: ${integration.skill.summary}
     })
 
     it('should use skill metadata when generic is missing', async () => {
-      await createTestLibrary('test-lib', [
+      await createTestLibrary(tempDir, 'test-lib', [
         {
           dirName : 'SkillOnly',
           skill   : {
@@ -342,7 +287,7 @@ summary: ${integration.skill.summary}
     })
 
     it('should prefer generic metadata when both exist', async () => {
-      await createTestLibrary('test-lib', [
+      await createTestLibrary(tempDir, 'test-lib', [
         {
           dirName : 'Both',
           generic : {
