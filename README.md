@@ -1,6 +1,6 @@
 # ai-ready
 
-**Discover and manage AI integrations from your installed npm packages**
+Provide, discover and manage AI integrations in npm packages.
 
 [![npm version](https://img.shields.io/npm/v/ai-ready.svg)](https://www.npmjs.com/package/ai-ready)
 [![License](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](https://opensource.org/licenses/Apache-2.0)
