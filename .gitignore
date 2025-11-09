@@ -1,0 +1,6 @@
+/dist
+/node_modules
+/qa
+/test-staging
+/.yalc
+/yalc.lock
