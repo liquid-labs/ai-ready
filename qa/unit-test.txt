@@ -1,0 +1,40 @@
+Test git rev: ccac535c31022ab904a3ed3631dd606f77f9c392
+(node:94450) Warning: `--localstorage-file` was provided without a valid path
+(Use `node --trace-warnings ...` to show where the warning was created)
+PASS lib/core/scanner.test.js
+PASS lib/core/cache.test.js
+PASS lib/core/registry.test.js
+PASS lib/commands/install.test.js
+PASS lib/parsers/frontmatter.test.js
+PASS lib/commands/remove.test.js
+PASS lib/commands/view.test.js
+PASS lib/commands/list.test.js
+PASS lib/core/types.test.js
+-----------------|---------|----------|---------|---------|--------------------------------
+File             | % Stmts | % Branch | % Funcs | % Lines | Uncovered Line #s              
+-----------------|---------|----------|---------|---------|--------------------------------
+All files        |    94.9 |    78.36 |   96.66 |   93.49 |                                
+ cli             |       0 |      100 |       0 |       0 |                                
+  air.mjs        |       0 |      100 |       0 |       0 | 1-43                           
+ lib/commands    |   97.97 |    86.63 |   92.75 |    97.3 |                                
+  data-lib.js    |     100 |      100 |     100 |     100 |                                
+  install.js     |   96.55 |       92 |   90.47 |   95.38 | 41,200,203                     
+  list.js        |   98.36 |    79.24 |   93.33 |   97.61 | 21                             
+  log-lib.js     |     100 |      100 |     100 |     100 |                                
+  remove.js      |   98.76 |    97.91 |      95 |   98.27 | 39                             
+  view.js        |   98.11 |       70 |   88.88 |   97.72 | 27                             
+ lib/core        |   95.09 |    73.61 |     100 |      94 |                                
+  cache.js       |    94.3 |     76.4 |     100 |   94.11 | 30,105,149,177                 
+  registry.js    |   95.08 |    72.51 |     100 |   93.89 | 43,124,130,168,197,265,292,299 
+  scanner.js     |   94.35 |    68.18 |     100 |   91.89 | 39,50,57,92,120,169            
+  test-lib.js    |     100 |    69.69 |     100 |     100 | 2-11                           
+  types.js       |     100 |      100 |     100 |     100 |                                
+ lib/parsers     |     100 |    88.23 |     100 |     100 |                                
+  frontmatter.js |     100 |    88.23 |     100 |     100 | 9                              
+-----------------|---------|----------|---------|---------|--------------------------------
+
+Test Suites: 9 passed, 9 total
+Tests:       143 passed, 143 total
+Snapshots:   0 total
+Time:        0.572 s, estimated 1 s
+Ran all test suites.
