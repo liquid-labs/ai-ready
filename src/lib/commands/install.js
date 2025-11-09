@@ -1,3 +1,5 @@
+import { logErrAndExit } from './log-lib'
+import { findProviderAndIntegration } from './data-lib'
 import { scanForProviders } from '../core/scanner'
 import { loadProvidersWithCache } from '../core/cache'
 import {
@@ -12,7 +14,7 @@ import { DEFAULT_CONFIG, INTEGRATION_TYPES } from '../core/types'
 /**
  * @import { Integration } from './types.js'
  */
-/* eslint-disable no-console, no-process-exit */
+/* eslint-disable no-console */
 
 /**
  * Install command implementation
@@ -24,10 +26,9 @@ import { DEFAULT_CONFIG, INTEGRATION_TYPES } from '../core/types'
  */
 export async function cmdInstall(libraryIntegration, options) {
   if (!libraryIntegration || !libraryIntegration.includes('/')) {
-    console.error(
+    logErrAndExit(
       'Error: Please specify library/integration format (e.g., my-lib/MyIntegration)'
     )
-    process.exit(1)
   }
 
   try {
@@ -47,23 +48,11 @@ export async function cmdInstall(libraryIntegration, options) {
     )
 
     // Find integration
-    const provider = providersWithStatus.find(
-      (p) => p.libraryName === libraryName
+    const { provider, integration } = findProviderAndIntegration(
+      providersWithStatus,
+      libraryName,
+      integrationName
     )
-    if (!provider) {
-      console.error(`Error: Library '${libraryName}' not found`)
-      process.exit(1)
-    }
-
-    const integration = provider.integrations.find(
-      (i) => i.name === integrationName
-    )
-    if (!integration) {
-      console.error(
-        `Error: Integration '${integrationName}' not found in library '${libraryName}'`
-      )
-      process.exit(1)
-    }
 
     // Determine types to install
     const typesToInstall = determineTypesToInstall(integration, options)
@@ -78,14 +67,19 @@ export async function cmdInstall(libraryIntegration, options) {
 
     // Install each type
     const installations = typesToInstall.map((type) =>
-      installType(libraryName, integrationName, integration, type, provider.path))
+      installType(
+        libraryName,
+        integrationName,
+        integration,
+        type,
+        provider.path
+      ))
 
     await Promise.all(installations)
     console.log('✔ Installation complete')
   }
   catch (error) {
-    console.error('Error installing integration:', error.message)
-    process.exit(1)
+    logErrAndExit(`Error installing integration: ${error.message}`)
   }
 }
 

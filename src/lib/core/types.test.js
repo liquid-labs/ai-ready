@@ -10,7 +10,9 @@ describe('types', () => {
   describe('DEFAULT_CONFIG', () => {
     it('should have correct default values', () => {
       expect(DEFAULT_CONFIG.scanPaths).toEqual(['node_modules'])
-      expect(DEFAULT_CONFIG.registryFiles.claudeSkillsDir).toBe('.claude/skills')
+      expect(DEFAULT_CONFIG.registryFiles.claudeSkillsDir).toBe(
+        '.claude/skills'
+      )
       expect(DEFAULT_CONFIG.registryFiles.generic).toEqual([
         'AGENTS.md',
         'CLAUDE.md',
@@ -29,44 +31,44 @@ describe('types', () => {
   describe('isValidIntegration', () => {
     it('should validate a correct integration', () => {
       const integration = {
-        name           : 'TestIntegration',
-        summary        : 'A test integration',
-        types          : ['genericIntegration'],
+        name    : 'TestIntegration',
+        summary : 'A test integration',
+        types   : ['genericIntegration'],
       }
       expect(isValidIntegration(integration)).toBe(true)
     })
 
     it('should reject integration with missing name', () => {
       const integration = {
-        summary        : 'A test integration',
-        types          : ['genericIntegration'],
+        summary : 'A test integration',
+        types   : ['genericIntegration'],
       }
       expect(isValidIntegration(integration)).toBe(false)
     })
 
     it('should reject integration with empty name', () => {
       const integration = {
-        name           : '',
-        summary        : 'A test integration',
-        types          : ['genericIntegration'],
+        name    : '',
+        summary : 'A test integration',
+        types   : ['genericIntegration'],
       }
       expect(isValidIntegration(integration)).toBe(false)
     })
 
     it('should reject integration with non-array types', () => {
       const integration = {
-        name           : 'TestIntegration',
-        summary        : 'A test integration',
-        types          : 'genericIntegration',
+        name    : 'TestIntegration',
+        summary : 'A test integration',
+        types   : 'genericIntegration',
       }
       expect(isValidIntegration(integration)).toBe(false)
     })
 
     it('should reject integration with empty types array', () => {
       const integration = {
-        name           : 'TestIntegration',
-        summary        : 'A test integration',
-        types          : [],
+        name    : 'TestIntegration',
+        summary : 'A test integration',
+        types   : [],
       }
       expect(isValidIntegration(integration)).toBe(false)
     })
@@ -85,10 +87,10 @@ describe('types', () => {
         path         : '/path/to/test-lib',
         integrations : [
           {
-            name           : 'TestIntegration',
-            summary        : 'A test integration',
-            types          : ['genericIntegration'],
-              },
+            name    : 'TestIntegration',
+            summary : 'A test integration',
+            types   : ['genericIntegration'],
+          },
         ],
       }
       expect(isValidProvider(provider)).toBe(true)
@@ -120,10 +122,10 @@ describe('types', () => {
         path         : '/path/to/test-lib',
         integrations : [
           {
-            name           : '',
-            summary        : 'Invalid',
-            types          : [],
-              },
+            name    : '',
+            summary : 'Invalid',
+            types   : [],
+          },
         ],
       }
       expect(isValidProvider(provider)).toBe(false)

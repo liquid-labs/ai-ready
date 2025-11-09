@@ -111,7 +111,9 @@ describe('install command', () => {
       expect(registry.installClaudeSkillSymlink).toHaveBeenCalledWith(
         '.claude/skills',
         'SkillOnly',
-        expect.stringContaining('/ai-ready/integrations/skill-only/claude-skill')
+        expect.stringContaining(
+          '/ai-ready/integrations/skill-only/claude-skill'
+        )
       )
       expect(consoleLogSpy).toHaveBeenCalledWith('✔ Claude Skill installed')
     })
@@ -195,7 +197,6 @@ describe('install command', () => {
       const output = consoleLogSpy.mock.calls.map((call) => call[0]).join('\n')
       expect(output).toContain('No types available to install')
     })
-
   })
 
   describe('backup creation', () => {
@@ -213,8 +214,7 @@ describe('install command', () => {
       await cmdInstall('test-lib/Integration', {})
 
       expect(consoleErrorSpy).toHaveBeenCalledWith(
-        'Error installing integration:',
-        'Cache error'
+        'Error installing integration: Cache error'
       )
       expect(processExitSpy).toHaveBeenCalledWith(1)
     })
@@ -227,8 +227,7 @@ describe('install command', () => {
       await cmdInstall('test-lib/SkillOnly', {})
 
       expect(consoleErrorSpy).toHaveBeenCalledWith(
-        'Error installing integration:',
-        'Symlink error'
+        'Error installing integration: Symlink error'
       )
       expect(processExitSpy).toHaveBeenCalledWith(1)
     })

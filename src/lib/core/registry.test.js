@@ -52,7 +52,7 @@ describe('registry', () => {
       for (const skill of normalizeEntries(claudeSkills)) {
         // Create fake source directory
         const sourcePath = path.join(tempDir, 'fake-source', skill.integration)
-        await fs.mkdir(sourcePath, { recursive : true })
+        await fs.mkdir(sourcePath, { recursive : true }) // eslint-disable-line no-await-in-loop
 
         // Convert integration name to kebab-case for symlink
         const skillName = skill.integration
@@ -61,13 +61,16 @@ describe('registry', () => {
           .toLowerCase()
 
         // Create symlink
-        await fs.symlink(sourcePath, path.join(skillsDir, skillName), 'dir')
+        await fs.symlink(sourcePath, path.join(skillsDir, skillName), 'dir') // eslint-disable-line no-await-in-loop
       }
     }
     if (genericEntries?.length > 0) {
       genericEntries = normalizeEntries(genericEntries)
       const rows = genericEntries
-        .map((e) => `| ${e.library} | ${e.integration} | Test | ${e.installed || ''} |`)
+        .map(
+          (e) =>
+            `| ${e.library} | ${e.integration} | Test | ${e.installed || ''} |`
+        )
         .join('\n')
       await fs.writeFile(
         path.join(tempDir, fileName),
@@ -79,7 +82,9 @@ describe('registry', () => {
 
   describe('Claude Skill symlinks', () => {
     it('should check if skill is installed (symlink exists)', async () => {
-      await setupRegistries([{ library : 'lib', integration : 'TestIntegration' }])
+      await setupRegistries([
+        { library : 'lib', integration : 'TestIntegration' },
+      ])
 
       const isInstalled = await isClaudeSkillInstalled(
         '.claude/skills',
@@ -135,7 +140,6 @@ describe('registry', () => {
     })
   })
 
-
   describe('readGenericRegistry', () => {
     it('should read entries from markdown table', async () => {
       await setupRegistries(null, [['lib', 'Int', 'Test', 'yes']])
@@ -178,7 +182,7 @@ describe('registry', () => {
       ],
     ])('should handle %s', async (_desc, rows, expected) => {
       await setupRegistries(null, rows)
-      
+
       const entries = await readGenericRegistry(['AGENTS.md'], tempDir)
       if (expected.length === 0) {
         expect(entries).toEqual([])

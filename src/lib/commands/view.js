@@ -1,3 +1,4 @@
+import { findProviderAndIntegration } from './data-lib'
 import { scanForProviders } from '../core/scanner'
 import { loadProvidersWithCache } from '../core/cache'
 import { loadInstallationStatus } from '../core/registry'
@@ -38,19 +39,16 @@ export async function cmdView(libraryIntegration) {
     const libraryName = parts[0]
     const integrationName = parts[1] || null
 
-    // Find library
-    const provider = providersWithStatus.find(
-      (p) => p.libraryName === libraryName
+    // Find library and optionally integration
+    const { provider, integration } = findProviderAndIntegration(
+      providersWithStatus,
+      libraryName,
+      integrationName
     )
 
-    if (!provider) {
-      console.error(`Error: Library '${libraryName}' not found`)
-      process.exit(1)
-    }
-
     // Display library or integration
-    if (integrationName) {
-      displayIntegration(provider, integrationName)
+    if (integration) {
+      displayIntegration(provider, integration)
     }
     else {
       displayLibrary(provider)
@@ -88,20 +86,9 @@ function displayLibrary(provider) {
 /**
  * Displays integration details
  * @param {IntegrationProvider} provider - Provider containing the integration
- * @param {string} integrationName - Name of integration to display
+ * @param {import('../core/types.js').Integration} integration - Integration to display
  */
-function displayIntegration(provider, integrationName) {
-  const integration = provider.integrations.find(
-    (i) => i.name === integrationName
-  )
-
-  if (!integration) {
-    console.error(
-      `Error: Integration '${integrationName}' not found in library '${provider.libraryName}'`
-    )
-    process.exit(1)
-  }
-
+function displayIntegration(provider, integration) {
   console.log(`Library      : ${provider.libraryName} (v${provider.version})`)
   console.log(`Integration  : ${integration.name}`)
   console.log(`Summary      : ${integration.summary}`)

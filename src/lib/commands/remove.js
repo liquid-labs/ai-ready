@@ -1,3 +1,5 @@
+import { logErrAndExit } from './log-lib'
+import { findProviderAndIntegration } from './data-lib'
 import { scanForProviders } from '../core/scanner'
 import { loadProvidersWithCache } from '../core/cache'
 import {
@@ -10,11 +12,6 @@ import {
 import { DEFAULT_CONFIG, INTEGRATION_TYPES } from '../core/types'
 
 /* eslint-disable no-console, no-process-exit */
-
-const logErrAndExit = (message) => {
-  console.error(message)
-  process.exit(1)
-}
 
 /**
  * Remove command implementation
@@ -49,21 +46,11 @@ export async function cmdRemove(libraryIntegration, options) {
     )
 
     // Find integration
-    const provider = providersWithStatus.find(
-      (p) => p.libraryName === libraryName
+    const { integration } = findProviderAndIntegration(
+      providersWithStatus,
+      libraryName,
+      integrationName
     )
-    if (!provider) {
-      logErrAndExit(`Error: Library '${libraryName}' not found`)
-    }
-
-    const integration = provider.integrations.find(
-      (i) => i.name === integrationName
-    )
-    if (!integration) {
-      logErrAndExit(
-        `Error: Integration '${integrationName}' not found in library '${libraryName}'`
-      )
-    }
 
     // Determine types to remove
     const typesToRemove = determineTypesToRemove(integration, options)
