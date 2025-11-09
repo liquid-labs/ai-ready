@@ -80,9 +80,11 @@ export async function addSource(url, options = {}) {
       `Adding ${STANDARD_REPOS.length} standard ${STANDARD_REPOS.length === 1 ? 'repository' : 'repositories'}...\n`
     )
 
-    for (const standardUrl of STANDARD_REPOS) {
-      await addSource(standardUrl, { baseDir, noClone })
-    }
+    await Promise.all(
+      STANDARD_REPOS.map(async (standardUrl) => {
+        await addSource(standardUrl, { baseDir, noClone })
+      })
+    )
 
     return
   }
@@ -127,24 +129,7 @@ export async function addSource(url, options = {}) {
 
   // Clone if requested
   if (!noClone) {
-    console.log('\nCloning repository...')
-    const result = await cloneRepo(repo)
-
-    if (result.success) {
-      repo.clonedAt = new Date().toISOString()
-      repo.lastReviewedCommit = result.commitSHA
-      await saveConfig(config)
-
-      console.log(`✓ Repository cloned to ${getRepoPath(repo.id)}`)
-
-      // Invalidate cache
-      await invalidateCache(baseDir)
-    }
-    else {
-      console.error(`\n✗ Failed to clone: ${result.error}`)
-      console.log('\nYou can clone it later with:')
-      console.log(`  air sources update ${repo.name}`)
-    }
+    await doClone(repo, config, baseDir)
   }
   else {
     console.log('\nClone skipped. Run `air sources update` to clone.')
@@ -176,33 +161,7 @@ export async function removeSource(identifier, options = {}) {
 
   // If --standard flag, remove all standard repos
   if (standard) {
-    const config = await loadConfig()
-    const standardReposToRemove = []
-
-    // Find all configured repos that match standard URLs
-    for (const standardUrl of STANDARD_REPOS) {
-      const normalizedStandardUrl = normalizeGitUrl(standardUrl)
-      const repo = config.repos.find(
-        (r) => r.normalizedUrl === normalizedStandardUrl
-      )
-      if (repo) {
-        standardReposToRemove.push(repo)
-      }
-    }
-
-    if (standardReposToRemove.length === 0) {
-      console.log('No standard repositories are currently configured.')
-
-      return
-    }
-
-    console.log(
-      `Removing ${standardReposToRemove.length} standard ${standardReposToRemove.length === 1 ? 'repository' : 'repositories'}...\n`
-    )
-
-    for (const repo of standardReposToRemove) {
-      await removeSource(repo.id, { baseDir, keepFiles })
-    }
+    await removeStandardRepos(baseDir, keepFiles)
 
     return
   }
@@ -235,11 +194,7 @@ export async function removeSource(identifier, options = {}) {
   }
   console.log()
 
-  const confirmed = await confirm('Are you sure?')
-  if (!confirmed) {
-    console.log('Aborted.')
-    process.exit(0)
-  }
+  await confirm('Are you sure?')
 
   // Remove from config
   config.repos = config.repos.filter((r) => r.id !== repo.id)
@@ -347,11 +302,7 @@ export async function repairSource(identifier, options = {}) {
   console.log(`Repairing repository: ${repo.name}`)
   console.log('This will delete and re-clone the repository.\n')
 
-  const confirmed = await confirm('Continue?')
-  if (!confirmed) {
-    console.log('Aborted.')
-    process.exit(0)
-  }
+  await confirm('Continue?')
 
   console.log('\nRepairing...')
   const result = await repairRepo(repo)
@@ -376,18 +327,22 @@ export async function repairSource(identifier, options = {}) {
  * @param {string} question - Question to ask the user
  * @returns {Promise<boolean>} True if user confirmed
  */
-function confirm(question) {
+const confirm = async (question) => {
   const rl = readline.createInterface({
     input  : process.stdin,
     output : process.stdout,
   })
 
-  return new Promise((resolve) => {
+  const confirmed = await new Promise((resolve) => {
     rl.question(`${question} (yes/no) `, (answer) => {
       rl.close()
       resolve(answer.toLowerCase() === 'yes' || answer.toLowerCase() === 'y')
     })
   })
+  if (!confirmed) {
+    console.log('Aborted.')
+    process.exit(0)
+  }
 }
 
 const warnAndConfirmAddSource = async (url) => {
@@ -403,11 +358,7 @@ const warnAndConfirmAddSource = async (url) => {
   console.log('\nOnly add repositories from sources you trust.')
   console.log(`\nRepository: ${url}\n`)
 
-  const confirmed = await confirm('Do you want to continue?')
-  if (!confirmed) {
-    console.log('Aborted.')
-    process.exit(0)
-  }
+  await confirm('Do you want to continue?')
 }
 
 const doUpdate = async (repo) => {
@@ -444,4 +395,57 @@ const doUpdate = async (repo) => {
     duration,
     wasClone : !cloned,
   }
+}
+
+const doClone = async (repo, config, baseDir) => {
+  console.log('\nCloning repository...')
+  const result = await cloneRepo(repo)
+
+  if (result.success) {
+    repo.clonedAt = new Date().toISOString()
+    repo.lastReviewedCommit = result.commitSHA
+    await saveConfig(config)
+
+    console.log(`✓ Repository cloned to ${getRepoPath(repo.id)}`)
+
+    // Invalidate cache
+    await invalidateCache(baseDir)
+  }
+  else {
+    console.error(`\n✗ Failed to clone: ${result.error}`)
+    console.log('\nYou can clone it later with:')
+    console.log(`  air sources update ${repo.name}`)
+  }
+}
+
+const removeStandardRepos = async (baseDir, keepFiles) => {
+  const config = await loadConfig()
+  const standardReposToRemove = []
+
+  // Find all configured repos that match standard URLs
+  for (const standardUrl of STANDARD_REPOS) {
+    const normalizedStandardUrl = normalizeGitUrl(standardUrl)
+    const repo = config.repos.find(
+      (r) => r.normalizedUrl === normalizedStandardUrl
+    )
+    if (repo) {
+      standardReposToRemove.push(repo)
+    }
+  }
+
+  if (standardReposToRemove.length === 0) {
+    console.log('No standard repositories are currently configured.')
+
+    return
+  }
+
+  console.log(
+    `Removing ${standardReposToRemove.length} standard ${standardReposToRemove.length === 1 ? 'repository' : 'repositories'}...\n`
+  )
+
+  await Promise.all(
+    standardReposToRemove.map(async (repo) => {
+      await removeSource(repo.id, { baseDir, keepFiles })
+    })
+  )
 }
