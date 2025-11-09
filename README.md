@@ -5,6 +5,8 @@ Provide, discover and manage AI integrations in npm packages.
 [![npm version](https://img.shields.io/npm/v/ai-ready.svg)](https://www.npmjs.com/package/ai-ready)
 [![License](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](https://opensource.org/licenses/Apache-2.0)
 
+**⚠ This is ALPHA software.** It is under active testing and we hope to confirm the API and release a beta version soon.
+
 `ai-ready` is a CLI tool that helps developers discover, view, and install AI integrations (including Claude Skills) that are embedded in their npm dependencies. It implements the [AIR (AI Ready) Protocol](docs/AIR_PROTOCOL_SPEC.md), enabling seamless integration between npm packages and AI coding assistants.
 
 ---
