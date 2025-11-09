@@ -1,7 +1,6 @@
 /* eslint-disable no-console, no-process-exit */
 
-import readline from 'readline'
-import { logErrAndExit } from './log-lib.js'
+import { confirm, logErrAndExit } from './ui-lib.js'
 import {
   loadConfig,
   saveConfig,
@@ -319,29 +318,6 @@ export async function repairSource(identifier, options = {}) {
   }
   else {
     logErrAndExit(`✗ Repair failed: ${result.error}`)
-  }
-}
-
-/**
- * Prompt user for yes/no confirmation
- * @param {string} question - Question to ask the user
- * @returns {Promise<boolean>} True if user confirmed
- */
-const confirm = async (question) => {
-  const rl = readline.createInterface({
-    input  : process.stdin,
-    output : process.stdout,
-  })
-
-  const confirmed = await new Promise((resolve) => {
-    rl.question(`${question} (yes/no) `, (answer) => {
-      rl.close()
-      resolve(answer.toLowerCase() === 'yes' || answer.toLowerCase() === 'y')
-    })
-  })
-  if (!confirmed) {
-    console.log('Aborted.')
-    process.exit(0)
   }
 }
 

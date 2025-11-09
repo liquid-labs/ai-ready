@@ -1,4 +1,4 @@
-import { logErrAndExit } from './log-lib.js'
+import { logErrAndExit } from './ui-lib.js'
 import { findProviderAndIntegration } from './data-lib.js'
 import { scanAll } from '../core/scanner.js'
 import { loadProvidersWithCache } from '../core/cache.js'

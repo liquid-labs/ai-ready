@@ -1,4 +1,4 @@
-import { logErrAndExit } from './log-lib'
+import { logErrAndExit } from './ui-lib'
 
 /**
  * @import { IntegrationProvider, Integration } from '../core/types.js'
