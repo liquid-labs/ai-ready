@@ -181,7 +181,7 @@ export function isValidCache(cache) {
     && typeof cache.scannedAt === 'string'
     && typeof cache.packageJsonMTime === 'number'
     && typeof cache.packageLockMTime === 'number'
-    && (Array.isArray(cache.npmProviders) || Array.isArray(cache.providers)) // Support legacy format
-    && Array.isArray(cache.remoteProviders || [])
+    && Array.isArray(cache.npmProviders)
+    && Array.isArray(cache.remoteProviders)
   )
 }

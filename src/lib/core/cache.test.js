@@ -9,6 +9,20 @@ import fs from 'fs/promises'
 import path from 'path'
 import os from 'os'
 
+const writeTestPackageJson = async (tempDir) => {
+  const pkgPath = path.join(tempDir, 'package.json')
+  await fs.writeFile(pkgPath, JSON.stringify({ name : 'test' }), 'utf8')
+
+  return pkgPath
+}
+
+const writeTestPackageLockJson = async (tempDir) => {
+  const lockPath = path.join(tempDir, 'package-lock.json')
+  await fs.writeFile(lockPath, JSON.stringify({ version : '1.0.0' }), 'utf8')
+
+  return lockPath
+}
+
 describe('cache', () => {
   let tempDir
 
@@ -195,19 +209,8 @@ describe('cache', () => {
 
   describe('createCacheData', () => {
     it('should create cache data with current timestamps', async () => {
-      const packageJsonPath = path.join(tempDir, 'package.json')
-      const packageLockPath = path.join(tempDir, 'package-lock.json')
-
-      await fs.writeFile(
-        packageJsonPath,
-        JSON.stringify({ name : 'test' }),
-        'utf8'
-      )
-      await fs.writeFile(
-        packageLockPath,
-        JSON.stringify({ version : '1.0.0' }),
-        'utf8'
-      )
+      await writeTestPackageJson(tempDir)
+      await writeTestPackageLockJson(tempDir)
 
       const providers = {
         npmProviders : [
@@ -254,20 +257,9 @@ describe('cache', () => {
   describe('loadProvidersWithCache', () => {
     it('should return cached providers when cache is valid', async () => {
       // Setup files
-      const packageJsonPath = path.join(tempDir, 'package.json')
-      const packageLockPath = path.join(tempDir, 'package-lock.json')
+      const packageJsonPath = await writeTestPackageJson(tempDir)
+      const packageLockPath = await writeTestPackageLockJson(tempDir)
       const cacheFile = '.aircache.json'
-
-      await fs.writeFile(
-        packageJsonPath,
-        JSON.stringify({ name : 'test' }),
-        'utf8'
-      )
-      await fs.writeFile(
-        packageLockPath,
-        JSON.stringify({ version : '1.0.0' }),
-        'utf8'
-      )
 
       const cache = {
         ...validCacheData,
@@ -286,12 +278,7 @@ describe('cache', () => {
     })
 
     it('should call scan function when cache is invalid', async () => {
-      const packageJsonPath = path.join(tempDir, 'package.json')
-      await fs.writeFile(
-        packageJsonPath,
-        JSON.stringify({ name : 'test' }),
-        'utf8'
-      )
+      await writeTestPackageJson(tempDir)
 
       const cacheFile = '.aircache.json'
       const newProviders = {
@@ -314,12 +301,7 @@ describe('cache', () => {
     })
 
     it('should write new cache after scanning', async () => {
-      const packageJsonPath = path.join(tempDir, 'package.json')
-      await fs.writeFile(
-        packageJsonPath,
-        JSON.stringify({ name : 'test' }),
-        'utf8'
-      )
+      await writeTestPackageJson(tempDir)
 
       const cacheFile = '.aircache.json'
       const newProviders = {
@@ -344,12 +326,7 @@ describe('cache', () => {
     })
 
     it('should call scan function when cache file does not exist', async () => {
-      const packageJsonPath = path.join(tempDir, 'package.json')
-      await fs.writeFile(
-        packageJsonPath,
-        JSON.stringify({ name : 'test' }),
-        'utf8'
-      )
+      await writeTestPackageJson(tempDir)
 
       const cacheFile = '.aircache.json'
       const newProviders = []

@@ -53,40 +53,42 @@ export async function scanRemoteProviders() {
   const config = await loadConfig()
   const providers = []
 
-  for (const repo of config.repos) {
-    // Skip if not cloned
-    if (!(await isRepoCloned(repo))) {
-      continue
-    }
+  await Promise.all(
+    config.repos.map(async (repo) => {
+      // Skip if not cloned
+      if (!(await isRepoCloned(repo))) {
+        return
+      }
 
-    const repoPath = getRepoPath(repo.id)
+      const repoPath = getRepoPath(repo.id)
 
-    // Get current commit SHA
-    let commitSHA = null
-    try {
-      const git = simpleGit(repoPath)
-      const log = await git.log({ maxCount : 1 })
-      commitSHA = log.latest?.hash || null
-    }
-    catch {
-      // Git error - skip this repo
-      continue
-    }
+      // Get current commit SHA
+      let commitSHA = null
+      try {
+        const git = simpleGit(repoPath)
+        const log = await git.log({ maxCount : 1 })
+        commitSHA = log.latest?.hash || null
+      }
+      catch {
+        // Git error - skip this repo
+        return
+      }
 
-    // Scan for integrations
-    const integrations = await scanRepoIntegrations(repoPath, repo)
+      // Scan for integrations
+      const integrations = await scanRepoIntegrations(repoPath, repo)
 
-    if (integrations.length > 0) {
-      providers.push({
-        repoId    : repo.id,
-        repoUrl   : repo.url,
-        repoName  : repo.name,
-        commitSHA : commitSHA || '',
-        scannedAt : new Date().toISOString(),
-        integrations,
-      })
-    }
-  }
+      if (integrations.length > 0) {
+        providers.push({
+          repoId    : repo.id,
+          repoUrl   : repo.url,
+          repoName  : repo.name,
+          commitSHA : commitSHA || '',
+          scannedAt : new Date().toISOString(),
+          integrations,
+        })
+      }
+    })
+  )
 
   return providers
 }

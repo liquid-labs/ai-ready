@@ -31,9 +31,8 @@ export async function loadConfig() {
 
   try {
     const content = await fs.readFile(CONFIG_FILE, 'utf8')
-    const config = JSON.parse(content)
 
-    return await migrateConfig(config)
+    return JSON.parse(content)
   }
   catch (error) {
     if (error.code === 'ENOENT') {
@@ -54,21 +53,6 @@ export async function loadConfig() {
 export async function saveConfig(config) {
   await ensureConfigDir()
   await fs.writeFile(CONFIG_FILE, JSON.stringify(config, null, 2), 'utf8')
-}
-
-/**
- * Migrates config to current version if needed
- * @param {RemoteRepoConfig} config - Configuration to migrate
- * @returns {Promise<RemoteRepoConfig>} Migrated configuration
- */
-async function migrateConfig(config) {
-  // Future migration logic would go here
-  // For now, just ensure required fields exist
-  return {
-    version        : config.version || '1.0.0',
-    sourcePriority : config.sourcePriority || ['npm', 'remote'],
-    repos          : config.repos || [],
-  }
 }
 
 /**

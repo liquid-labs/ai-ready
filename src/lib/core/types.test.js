@@ -153,7 +153,7 @@ describe('types', () => {
         scannedAt        : '2025-11-07T12:00:00Z',
         packageJsonMTime : 1234567890,
         packageLockMTime : 1234567890,
-        providers        : [
+        npmProviders     : [
           {
             libraryName  : 'test-lib',
             version      : '1.0.0',
@@ -161,6 +161,7 @@ describe('types', () => {
             integrations : [],
           },
         ],
+        remoteProviders : [],
       }
       expect(isValidCache(cache)).toBe(true)
     })
@@ -184,21 +185,24 @@ describe('types', () => {
       expect(isValidCache(cache)).toBe(false)
     })
 
-    it('should accept cache with legacy providers format', () => {
+    it('should reject cache with missing npmProviders', () => {
       const cache = {
         scannedAt        : '2025-11-07T12:00:00Z',
         packageJsonMTime : 1234567890,
         packageLockMTime : 1234567890,
-        providers        : [
-          {
-            libraryName  : 'test-lib',
-            version      : '1.0.0',
-            path         : '/path',
-            integrations : [],
-          },
-        ],
+        remoteProviders  : [],
       }
-      expect(isValidCache(cache)).toBe(true)
+      expect(isValidCache(cache)).toBe(false)
+    })
+
+    it('should reject cache with missing remoteProviders', () => {
+      const cache = {
+        scannedAt        : '2025-11-07T12:00:00Z',
+        packageJsonMTime : 1234567890,
+        packageLockMTime : 1234567890,
+        npmProviders     : [],
+      }
+      expect(isValidCache(cache)).toBe(false)
     })
 
     it('should reject null or undefined', () => {

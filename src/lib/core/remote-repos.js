@@ -76,29 +76,9 @@ export async function isRepoCloned(repo) {
 export async function cloneRepo(repo, options = {}) {
   const { shallow = true } = options
 
-  // Check Git availability
-  if (!(await isGitAvailable())) {
-    return {
-      success : false,
-      error :
-        'Git is not installed or not available in PATH. Please install Git and try again.',
-    }
-  }
-
-  // Check disk space
-  try {
-    const { free } = await checkDiskSpace(DATA_DIR)
-    const freeMB = free / (1024 * 1024)
-    if (freeMB < MIN_DISK_SPACE_MB) {
-      return {
-        success : false,
-        error   : `Insufficient disk space. Available: ${freeMB.toFixed(0)}MB, Required: ${MIN_DISK_SPACE_MB}MB`,
-      }
-    }
-  }
-  catch (error) {
-    // Disk space check failed, but continue anyway
-    console.warn(`Warning: Could not check disk space: ${error.message}`)
+  const preConditionResult = await checkClonePreconditions()
+  if (preConditionResult !== null) {
+    return preConditionResult
   }
 
   await ensureDataDir()
@@ -262,4 +242,33 @@ export async function getCurrentCommitSHA(repo) {
   catch {
     return null
   }
+}
+
+const checkClonePreconditions = async () => {
+  // Check Git availability
+  if (!(await isGitAvailable())) {
+    return {
+      success : false,
+      error :
+        'Git is not installed or not available in PATH. Please install Git and try again.',
+    }
+  }
+
+  // Check disk space
+  try {
+    const { free } = await checkDiskSpace(DATA_DIR)
+    const freeMB = free / (1024 * 1024)
+    if (freeMB < MIN_DISK_SPACE_MB) {
+      return {
+        success : false,
+        error   : `Insufficient disk space. Available: ${freeMB.toFixed(0)}MB, Required: ${MIN_DISK_SPACE_MB}MB`,
+      }
+    }
+  }
+  catch (error) {
+    // Disk space check failed, but continue anyway
+    console.warn(`Warning: Could not check disk space: ${error.message}`) // eslint-disable-line no-console
+  }
+
+  return null
 }

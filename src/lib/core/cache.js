@@ -27,19 +27,6 @@ export async function readCache(cacheFilePath, baseDir = process.cwd()) {
       return null
     }
 
-    // Handle legacy format migration
-    if (data.providers && !data.npmProviders) {
-      // Old format: { providers: [...] }
-      // New format: { npmProviders: [...], remoteProviders: [] }
-      return {
-        scannedAt        : data.scannedAt,
-        packageJsonMTime : data.packageJsonMTime,
-        packageLockMTime : data.packageLockMTime,
-        npmProviders     : data.providers,
-        remoteProviders  : [],
-      }
-    }
-
     return data
   }
   catch (error) {
@@ -241,6 +228,8 @@ const validateNpmCache = async (cache, baseDir) => {
     }
     throw error
   }
+
+  return true
 }
 
 const validateRemoteCache = async (cache) => {
@@ -251,11 +240,16 @@ const validateRemoteCache = async (cache) => {
   const cachedRepoIds = new Set(remoteProviders.map((p) => p.repoId))
   const clonedRepos = []
 
-  for (const repo of config.repos) {
-    if (await isRepoCloned(repo)) {
-      clonedRepos.push(repo)
+  ;(
+    await Promise.all(
+      config.repos.map(async (repo) =>
+        (await isRepoCloned(repo)) ? repo : null)
+    )
+  ).forEach((r) => {
+    if (r !== null) {
+      clonedRepos.push(r)
     }
-  }
+  })
 
   const currentRepoIds = new Set(clonedRepos.map((r) => r.id))
 
@@ -280,7 +274,9 @@ const validateRemoteCache = async (cache) => {
     try {
       const repoPath = getRepoPath(repo.id)
       const git = simpleGit(repoPath)
-      const log = await git.log({ maxCount : 1 })
+      // normally, we would factor this out, but since this fails quick we don't want to wait on everything to resolve
+      // when it may not matter
+      const log = await git.log({ maxCount : 1 }) // eslint-disable-line no-await-in-loop
       const currentSHA = log.latest?.hash
 
       if (currentSHA !== remoteProvider.commitSHA) {
@@ -291,4 +287,6 @@ const validateRemoteCache = async (cache) => {
       return false // Git error or repo inaccessible
     }
   }
+
+  return true
 }
