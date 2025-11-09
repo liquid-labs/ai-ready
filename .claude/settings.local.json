@@ -14,7 +14,8 @@
       "Bash(TEST=list.test make test:*)",
       "Bash(make:*)",
       "Bash(TEST=cache.test make test:*)",
-      "Bash(TEST=scanner.test make test:*)"
+      "Bash(TEST=scanner.test make test:*)",
+      "Bash(TEST=view.test make test:*)"
     ],
     "deny": [],
     "ask": []

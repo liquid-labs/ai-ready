@@ -35,7 +35,9 @@ export async function cmdList(options) {
     let filtered = providersWithStatus
 
     if (options.library) {
-      filtered = filtered.filter((p) => (p.libraryName || p.repoName) === options.library)
+      filtered = filtered.filter(
+        (p) => (p.libraryName || p.repoName) === options.library
+      )
     }
 
     // Filter integrations

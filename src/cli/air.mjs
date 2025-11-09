@@ -9,7 +9,7 @@ import {
   addSource,
   removeSource,
   updateSources,
-  repairSource,
+  repairSource
 } from '../lib/commands/sources.js'
 
 const run = () => {

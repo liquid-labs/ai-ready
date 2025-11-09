@@ -51,7 +51,10 @@ describe('install command', () => {
     consoleErrorSpy = jest.spyOn(console, 'error').mockImplementation()
     processExitSpy = jest.spyOn(process, 'exit').mockImplementation()
 
-    cache.loadProvidersWithCache.mockResolvedValue(mockProviders)
+    cache.loadProvidersWithCache.mockResolvedValue({
+      npmProviders    : mockProviders,
+      remoteProviders : [],
+    })
     registry.loadInstallationStatus.mockResolvedValue(mockProviders)
     registry.createBackup.mockResolvedValue(undefined)
     registry.installClaudeSkillSymlink.mockResolvedValue(undefined)

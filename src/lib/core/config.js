@@ -19,7 +19,7 @@ const CONFIG_FILE = path.join(AI_READY_CONFIG_DIR, 'config.json')
  * @returns {Promise<void>}
  */
 async function ensureConfigDir() {
-  await fs.mkdir(AI_READY_CONFIG_DIR, { recursive: true })
+  await fs.mkdir(AI_READY_CONFIG_DIR, { recursive : true })
 }
 
 /**
@@ -32,11 +32,14 @@ export async function loadConfig() {
   try {
     const content = await fs.readFile(CONFIG_FILE, 'utf8')
     const config = JSON.parse(content)
+
     return await migrateConfig(config)
-  } catch (error) {
+  }
+  catch (error) {
     if (error.code === 'ENOENT') {
       // Config file doesn't exist, create default
       await saveConfig(DEFAULT_REMOTE_CONFIG)
+
       return DEFAULT_REMOTE_CONFIG
     }
     throw error

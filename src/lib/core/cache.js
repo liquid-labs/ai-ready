@@ -78,7 +78,11 @@ export async function writeCache(
  * @param {string} [source='all'] - Source type to validate ('npm', 'remote', or 'all')
  * @returns {Promise<boolean>} True if cache is valid
  */
-export async function isCacheValid(cache, baseDir = process.cwd(), source = SOURCE_TYPE.ALL) {
+export async function isCacheValid(
+  cache,
+  baseDir = process.cwd(),
+  source = SOURCE_TYPE.ALL
+) {
   if (!cache) {
     return false
   }
@@ -164,13 +168,14 @@ export async function isCacheValid(cache, baseDir = process.cwd(), source = SOUR
       try {
         const repoPath = getRepoPath(repo.id)
         const git = simpleGit(repoPath)
-        const log = await git.log({ maxCount: 1 })
+        const log = await git.log({ maxCount : 1 })
         const currentSHA = log.latest?.hash
 
         if (currentSHA !== remoteProvider.commitSHA) {
           return false // Commit changed
         }
-      } catch {
+      }
+      catch {
         return false // Git error or repo inaccessible
       }
     }
@@ -213,7 +218,7 @@ export async function createCacheData(data, baseDir = process.cwd()) {
   }
 
   return {
-    scannedAt : new Date().toISOString(),
+    scannedAt       : new Date().toISOString(),
     packageJsonMTime,
     packageLockMTime,
     npmProviders    : data.npmProviders || [],
@@ -260,12 +265,16 @@ export async function loadProvidersWithCache(
  * @param {string} [cacheFilePath='.aircache.json'] - Path to cache file
  * @returns {Promise<void>}
  */
-export async function invalidateCache(baseDir = process.cwd(), cacheFilePath = '.aircache.json') {
+export async function invalidateCache(
+  baseDir = process.cwd(),
+  cacheFilePath = '.aircache.json'
+) {
   const fullPath = path.resolve(baseDir, cacheFilePath)
 
   try {
     await fs.unlink(fullPath)
-  } catch (error) {
+  }
+  catch (error) {
     if (error.code !== 'ENOENT') {
       throw error
     }

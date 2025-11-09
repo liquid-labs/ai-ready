@@ -242,7 +242,10 @@ describe('cache', () => {
     })
 
     it('should create valid ISO timestamp', async () => {
-      const cache = await createCacheData({ npmProviders : [], remoteProviders : [] }, tempDir)
+      const cache = await createCacheData(
+        { npmProviders : [], remoteProviders : [] },
+        tempDir
+      )
       expect(() => new Date(cache.scannedAt)).not.toThrow()
       expect(new Date(cache.scannedAt).toISOString()).toBe(cache.scannedAt)
     })

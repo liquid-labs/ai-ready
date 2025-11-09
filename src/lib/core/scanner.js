@@ -65,9 +65,10 @@ export async function scanRemoteProviders() {
     let commitSHA = null
     try {
       const git = simpleGit(repoPath)
-      const log = await git.log({ maxCount: 1 })
+      const log = await git.log({ maxCount : 1 })
       commitSHA = log.latest?.hash || null
-    } catch {
+    }
+    catch {
       // Git error - skip this repo
       continue
     }
@@ -77,11 +78,11 @@ export async function scanRemoteProviders() {
 
     if (integrations.length > 0) {
       providers.push({
-        repoId     : repo.id,
-        repoUrl    : repo.url,
-        repoName   : repo.name,
-        commitSHA  : commitSHA || '',
-        scannedAt  : new Date().toISOString(),
+        repoId    : repo.id,
+        repoUrl   : repo.url,
+        repoName  : repo.name,
+        commitSHA : commitSHA || '',
+        scannedAt : new Date().toISOString(),
         integrations,
       })
     }
@@ -101,7 +102,8 @@ async function scanRepoIntegrations(repoPath, repo) {
 
   try {
     await fs.access(integrationsPath)
-  } catch {
+  }
+  catch {
     // No ai-ready/integrations directory
     return []
   }

@@ -21,7 +21,7 @@ const MIN_DISK_SPACE_MB = 100
  * @returns {Promise<void>}
  */
 async function ensureDataDir() {
-  await fs.mkdir(AI_READY_DATA_DIR, { recursive: true })
+  await fs.mkdir(AI_READY_DATA_DIR, { recursive : true })
 }
 
 /**
@@ -41,8 +41,10 @@ export async function isGitAvailable() {
   try {
     const git = simpleGit()
     await git.version()
+
     return true
-  } catch {
+  }
+  catch {
     return false
   }
 }
@@ -56,8 +58,10 @@ export async function isRepoCloned(repo) {
   const localPath = getRepoPath(repo.id)
   try {
     await fs.access(path.join(localPath, '.git'))
+
     return true
-  } catch {
+  }
+  catch {
     return false
   }
 }
@@ -76,7 +80,8 @@ export async function cloneRepo(repo, options = {}) {
   if (!(await isGitAvailable())) {
     return {
       success : false,
-      error   : 'Git is not installed or not available in PATH. Please install Git and try again.',
+      error :
+        'Git is not installed or not available in PATH. Please install Git and try again.',
     }
   }
 
@@ -90,7 +95,8 @@ export async function cloneRepo(repo, options = {}) {
         error   : `Insufficient disk space. Available: ${freeMB.toFixed(0)}MB, Required: ${MIN_DISK_SPACE_MB}MB`,
       }
     }
-  } catch (error) {
+  }
+  catch (error) {
     // Disk space check failed, but continue anyway
     console.warn(`Warning: Could not check disk space: ${error.message}`)
   }
@@ -108,25 +114,27 @@ export async function cloneRepo(repo, options = {}) {
   }
 
   try {
-    const git = simpleGit({ timeout: { block: GIT_TIMEOUT_MS } })
+    const git = simpleGit({ timeout : { block : GIT_TIMEOUT_MS } })
     const cloneOptions = shallow ? ['--depth', '1'] : []
 
     await git.clone(repo.url, localPath, cloneOptions)
 
     // Get current commit SHA
     const localGit = simpleGit(localPath)
-    const log = await localGit.log({ maxCount: 1 })
+    const log = await localGit.log({ maxCount : 1 })
     const commitSHA = log.latest?.hash || null
 
     return {
-      success   : true,
+      success : true,
       commitSHA,
     }
-  } catch (error) {
+  }
+  catch (error) {
     // Clean up partial clone
     try {
-      await fs.rm(localPath, { recursive: true, force: true })
-    } catch {
+      await fs.rm(localPath, { recursive : true, force : true })
+    }
+    catch {
       // Ignore cleanup errors
     }
 
@@ -162,17 +170,17 @@ export async function updateRepo(repo) {
   }
 
   try {
-    const git = simpleGit(localPath, { timeout: { block: GIT_TIMEOUT_MS } })
+    const git = simpleGit(localPath, { timeout : { block : GIT_TIMEOUT_MS } })
 
     // Get current commit before pull
-    const logBefore = await git.log({ maxCount: 1 })
+    const logBefore = await git.log({ maxCount : 1 })
     const beforeSHA = logBefore.latest?.hash
 
     // Pull latest changes
     await git.pull()
 
     // Get commit after pull
-    const logAfter = await git.log({ maxCount: 1 })
+    const logAfter = await git.log({ maxCount : 1 })
     const afterSHA = logAfter.latest?.hash
 
     return {
@@ -180,7 +188,8 @@ export async function updateRepo(repo) {
       changed   : beforeSHA !== afterSHA,
       commitSHA : afterSHA || null,
     }
-  } catch (error) {
+  }
+  catch (error) {
     return {
       success : false,
       error   : error.message,
@@ -197,13 +206,16 @@ export async function removeRepo(repo) {
   const localPath = getRepoPath(repo.id)
 
   try {
-    await fs.rm(localPath, { recursive: true, force: true })
-    return { success: true }
-  } catch (error) {
+    await fs.rm(localPath, { recursive : true, force : true })
+
+    return { success : true }
+  }
+  catch (error) {
     if (error.code === 'ENOENT') {
       // Already deleted
-      return { success: true }
+      return { success : true }
     }
+
     return {
       success : false,
       error   : error.message,
@@ -243,9 +255,11 @@ export async function getCurrentCommitSHA(repo) {
   try {
     const localPath = getRepoPath(repo.id)
     const git = simpleGit(localPath)
-    const log = await git.log({ maxCount: 1 })
+    const log = await git.log({ maxCount : 1 })
+
     return log.latest?.hash || null
-  } catch {
+  }
+  catch {
     return null
   }
 }
