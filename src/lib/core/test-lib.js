@@ -64,3 +64,30 @@ summary: ${integration.skill.summary}
     }
   }
 }
+
+/**
+ * Helper to create a test table for testing
+ * @param {string} rows - Rows of the table
+ * @returns {string} Test table
+ * @private
+ */
+export const mkTable = (rows) =>
+  `| Library | Integration | Summary | Installed |\n|---------|-------------|---------|-----------|${rows}`
+
+/**
+ * Helper to create a test provider for testing
+ * @param {Array<{name: string, summary: string, types: string[]}>} integrations - Integration definitions
+ * @returns {object} Test provider
+ * @private
+ */
+export const makeProvider = (integrations) => ({
+  libraryName  : 'test-lib',
+  version      : '1.0.0',
+  path         : '/path',
+  integrations : integrations.map((int) => ({
+    name           : int.name,
+    summary        : int.summary || 'Test',
+    types          : int.types,
+    installedTypes : [],
+  })),
+})

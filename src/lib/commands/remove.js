@@ -12,6 +12,11 @@ import { DEFAULT_CONFIG, INTEGRATION_TYPES } from '../core/types'
 
 /* eslint-disable no-console, no-process-exit */
 
+const logErrAndExit = (message) => {
+  console.error(message)
+  process.exit(1)
+}
+
 /**
  * Remove command implementation
  * @param {string} libraryIntegration - Library/integration to remove
@@ -49,23 +54,20 @@ export async function cmdRemove(libraryIntegration, options) {
       (p) => p.libraryName === libraryName
     )
     if (!provider) {
-      console.error(`Error: Library '${libraryName}' not found`)
-      process.exit(1)
+      logErrAndExit(`Error: Library '${libraryName}' not found`)
     }
 
     const integration = provider.integrations.find(
       (i) => i.name === integrationName
     )
     if (!integration) {
-      console.error(
+      logErrAndExit(
         `Error: Integration '${integrationName}' not found in library '${libraryName}'`
       )
-      process.exit(1)
     }
 
     // Determine types to remove
     const typesToRemove = determineTypesToRemove(integration, options)
-
     if (typesToRemove.length === 0) {
       console.log('No installed types to remove.')
 
@@ -76,14 +78,14 @@ export async function cmdRemove(libraryIntegration, options) {
 
     // Remove each type
     await Promise.all(
-      typesToRemove.map((type) => removeType(libraryName, integrationName, type))
+      typesToRemove.map((type) =>
+        removeType(libraryName, integrationName, type))
     )
 
     console.log('✔ Removal complete')
   }
   catch (error) {
-    console.error('Error removing integration:', error.message)
-    process.exit(1)
+    logErrAndExit(`Error removing integration: ${error.message}`)
   }
 }
 

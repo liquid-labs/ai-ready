@@ -255,8 +255,7 @@ describe('remove command', () => {
       await cmdRemove('test-lib/Integration', {})
 
       expect(consoleErrorSpy).toHaveBeenCalledWith(
-        'Error removing integration:',
-        'Cache error'
+        'Error removing integration: Cache error'
       )
       expect(processExitSpy).toHaveBeenCalledWith(1)
     })
@@ -267,8 +266,7 @@ describe('remove command', () => {
       await cmdRemove('test-lib/SkillInstalled', {})
 
       expect(consoleErrorSpy).toHaveBeenCalledWith(
-        'Error removing integration:',
-        'Write error'
+        'Error removing integration: Write error'
       )
       expect(processExitSpy).toHaveBeenCalledWith(1)
     })

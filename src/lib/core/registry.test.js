@@ -1,3 +1,8 @@
+import fs from 'fs/promises'
+import path from 'path'
+import os from 'os'
+import yaml from 'js-yaml'
+
 import {
   readClaudeRegistry,
   writeClaudeRegistry,
@@ -5,12 +10,9 @@ import {
   writeGenericRegistry,
   loadInstallationStatus,
   createBackup
-} from './registry.js'
-import { INTEGRATION_TYPES } from './types.js'
-import fs from 'fs/promises'
-import path from 'path'
-import os from 'os'
-import yaml from 'js-yaml'
+} from './registry'
+import { mkTable, makeProvider } from './test-lib'
+import { INTEGRATION_TYPES } from './types'
 
 describe('registry', () => {
   let tempDir
@@ -25,6 +27,22 @@ describe('registry', () => {
     }
   })
 
+  const setupRegistries = async (claudeSkills, genericEntries) => {
+    if (claudeSkills) {
+      await writeClaudeRegistry('.claude', claudeSkills, tempDir)
+    }
+    if (genericEntries) {
+      const rows = genericEntries
+        .map((e) => `| ${e.library} | ${e.integration} | Test | yes |`)
+        .join('\n')
+      await fs.writeFile(
+        path.join(tempDir, 'AGENTS.md'),
+        `# Table\n${mkTable(`\n${rows}`)}`,
+        'utf8'
+      )
+    }
+  }
+
   describe('readClaudeRegistry', () => {
     it.each([
       [
@@ -38,9 +56,24 @@ describe('registry', () => {
         },
       ],
       ['invalid YAML', 'invalid: [yaml', true, null],
-      ['non-existent file', null, false, (skills) => expect(skills).toEqual([])],
-      ['not an array', 'skills: not-an-array', false, (skills) => expect(skills).toEqual([])],
-      ['empty array', 'skills: []', false, (skills) => expect(skills).toEqual([])],
+      [
+        'non-existent file',
+        null,
+        false,
+        (skills) => expect(skills).toEqual([]),
+      ],
+      [
+        'not an array',
+        'skills: not-an-array',
+        false,
+        (skills) => expect(skills).toEqual([]),
+      ],
+      [
+        'empty array',
+        'skills: []',
+        false,
+        (skills) => expect(skills).toEqual([]),
+      ],
       [
         'filtered invalids',
         yaml.dump({
@@ -51,10 +84,14 @@ describe('registry', () => {
           ],
         }),
         false,
-        (skills) => expect(skills).toMatchObject([{ library : 'valid', integration : 'Int' }]),
+        (skills) =>
+          expect(skills).toMatchObject([
+            { library : 'valid', integration : 'Int' },
+          ]),
       ],
     ])('should handle %s', async (_desc, content, shouldThrow, assertion) => {
-      if (content) await fs.writeFile(path.join(tempDir, '.claude'), content, 'utf8')
+      if (content)
+        await fs.writeFile(path.join(tempDir, '.claude'), content, 'utf8')
 
       if (shouldThrow) {
         await expect(readClaudeRegistry('.claude', tempDir)).rejects.toThrow()
@@ -70,7 +107,13 @@ describe('registry', () => {
     it.each([
       [
         'skills with installedAt',
-        [{ library : 'lib', integration : 'Int', installedAt : '2025-11-07T12:00:00Z' }],
+        [
+          {
+            library     : 'lib',
+            integration : 'Int',
+            installedAt : '2025-11-07T12:00:00Z',
+          },
+        ],
         (data) => {
           expect(data.skills).toHaveLength(1)
           expect(data.skills[0].installedAt).toBe('2025-11-07T12:00:00Z')
@@ -86,10 +129,9 @@ describe('registry', () => {
       ],
       ['empty array', [], (data) => expect(data.skills).toEqual([])],
     ])('should write %s', async (_desc, skills, assertion) => {
-      const claudeFile = '.claude'
-      await writeClaudeRegistry(claudeFile, skills, tempDir)
+      await writeClaudeRegistry('.claude', skills, tempDir)
 
-      const content = await fs.readFile(path.join(tempDir, claudeFile), 'utf8')
+      const content = await fs.readFile(path.join(tempDir, '.claude'), 'utf8')
       const data = yaml.load(content)
 
       assertion(data)
@@ -99,20 +141,32 @@ describe('registry', () => {
   })
 
   describe('readGenericRegistry', () => {
-    const mkTable = (rows) =>
-      `| Library | Integration | Summary | Installed |\n|---------|-------------|---------|-----------|${rows}`
-
     it('should read entries from markdown table', async () => {
-      await fs.writeFile(path.join(tempDir, 'AGENTS.md'), mkTable('\n| lib | Int | Test | yes |'), 'utf8')
+      await fs.writeFile(
+        path.join(tempDir, 'AGENTS.md'),
+        mkTable('\n| lib | Int | Test | yes |'),
+        'utf8'
+      )
       const entries = await readGenericRegistry(['AGENTS.md'], tempDir)
       expect(entries).toHaveLength(1)
       expect(entries[0]).toMatchObject({ library : 'lib', integration : 'Int' })
     })
 
     it('should read from multiple files', async () => {
-      await fs.writeFile(path.join(tempDir, 'AGENTS.md'), mkTable('\n| lib-1 | Int1 | T | yes |'), 'utf8')
-      await fs.writeFile(path.join(tempDir, 'CLAUDE.md'), mkTable('\n| lib-2 | Int2 | T | yes |'), 'utf8')
-      const entries = await readGenericRegistry(['AGENTS.md', 'CLAUDE.md'], tempDir)
+      await fs.writeFile(
+        path.join(tempDir, 'AGENTS.md'),
+        mkTable('\n| lib-1 | Int1 | T | yes |'),
+        'utf8'
+      )
+      await fs.writeFile(
+        path.join(tempDir, 'CLAUDE.md'),
+        mkTable('\n| lib-2 | Int2 | T | yes |'),
+        'utf8'
+      )
+      const entries = await readGenericRegistry(
+        ['AGENTS.md', 'CLAUDE.md'],
+        tempDir
+      )
       expect(entries).toHaveLength(2)
       expect(entries.find((e) => e.library === 'lib-1')).toBeDefined()
       expect(entries.find((e) => e.library === 'lib-2')).toBeDefined()
@@ -120,13 +174,36 @@ describe('registry', () => {
 
     it.each([
       ['non-existent', null, []],
-      ['skip non-installed', '\n| lib | Yes | T | yes |\n| lib | No | T | |', [{ integration : 'Yes' }]],
-      ['whitespace', '\n|  lib  |  int  |  T  |  yes  |', [{ library : 'lib', integration : 'int' }]],
-      ['after content', '\n| lib | int | T | yes |\n\n## More', [{ library : 'lib', integration : 'int' }]],
+      [
+        'skip non-installed',
+        '\n| lib | Yes | T | yes |\n| lib | No | T | |',
+        [{ integration : 'Yes' }],
+      ],
+      [
+        'whitespace',
+        '\n|  lib  |  int  |  T  |  yes  |',
+        [{ library : 'lib', integration : 'int' }],
+      ],
+      [
+        'after content',
+        '\n| lib | int | T | yes |\n\n## More',
+        [{ library : 'lib', integration : 'int' }],
+      ],
     ])('should handle %s', async (_desc, rows, expected) => {
-      if (rows) await fs.writeFile(path.join(tempDir, 'AGENTS.md'), mkTable(rows), 'utf8')
+      if (rows) {
+        await fs.writeFile(
+          path.join(tempDir, 'AGENTS.md'),
+          mkTable(rows),
+          'utf8'
+        )
+      }
       const entries = await readGenericRegistry(['AGENTS.md'], tempDir)
-      expected.length === 0 ? expect(entries).toEqual([]) : expect(entries).toMatchObject(expected)
+      if (expected.length === 0) {
+        expect(entries).toEqual([])
+      }
+      else {
+        expect(entries).toMatchObject(expected)
+      }
     })
   })
 
@@ -156,32 +233,6 @@ describe('registry', () => {
   })
 
   describe('loadInstallationStatus', () => {
-    const makeProvider = (integrations) => ({
-      libraryName  : 'test-lib',
-      version      : '1.0.0',
-      path         : '/path',
-      integrations : integrations.map((int) => ({
-        name           : int.name,
-        summary        : int.summary || 'Test',
-        types          : int.types,
-        installedTypes : [],
-      })),
-    })
-
-    const setupRegistries = async (claudeSkills, genericEntries) => {
-      if (claudeSkills) {
-        await writeClaudeRegistry('.claude', claudeSkills, tempDir)
-      }
-      if (genericEntries) {
-        const table = `# Table
-| Library | Integration | Summary | Installed |
-|---------|-------------|---------|-----------|
-${genericEntries.map((e) => `| ${e.library} | ${e.integration} | Test | yes |`).join('\n')}
-`
-        await fs.writeFile(path.join(tempDir, 'AGENTS.md'), table, 'utf8')
-      }
-    }
-
     it('should mark installed types based on registries', async () => {
       await setupRegistries(
         [{ library : 'test-lib', integration : 'Integration1' }],
@@ -199,10 +250,19 @@ ${genericEntries.map((e) => `| ${e.library} | ${e.integration} | Test | yes |`).
         ]),
       ]
 
-      const updated = await loadInstallationStatus(providers, '.claude', ['AGENTS.md'], tempDir)
+      const updated = await loadInstallationStatus(
+        providers,
+        '.claude',
+        ['AGENTS.md'],
+        tempDir
+      )
 
-      expect(updated[0].integrations[0].installedTypes).toEqual([INTEGRATION_TYPES.CLAUDE_SKILL])
-      expect(updated[0].integrations[1].installedTypes).toEqual([INTEGRATION_TYPES.GENERIC])
+      expect(updated[0].integrations[0].installedTypes).toEqual([
+        INTEGRATION_TYPES.CLAUDE_SKILL,
+      ])
+      expect(updated[0].integrations[1].installedTypes).toEqual([
+        INTEGRATION_TYPES.GENERIC,
+      ])
       expect(updated[0].integrations[2].installedTypes).toEqual([])
     })
 
@@ -221,7 +281,12 @@ ${genericEntries.map((e) => `| ${e.library} | ${e.integration} | Test | yes |`).
         ]),
       ]
 
-      const updated = await loadInstallationStatus(providers, '.claude', ['AGENTS.md'], tempDir)
+      const updated = await loadInstallationStatus(
+        providers,
+        '.claude',
+        ['AGENTS.md'],
+        tempDir
+      )
 
       expect(updated[0].integrations[0].installedTypes).toEqual([
         INTEGRATION_TYPES.GENERIC,
@@ -231,10 +296,17 @@ ${genericEntries.map((e) => `| ${e.library} | ${e.integration} | Test | yes |`).
 
     it('should handle missing registry files', async () => {
       const providers = [
-        makeProvider([{ name : 'Integration1', types : [INTEGRATION_TYPES.CLAUDE_SKILL] }]),
+        makeProvider([
+          { name : 'Integration1', types : [INTEGRATION_TYPES.CLAUDE_SKILL] },
+        ]),
       ]
 
-      const updated = await loadInstallationStatus(providers, '.claude', ['AGENTS.md'], tempDir)
+      const updated = await loadInstallationStatus(
+        providers,
+        '.claude',
+        ['AGENTS.md'],
+        tempDir
+      )
 
       expect(updated[0].integrations[0].installedTypes).toEqual([])
     })
