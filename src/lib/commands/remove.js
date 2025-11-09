@@ -3,8 +3,7 @@ import { loadProvidersWithCache } from '../core/cache'
 import {
   loadInstallationStatus,
   createBackup,
-  readClaudeRegistry,
-  writeClaudeRegistry,
+  removeClaudeSkillSymlink,
   readGenericRegistry,
   writeGenericRegistry
 } from '../core/registry'
@@ -45,7 +44,7 @@ export async function cmdRemove(libraryIntegration, options) {
 
     const providersWithStatus = await loadInstallationStatus(
       providers,
-      DEFAULT_CONFIG.registryFiles.claude,
+      DEFAULT_CONFIG.registryFiles.claudeSkillsDir,
       DEFAULT_CONFIG.registryFiles.generic
     )
 
@@ -140,26 +139,16 @@ async function removeType(libraryName, integrationName, type) {
 }
 
 /**
- * Removes a Claude Skill
- * @param {string} libraryName - Library name
+ * Removes a Claude Skill by deleting its symlink
+ * @param {string} libraryName - Library name (unused, kept for signature compatibility)
  * @param {string} integrationName - Integration name
  * @returns {Promise<void>}
  */
 async function removeClaudeSkill(libraryName, integrationName) {
-  const claudeFile = DEFAULT_CONFIG.registryFiles.claude
+  const claudeSkillsDir = DEFAULT_CONFIG.registryFiles.claudeSkillsDir
 
-  // Create backup
-  await createBackup(claudeFile)
-
-  // Read existing skills
-  const skills = await readClaudeRegistry(claudeFile)
-
-  // Filter out the entry
-  const filtered = skills.filter(
-    (s) => !(s.library === libraryName && s.integration === integrationName)
-  )
-
-  await writeClaudeRegistry(claudeFile, filtered)
+  // Remove symlink
+  await removeClaudeSkillSymlink(claudeSkillsDir, integrationName)
 }
 
 /**

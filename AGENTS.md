@@ -55,7 +55,7 @@ Scanner → Cache → Registry → Commands
 
 3. **Registry** (`src/lib/core/registry.js`)
    - Tracks installed integrations in two formats:
-     - `.claude` (YAML) - Claude Skills
+     - `.claude/skills/` (symlinks) - Claude Skills
      - `AGENTS.md` (Markdown table) - Generic integrations
    - Overlays installation status onto provider data
 
@@ -68,12 +68,14 @@ Scanner → Cache → Registry → Commands
 
 - **Claude Skills** (`claudeSkill`)
   - File: `ai-ready/integrations/<Name>/claude-skill/SKILL.md`
-  - Registry: `.claude` (YAML)
+  - Registry: `.claude/skills/` (directory of symlinks)
+  - Installation: Symlink `.claude/skills/<skill-name> → <library-path>/ai-ready/integrations/<Name>/claude-skill`
   - Flag: `--skill`
 
 - **Generic Integrations** (`genericIntegration`)
   - File: `ai-ready/integrations/<Name>/AI_INTEGRATION.md`
   - Registry: `AGENTS.md` or `CLAUDE.md` (Markdown table)
+  - Installation: Listed in markdown table (no separate tracking needed)
   - Flag: `--generic`
 
 **Dual-Type Support:** An integration can provide both types by including both files. Users can install one or both types independently.
@@ -87,7 +89,7 @@ Integration {
   name: string              // Integration name
   summary: string           // One-line description
   types: string[]           // Available: ['genericIntegration', 'claudeSkill']
-  installedTypes: string[]  // Installed (subset of types)
+  installedTypes: string[]  // Dynamically computed by checking filesystem/markdown
 }
 
 IntegrationProvider {
@@ -208,10 +210,16 @@ try {
 2. Skill metadata name (if `claude-skill/SKILL.md` exists)
 3. Directory name (fallback)
 
-### Registry Write Behavior
-- **Claude registry:** Writes to `.claude` only
-- **Generic registry:** Writes to **first** file in `DEFAULT_CONFIG.registryFiles.generic` array
-- **Multiple generic files:** Reads from all, merges results
+### Registry Behavior
+- **Claude Skills:**
+  - Installation: Creates symlink in `.claude/skills/<skill-name>`
+  - Removal: Deletes symlink
+  - Detection: Checks for symlink existence
+- **Generic Integrations:**
+  - Installation: Writes to **first** file in `DEFAULT_CONFIG.registryFiles.generic` array
+  - Removal: Removes entry from table
+  - Detection: Parses markdown tables from all configured files
+  - **Multiple generic files:** Reads from all, merges results
 
 ### Validation Layers
 1. **Type validation** (`types.js`) - Structure checks

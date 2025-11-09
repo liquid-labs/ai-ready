@@ -57,11 +57,7 @@ describe('remove command', () => {
     cache.loadProvidersWithCache.mockResolvedValue(mockProviders)
     registry.loadInstallationStatus.mockResolvedValue(mockProviders)
     registry.createBackup.mockResolvedValue(undefined)
-    registry.readClaudeRegistry.mockResolvedValue([
-      { library : 'test-lib', integration : 'SkillInstalled' },
-      { library : 'test-lib', integration : 'BothInstalled' },
-    ])
-    registry.writeClaudeRegistry.mockResolvedValue(undefined)
+    registry.removeClaudeSkillSymlink.mockResolvedValue(undefined)
     registry.readGenericRegistry.mockResolvedValue([
       { library : 'test-lib', integration : 'GenericInstalled' },
       { library : 'test-lib', integration : 'BothInstalled' },
@@ -118,11 +114,9 @@ describe('remove command', () => {
     it('should remove Claude Skill type', async () => {
       await cmdRemove('test-lib/SkillInstalled', {})
 
-      expect(registry.writeClaudeRegistry).toHaveBeenCalledWith(
-        '.claude',
-        expect.arrayContaining([
-          { library : 'test-lib', integration : 'BothInstalled' },
-        ])
+      expect(registry.removeClaudeSkillSymlink).toHaveBeenCalledWith(
+        '.claude/skills',
+        'SkillInstalled'
       )
       expect(consoleLogSpy).toHaveBeenCalledWith('✔ Claude Skill removed')
     })
@@ -130,7 +124,7 @@ describe('remove command', () => {
     it('should remove Claude Skill with --skill flag', async () => {
       await cmdRemove('test-lib/BothInstalled', { skill : true })
 
-      expect(registry.writeClaudeRegistry).toHaveBeenCalled()
+      expect(registry.removeClaudeSkillSymlink).toHaveBeenCalled()
       expect(registry.writeGenericRegistry).not.toHaveBeenCalled()
       expect(consoleLogSpy).toHaveBeenCalledWith('✔ Claude Skill removed')
     })
@@ -162,7 +156,7 @@ describe('remove command', () => {
       await cmdRemove('test-lib/BothInstalled', { generic : true })
 
       expect(registry.writeGenericRegistry).toHaveBeenCalled()
-      expect(registry.writeClaudeRegistry).not.toHaveBeenCalled()
+      expect(registry.removeClaudeSkillSymlink).not.toHaveBeenCalled()
       expect(consoleLogSpy).toHaveBeenCalledWith(
         '✔ Generic integration removed'
       )
@@ -180,7 +174,7 @@ describe('remove command', () => {
     it('should remove all types when no flags specified', async () => {
       await cmdRemove('test-lib/BothInstalled', {})
 
-      expect(registry.writeClaudeRegistry).toHaveBeenCalled()
+      expect(registry.removeClaudeSkillSymlink).toHaveBeenCalled()
       expect(registry.writeGenericRegistry).toHaveBeenCalled()
       expect(consoleLogSpy).toHaveBeenCalledWith('✔ Claude Skill removed')
       expect(consoleLogSpy).toHaveBeenCalledWith(
@@ -191,7 +185,7 @@ describe('remove command', () => {
     it('should remove all types when both flags specified', async () => {
       await cmdRemove('test-lib/BothInstalled', { skill : true, generic : true })
 
-      expect(registry.writeClaudeRegistry).toHaveBeenCalled()
+      expect(registry.removeClaudeSkillSymlink).toHaveBeenCalled()
       expect(registry.writeGenericRegistry).toHaveBeenCalled()
     })
   })
@@ -206,31 +200,14 @@ describe('remove command', () => {
   })
 
   describe('backup creation', () => {
-    it('should create backups before modifying files', async () => {
+    it('should create backups before modifying generic files', async () => {
       await cmdRemove('test-lib/BothInstalled', {})
 
-      expect(registry.createBackup).toHaveBeenCalledWith('.claude')
       expect(registry.createBackup).toHaveBeenCalledWith('AGENTS.md')
     })
   })
 
   describe('filtering entries', () => {
-    it('should remove only the specified integration from Claude registry', async () => {
-      await cmdRemove('test-lib/SkillInstalled', {})
-
-      const writtenSkills = registry.writeClaudeRegistry.mock.calls[0][1]
-      expect(writtenSkills).not.toContainEqual(
-        expect.objectContaining({
-          library     : 'test-lib',
-          integration : 'SkillInstalled',
-        })
-      )
-      expect(writtenSkills).toContainEqual({
-        library     : 'test-lib',
-        integration : 'BothInstalled',
-      })
-    })
-
     it('should remove only the specified integration from generic registry', async () => {
       await cmdRemove('test-lib/GenericInstalled', {})
 
@@ -260,13 +237,15 @@ describe('remove command', () => {
       expect(processExitSpy).toHaveBeenCalledWith(1)
     })
 
-    it('should handle write errors', async () => {
-      registry.writeClaudeRegistry.mockRejectedValue(new Error('Write error'))
+    it('should handle symlink removal errors', async () => {
+      registry.removeClaudeSkillSymlink.mockRejectedValue(
+        new Error('Symlink error')
+      )
 
       await cmdRemove('test-lib/SkillInstalled', {})
 
       expect(consoleErrorSpy).toHaveBeenCalledWith(
-        'Error removing integration: Write error'
+        'Error removing integration: Symlink error'
       )
       expect(processExitSpy).toHaveBeenCalledWith(1)
     })

@@ -3,8 +3,7 @@ import { loadProvidersWithCache } from '../core/cache'
 import {
   loadInstallationStatus,
   createBackup,
-  readClaudeRegistry,
-  writeClaudeRegistry,
+  installClaudeSkillSymlink,
   readGenericRegistry,
   writeGenericRegistry
 } from '../core/registry'
@@ -43,7 +42,7 @@ export async function cmdInstall(libraryIntegration, options) {
 
     const providersWithStatus = await loadInstallationStatus(
       providers,
-      DEFAULT_CONFIG.registryFiles.claude,
+      DEFAULT_CONFIG.registryFiles.claudeSkillsDir,
       DEFAULT_CONFIG.registryFiles.generic
     )
 
@@ -79,7 +78,7 @@ export async function cmdInstall(libraryIntegration, options) {
 
     // Install each type
     const installations = typesToInstall.map((type) =>
-      installType(libraryName, integrationName, integration, type))
+      installType(libraryName, integrationName, integration, type, provider.path))
 
     await Promise.all(installations)
     console.log('✔ Installation complete')
@@ -133,11 +132,18 @@ function determineTypesToInstall(integration, options) {
  * @param {string} integrationName - Integration name
  * @param {Integration} integration - Integration object
  * @param {string} type - Type to install
+ * @param {string} libraryPath - Path to library root
  * @returns {Promise<void>}
  */
-async function installType(libraryName, integrationName, integration, type) {
+async function installType(
+  libraryName,
+  integrationName,
+  integration,
+  type,
+  libraryPath
+) {
   if (type === INTEGRATION_TYPES.CLAUDE_SKILL) {
-    await installClaudeSkill(libraryName, integrationName)
+    await installClaudeSkill(integrationName, libraryPath)
     console.log('✔ Claude Skill installed')
   }
   else if (type === INTEGRATION_TYPES.GENERIC) {
@@ -151,34 +157,25 @@ async function installType(libraryName, integrationName, integration, type) {
 }
 
 /**
- * Installs a Claude Skill
- * @param {string} libraryName - Library name
+ * Installs a Claude Skill by creating a symlink
  * @param {string} integrationName - Integration name
+ * @param {string} libraryPath - Path to library root
  * @returns {Promise<void>}
  */
-async function installClaudeSkill(libraryName, integrationName) {
-  const claudeFile = DEFAULT_CONFIG.registryFiles.claude
+async function installClaudeSkill(integrationName, libraryPath) {
+  const claudeSkillsDir = DEFAULT_CONFIG.registryFiles.claudeSkillsDir
 
-  // Create backup
-  await createBackup(claudeFile)
+  // Determine integration directory name (convert PascalCase to kebab-case)
+  const integrationDirName = integrationName
+    .replace(/([a-z])([A-Z])/g, '$1-$2')
+    .replace(/[\s_]+/g, '-')
+    .toLowerCase()
 
-  // Read existing skills
-  const skills = await readClaudeRegistry(claudeFile)
+  // Source path is the claude-skill directory in the library
+  const sourcePath = `${libraryPath}/ai-ready/integrations/${integrationDirName}/claude-skill`
 
-  // Check if already exists
-  const exists = skills.some(
-    (s) => s.library === libraryName && s.integration === integrationName
-  )
-
-  if (!exists) {
-    skills.push({
-      library     : libraryName,
-      integration : integrationName,
-      installedAt : new Date().toISOString(),
-    })
-
-    await writeClaudeRegistry(claudeFile, skills)
-  }
+  // Create symlink
+  await installClaudeSkillSymlink(claudeSkillsDir, integrationName, sourcePath)
 }
 
 /**

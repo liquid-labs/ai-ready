@@ -3,7 +3,6 @@
  * @property {string} name - Integration name
  * @property {string} summary - One-line summary of the integration
  * @property {string[]} types - Available integration types (e.g., ['genericIntegration', 'claudeSkill'])
- * @property {string[]} installedTypes - Currently installed types (subset of types)
  */
 
 /**
@@ -31,15 +30,8 @@
 
 /**
  * @typedef {object} RegistryFiles
- * @property {string} claude - Path to .claude file
+ * @property {string} claudeSkillsDir - Path to .claude/skills directory
  * @property {string[]} generic - Paths to generic integration files
- */
-
-/**
- * @typedef {object} ClaudeSkillEntry
- * @property {string} library - Library name
- * @property {string} integration - Integration name
- * @property {string} installedAt - ISO timestamp
  */
 
 /**
@@ -49,8 +41,8 @@
 export const DEFAULT_CONFIG = {
   scanPaths     : ['node_modules'],
   registryFiles : {
-    claude  : '.claude',
-    generic : ['AGENTS.md', 'CLAUDE.md'],
+    claudeSkillsDir : '.claude/skills',
+    generic         : ['AGENTS.md', 'CLAUDE.md'],
   },
   cacheFile : '.aircache.json',
 }
@@ -76,7 +68,6 @@ export function isValidIntegration(integration) {
     && typeof integration.summary === 'string'
     && Array.isArray(integration.types)
     && integration.types.length > 0
-    && Array.isArray(integration.installedTypes)
   )
 }
 

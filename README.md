@@ -102,7 +102,11 @@ air install my-library/MyIntegration
 air list --installed
 ```
 
-The installed integrations are registered in your project's `.claude` file (for Claude Skills) and `AGENTS.md` or `CLAUDE.md` (for generic integrations), making them available to AI assistants.
+The installed integrations are registered in your project:
+- **Claude Skills**: Symlinked into `.claude/skills/` directory
+- **Generic Integrations**: Listed in `AGENTS.md` or `CLAUDE.md` markdown tables
+
+This makes them discoverable by AI assistants.
 
 ---
 
@@ -240,10 +244,10 @@ air install jest-ai/TestGenerator --generic
 **What happens during installation:**
 
 1. The tool validates the integration exists
-2. Creates a backup of existing registry files (`.claude.bak`, `AGENTS.md.bak`)
-3. Adds the integration to the appropriate registry:
-   - **Claude Skills** → `.claude` file (YAML format)
-   - **Generic Integrations** → `AGENTS.md` or `CLAUDE.md` (Markdown table)
+2. Creates a backup of existing registry files (`AGENTS.md.bak`)
+3. Installs the integration:
+   - **Claude Skills** → Creates symlink in `.claude/skills/` directory
+   - **Generic Integrations** → Adds entry to `AGENTS.md` or `CLAUDE.md` (Markdown table)
 4. Confirms successful installation
 
 **Sample Output:**
@@ -327,16 +331,15 @@ The AIR Protocol supports two types of integrations:
 - Skill-specific parameters and invocation patterns
 - Integration with Claude's skill system
 
-**Registry:** Installed Claude Skills are registered in `.claude` (YAML format)
+**Registry:** Installed Claude Skills are symlinked into `.claude/skills/` directory
 
-**Example `.claude` entry:**
+**Example installation:**
 
-```yaml
-skills:
-  - library: jest-ai
-    integration: TestGenerator
-    installedAt: '2025-01-15T10:30:00.000Z'
+```bash
+.claude/skills/test-generator → node_modules/jest-ai/ai-ready/integrations/test-generator/claude-skill
 ```
+
+The skill name is converted to kebab-case (e.g., `TestGenerator` → `test-generator`).
 
 #### 2. Generic Integrations
 
@@ -362,10 +365,10 @@ skills:
 
 Registry files track which integrations are installed in your project:
 
-- **`.claude`**: YAML file listing installed Claude Skills
+- **`.claude/skills/`**: Directory containing symlinks to installed Claude Skills
 - **`AGENTS.md`** or **`CLAUDE.md`**: Markdown file listing installed generic integrations
 
-These files are typically committed to version control, allowing teams to share AI integration configurations.
+The `.claude/skills/` directory and markdown files are typically committed to version control, allowing teams to share AI integration configurations.
 
 ### Caching System
 
@@ -487,17 +490,17 @@ All paths are relative to your project root (current working directory).
 ### Registry File Format
 
 <details>
-<summary><strong>.claude Format (YAML)</strong></summary>
+<summary><strong>.claude/skills/ Format (Symlinks)</strong></summary>
 
-```yaml
-skills:
-  - library: package-name
-    integration: IntegrationName
-    installedAt: '2025-01-15T10:30:00.000Z'
-  - library: another-package
-    integration: AnotherIntegration
-    installedAt: '2025-01-16T14:20:00.000Z'
+Claude Skills are installed by creating symlinks in the `.claude/skills/` directory:
+
+```bash
+.claude/skills/
+├── integration-name → ../../node_modules/package-name/ai-ready/integrations/integration-name/claude-skill
+└── another-integration → ../../node_modules/another-package/ai-ready/integrations/another-integration/claude-skill
 ```
+
+Integration names are converted to kebab-case for the symlink filename.
 
 </details>
 
@@ -578,23 +581,27 @@ air list
 
 ### Registry File Corruption
 
-**Problem:** `.claude` or `AGENTS.md` file appears corrupted
+**Problem:** `AGENTS.md` file appears corrupted or symlinks in `.claude/skills/` are broken
 
 **Solutions:**
 
 1. Check for backup files (automatically created during installations):
    ```bash
-   ls -la .claude.bak AGENTS.md.bak
+   ls -la AGENTS.md.bak
    ```
 
 2. Restore from backup if needed:
    ```bash
-   cp .claude.bak .claude
+   cp AGENTS.md.bak AGENTS.md
    ```
 
-3. Manually fix the file format (see [Registry File Format](#registry-file-format))
+3. For broken symlinks, remove and reinstall the integration:
+   ```bash
+   air remove library/integration
+   air install library/integration
+   ```
 
-4. Re-install integrations if necessary
+4. Manually fix the file format (see [Registry File Format](#registry-file-format))
 
 ### No Integrations Found
 

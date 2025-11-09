@@ -10,7 +10,7 @@ describe('types', () => {
   describe('DEFAULT_CONFIG', () => {
     it('should have correct default values', () => {
       expect(DEFAULT_CONFIG.scanPaths).toEqual(['node_modules'])
-      expect(DEFAULT_CONFIG.registryFiles.claude).toBe('.claude')
+      expect(DEFAULT_CONFIG.registryFiles.claudeSkillsDir).toBe('.claude/skills')
       expect(DEFAULT_CONFIG.registryFiles.generic).toEqual([
         'AGENTS.md',
         'CLAUDE.md',
@@ -32,7 +32,6 @@ describe('types', () => {
         name           : 'TestIntegration',
         summary        : 'A test integration',
         types          : ['genericIntegration'],
-        installedTypes : [],
       }
       expect(isValidIntegration(integration)).toBe(true)
     })
@@ -41,7 +40,6 @@ describe('types', () => {
       const integration = {
         summary        : 'A test integration',
         types          : ['genericIntegration'],
-        installedTypes : [],
       }
       expect(isValidIntegration(integration)).toBe(false)
     })
@@ -51,7 +49,6 @@ describe('types', () => {
         name           : '',
         summary        : 'A test integration',
         types          : ['genericIntegration'],
-        installedTypes : [],
       }
       expect(isValidIntegration(integration)).toBe(false)
     })
@@ -61,7 +58,6 @@ describe('types', () => {
         name           : 'TestIntegration',
         summary        : 'A test integration',
         types          : 'genericIntegration',
-        installedTypes : [],
       }
       expect(isValidIntegration(integration)).toBe(false)
     })
@@ -71,7 +67,6 @@ describe('types', () => {
         name           : 'TestIntegration',
         summary        : 'A test integration',
         types          : [],
-        installedTypes : [],
       }
       expect(isValidIntegration(integration)).toBe(false)
     })
@@ -93,8 +88,7 @@ describe('types', () => {
             name           : 'TestIntegration',
             summary        : 'A test integration',
             types          : ['genericIntegration'],
-            installedTypes : [],
-          },
+              },
         ],
       }
       expect(isValidProvider(provider)).toBe(true)
@@ -129,8 +123,7 @@ describe('types', () => {
             name           : '',
             summary        : 'Invalid',
             types          : [],
-            installedTypes : [],
-          },
+              },
         ],
       }
       expect(isValidProvider(provider)).toBe(false)

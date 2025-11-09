@@ -1,11 +1,11 @@
 import fs from 'fs/promises'
 import path from 'path'
 import os from 'os'
-import yaml from 'js-yaml'
 
 import {
-  readClaudeRegistry,
-  writeClaudeRegistry,
+  isClaudeSkillInstalled,
+  installClaudeSkillSymlink,
+  removeClaudeSkillSymlink,
   readGenericRegistry,
   writeGenericRegistry,
   loadInstallationStatus,
@@ -27,142 +27,126 @@ describe('registry', () => {
     }
   })
 
-  const setupRegistries = async (claudeSkills, genericEntries) => {
-    if (claudeSkills) {
-      await writeClaudeRegistry('.claude', claudeSkills, tempDir)
+  const normalizeEntries = (entries) => {
+    return entries.map((entry) =>
+      Array.isArray(entry)
+        ? {
+            library     : entry[0],
+            integration : entry[1],
+            summary     : entry[2] !== undefined ? entry[2] : 'Test',
+            installed   : entry[3],
+          }
+        : entry)
+  }
+
+  const setupRegistries = async (
+    claudeSkills = [],
+    genericEntries = [],
+    fileName = 'AGENTS.md'
+  ) => {
+    if (claudeSkills?.length > 0) {
+      // Create .claude/skills directory and symlinks
+      const skillsDir = path.join(tempDir, '.claude', 'skills')
+      await fs.mkdir(skillsDir, { recursive : true })
+
+      for (const skill of normalizeEntries(claudeSkills)) {
+        // Create fake source directory
+        const sourcePath = path.join(tempDir, 'fake-source', skill.integration)
+        await fs.mkdir(sourcePath, { recursive : true })
+
+        // Convert integration name to kebab-case for symlink
+        const skillName = skill.integration
+          .replace(/([a-z])([A-Z])/g, '$1-$2')
+          .replace(/[\s_]+/g, '-')
+          .toLowerCase()
+
+        // Create symlink
+        await fs.symlink(sourcePath, path.join(skillsDir, skillName), 'dir')
+      }
     }
-    if (genericEntries) {
+    if (genericEntries?.length > 0) {
+      genericEntries = normalizeEntries(genericEntries)
       const rows = genericEntries
-        .map((e) => `| ${e.library} | ${e.integration} | Test | yes |`)
+        .map((e) => `| ${e.library} | ${e.integration} | Test | ${e.installed || ''} |`)
         .join('\n')
       await fs.writeFile(
-        path.join(tempDir, 'AGENTS.md'),
+        path.join(tempDir, fileName),
         `# Table\n${mkTable(`\n${rows}`)}`,
         'utf8'
       )
     }
   }
 
-  describe('readClaudeRegistry', () => {
-    it.each([
-      [
-        'valid file',
-        'skills:\n  - library: lib\n    integration: Int\n    installedAt: 2025-11-07T12:00:00Z\n',
-        false,
-        (skills) => {
-          expect(skills).toHaveLength(1)
-          expect(skills[0].library).toBe('lib')
-          expect(skills[0].installedAt).toBeDefined()
-        },
-      ],
-      ['invalid YAML', 'invalid: [yaml', true, null],
-      [
-        'non-existent file',
-        null,
-        false,
-        (skills) => expect(skills).toEqual([]),
-      ],
-      [
-        'not an array',
-        'skills: not-an-array',
-        false,
-        (skills) => expect(skills).toEqual([]),
-      ],
-      [
-        'empty array',
-        'skills: []',
-        false,
-        (skills) => expect(skills).toEqual([]),
-      ],
-      [
-        'filtered invalids',
-        yaml.dump({
-          skills : [
-            { library : 'valid', integration : 'Int' },
-            { library : 'missing-int' },
-            null,
-          ],
-        }),
-        false,
-        (skills) =>
-          expect(skills).toMatchObject([
-            { library : 'valid', integration : 'Int' },
-          ]),
-      ],
-    ])('should handle %s', async (_desc, content, shouldThrow, assertion) => {
-      if (content)
-        await fs.writeFile(path.join(tempDir, '.claude'), content, 'utf8')
+  describe('Claude Skill symlinks', () => {
+    it('should check if skill is installed (symlink exists)', async () => {
+      await setupRegistries([{ library : 'lib', integration : 'TestIntegration' }])
 
-      if (shouldThrow) {
-        await expect(readClaudeRegistry('.claude', tempDir)).rejects.toThrow()
-      }
-      else {
-        const skills = await readClaudeRegistry('.claude', tempDir)
-        assertion(skills)
-      }
+      const isInstalled = await isClaudeSkillInstalled(
+        '.claude/skills',
+        'TestIntegration',
+        tempDir
+      )
+
+      expect(isInstalled).toBe(true)
+    })
+
+    it('should return false when skill is not installed', async () => {
+      const isInstalled = await isClaudeSkillInstalled(
+        '.claude/skills',
+        'NonExistent',
+        tempDir
+      )
+
+      expect(isInstalled).toBe(false)
+    })
+
+    it('should install skill by creating symlink', async () => {
+      const sourcePath = path.join(tempDir, 'source-skill')
+      await fs.mkdir(sourcePath, { recursive : true })
+
+      await installClaudeSkillSymlink(
+        '.claude/skills',
+        'TestSkill',
+        sourcePath,
+        tempDir
+      )
+
+      const symlinkPath = path.join(tempDir, '.claude/skills/test-skill')
+      const stats = await fs.lstat(symlinkPath)
+      expect(stats.isSymbolicLink()).toBe(true)
+
+      const targetPath = await fs.readlink(symlinkPath)
+      expect(targetPath).toBe(sourcePath)
+    })
+
+    it('should remove skill by deleting symlink', async () => {
+      await setupRegistries([{ library : 'lib', integration : 'ToRemove' }])
+
+      await removeClaudeSkillSymlink('.claude/skills', 'ToRemove', tempDir)
+
+      const symlinkPath = path.join(tempDir, '.claude/skills/to-remove')
+      await expect(fs.access(symlinkPath)).rejects.toThrow()
+    })
+
+    it('should not throw when removing non-existent skill', async () => {
+      await expect(
+        removeClaudeSkillSymlink('.claude/skills', 'NonExistent', tempDir)
+      ).resolves.not.toThrow()
     })
   })
 
-  describe('writeClaudeRegistry', () => {
-    it.each([
-      [
-        'skills with installedAt',
-        [
-          {
-            library     : 'lib',
-            integration : 'Int',
-            installedAt : '2025-11-07T12:00:00Z',
-          },
-        ],
-        (data) => {
-          expect(data.skills).toHaveLength(1)
-          expect(data.skills[0].installedAt).toBe('2025-11-07T12:00:00Z')
-        },
-      ],
-      [
-        'skills without installedAt (auto-added)',
-        [{ library : 'lib', integration : 'Int' }],
-        (data) => {
-          expect(data.skills[0].installedAt).toBeDefined()
-          expect(typeof data.skills[0].installedAt).toBe('string')
-        },
-      ],
-      ['empty array', [], (data) => expect(data.skills).toEqual([])],
-    ])('should write %s', async (_desc, skills, assertion) => {
-      await writeClaudeRegistry('.claude', skills, tempDir)
-
-      const content = await fs.readFile(path.join(tempDir, '.claude'), 'utf8')
-      const data = yaml.load(content)
-
-      assertion(data)
-      expect(content).toContain('skills:')
-      if (skills.length > 0) expect(content).toContain('  - library:')
-    })
-  })
 
   describe('readGenericRegistry', () => {
     it('should read entries from markdown table', async () => {
-      await fs.writeFile(
-        path.join(tempDir, 'AGENTS.md'),
-        mkTable('\n| lib | Int | Test | yes |'),
-        'utf8'
-      )
+      await setupRegistries(null, [['lib', 'Int', 'Test', 'yes']])
       const entries = await readGenericRegistry(['AGENTS.md'], tempDir)
       expect(entries).toHaveLength(1)
       expect(entries[0]).toMatchObject({ library : 'lib', integration : 'Int' })
     })
 
     it('should read from multiple files', async () => {
-      await fs.writeFile(
-        path.join(tempDir, 'AGENTS.md'),
-        mkTable('\n| lib-1 | Int1 | T | yes |'),
-        'utf8'
-      )
-      await fs.writeFile(
-        path.join(tempDir, 'CLAUDE.md'),
-        mkTable('\n| lib-2 | Int2 | T | yes |'),
-        'utf8'
-      )
+      await setupRegistries(null, [['lib-1', 'Int1', 'T', 'yes']], 'AGENTS.md')
+      await setupRegistries(null, [['lib-2', 'Int2', 'T', 'yes']], 'CLAUDE.md')
       const entries = await readGenericRegistry(
         ['AGENTS.md', 'CLAUDE.md'],
         tempDir
@@ -173,30 +157,28 @@ describe('registry', () => {
     })
 
     it.each([
-      ['non-existent', null, []],
+      ['non-existent', [], []],
       [
         'skip non-installed',
-        '\n| lib | Yes | T | yes |\n| lib | No | T | |',
+        [
+          ['lib', 'Yes', 'T', 'yes'],
+          ['lib', 'No', 'T', ''],
+        ],
         [{ integration : 'Yes' }],
       ],
       [
         'whitespace',
-        '\n|  lib  |  int  |  T  |  yes  |',
+        [['lib', 'int', 'T', 'yes']],
         [{ library : 'lib', integration : 'int' }],
       ],
       [
         'after content',
-        '\n| lib | int | T | yes |\n\n## More',
+        [['lib', 'int', 'T', 'yes']],
         [{ library : 'lib', integration : 'int' }],
       ],
     ])('should handle %s', async (_desc, rows, expected) => {
-      if (rows) {
-        await fs.writeFile(
-          path.join(tempDir, 'AGENTS.md'),
-          mkTable(rows),
-          'utf8'
-        )
-      }
+      await setupRegistries(null, rows)
+      
       const entries = await readGenericRegistry(['AGENTS.md'], tempDir)
       if (expected.length === 0) {
         expect(entries).toEqual([])
@@ -236,7 +218,7 @@ describe('registry', () => {
     it('should mark installed types based on registries', async () => {
       await setupRegistries(
         [{ library : 'test-lib', integration : 'Integration1' }],
-        [{ library : 'test-lib', integration : 'Integration2' }]
+        [{ library : 'test-lib', integration : 'Integration2', installed : 'yes' }]
       )
 
       const providers = [
@@ -252,7 +234,7 @@ describe('registry', () => {
 
       const updated = await loadInstallationStatus(
         providers,
-        '.claude',
+        '.claude/skills',
         ['AGENTS.md'],
         tempDir
       )
@@ -269,7 +251,7 @@ describe('registry', () => {
     it('should handle both types installed', async () => {
       await setupRegistries(
         [{ library : 'test-lib', integration : 'Dual' }],
-        [{ library : 'test-lib', integration : 'Dual' }]
+        [{ library : 'test-lib', integration : 'Dual', installed : 'yes' }]
       )
 
       const providers = [
@@ -283,7 +265,7 @@ describe('registry', () => {
 
       const updated = await loadInstallationStatus(
         providers,
-        '.claude',
+        '.claude/skills',
         ['AGENTS.md'],
         tempDir
       )
@@ -303,7 +285,7 @@ describe('registry', () => {
 
       const updated = await loadInstallationStatus(
         providers,
-        '.claude',
+        '.claude/skills',
         ['AGENTS.md'],
         tempDir
       )

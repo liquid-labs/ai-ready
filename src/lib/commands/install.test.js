@@ -54,8 +54,7 @@ describe('install command', () => {
     cache.loadProvidersWithCache.mockResolvedValue(mockProviders)
     registry.loadInstallationStatus.mockResolvedValue(mockProviders)
     registry.createBackup.mockResolvedValue(undefined)
-    registry.readClaudeRegistry.mockResolvedValue([])
-    registry.writeClaudeRegistry.mockResolvedValue(undefined)
+    registry.installClaudeSkillSymlink.mockResolvedValue(undefined)
     registry.readGenericRegistry.mockResolvedValue([])
     registry.writeGenericRegistry.mockResolvedValue(undefined)
   })
@@ -109,15 +108,10 @@ describe('install command', () => {
     it('should install Claude Skill type', async () => {
       await cmdInstall('test-lib/SkillOnly', {})
 
-      expect(registry.createBackup).toHaveBeenCalledWith('.claude')
-      expect(registry.writeClaudeRegistry).toHaveBeenCalledWith(
-        '.claude',
-        expect.arrayContaining([
-          expect.objectContaining({
-            library     : 'test-lib',
-            integration : 'SkillOnly',
-          }),
-        ])
+      expect(registry.installClaudeSkillSymlink).toHaveBeenCalledWith(
+        '.claude/skills',
+        'SkillOnly',
+        expect.stringContaining('/ai-ready/integrations/skill-only/claude-skill')
       )
       expect(consoleLogSpy).toHaveBeenCalledWith('✔ Claude Skill installed')
     })
@@ -125,7 +119,7 @@ describe('install command', () => {
     it('should install Claude Skill with --skill flag', async () => {
       await cmdInstall('test-lib/DualType', { skill : true })
 
-      expect(registry.writeClaudeRegistry).toHaveBeenCalled()
+      expect(registry.installClaudeSkillSymlink).toHaveBeenCalled()
       expect(registry.writeGenericRegistry).not.toHaveBeenCalled()
     })
 
@@ -134,7 +128,7 @@ describe('install command', () => {
 
       const output = consoleLogSpy.mock.calls.map((call) => call[0]).join('\n')
       expect(output).toContain('No types available to install')
-      expect(registry.writeClaudeRegistry).not.toHaveBeenCalled()
+      expect(registry.installClaudeSkillSymlink).not.toHaveBeenCalled()
     })
   })
 
@@ -162,7 +156,7 @@ describe('install command', () => {
       await cmdInstall('test-lib/DualType', { generic : true })
 
       expect(registry.writeGenericRegistry).toHaveBeenCalled()
-      expect(registry.writeClaudeRegistry).not.toHaveBeenCalled()
+      expect(registry.installClaudeSkillSymlink).not.toHaveBeenCalled()
     })
 
     it('should not install generic for skill-only integration', async () => {
@@ -178,7 +172,7 @@ describe('install command', () => {
     it('should install all types when no flags specified', async () => {
       await cmdInstall('test-lib/DualType', {})
 
-      expect(registry.writeClaudeRegistry).toHaveBeenCalled()
+      expect(registry.installClaudeSkillSymlink).toHaveBeenCalled()
       expect(registry.writeGenericRegistry).toHaveBeenCalled()
       expect(consoleLogSpy).toHaveBeenCalledWith('✔ Claude Skill installed')
       expect(consoleLogSpy).toHaveBeenCalledWith(
@@ -189,7 +183,7 @@ describe('install command', () => {
     it('should install all types when both flags specified', async () => {
       await cmdInstall('test-lib/DualType', { skill : true, generic : true })
 
-      expect(registry.writeClaudeRegistry).toHaveBeenCalled()
+      expect(registry.installClaudeSkillSymlink).toHaveBeenCalled()
       expect(registry.writeGenericRegistry).toHaveBeenCalled()
     })
   })
@@ -202,91 +196,12 @@ describe('install command', () => {
       expect(output).toContain('No types available to install')
     })
 
-    it('should not re-add existing Claude Skill entries', async () => {
-      // Start with one entry already in registry
-      registry.readClaudeRegistry.mockResolvedValue([
-        { library : 'other-lib', integration : 'Other' },
-      ])
-
-      const providers = [
-        {
-          libraryName  : 'test-lib',
-          version      : '1.0.0',
-          path         : '/path',
-          integrations : [
-            {
-              name           : 'SkillOnly',
-              summary        : 'Skill only integration',
-              types          : [INTEGRATION_TYPES.CLAUDE_SKILL],
-              installedTypes : [],
-            },
-          ],
-        },
-      ]
-
-      registry.loadInstallationStatus.mockResolvedValue(providers)
-
-      await cmdInstall('test-lib/SkillOnly', {})
-
-      // Should add new entry without duplicating
-      expect(registry.writeClaudeRegistry).toHaveBeenCalledWith(
-        '.claude',
-        expect.arrayContaining([
-          { library : 'other-lib', integration : 'Other' },
-          expect.objectContaining({
-            library     : 'test-lib',
-            integration : 'SkillOnly',
-          }),
-        ])
-      )
-    })
-
-    it('should not re-add existing generic entries', async () => {
-      // Start with one entry already in registry
-      registry.readGenericRegistry.mockResolvedValue([
-        { library : 'other-lib', integration : 'Other' },
-      ])
-
-      const providers = [
-        {
-          libraryName  : 'test-lib',
-          version      : '1.0.0',
-          path         : '/path',
-          integrations : [
-            {
-              name           : 'GenericOnly',
-              summary        : 'Generic only integration',
-              types          : [INTEGRATION_TYPES.GENERIC],
-              installedTypes : [],
-            },
-          ],
-        },
-      ]
-
-      registry.loadInstallationStatus.mockResolvedValue(providers)
-
-      await cmdInstall('test-lib/GenericOnly', {})
-
-      // Should add new entry without duplicating
-      expect(registry.writeGenericRegistry).toHaveBeenCalledWith(
-        'AGENTS.md',
-        expect.arrayContaining([
-          { library : 'other-lib', integration : 'Other' },
-          expect.objectContaining({
-            library     : 'test-lib',
-            integration : 'GenericOnly',
-            summary     : 'Generic only integration',
-          }),
-        ])
-      )
-    })
   })
 
   describe('backup creation', () => {
-    it('should create backups before modifying files', async () => {
+    it('should create backups before modifying generic files', async () => {
       await cmdInstall('test-lib/DualType', {})
 
-      expect(registry.createBackup).toHaveBeenCalledWith('.claude')
       expect(registry.createBackup).toHaveBeenCalledWith('AGENTS.md')
     })
   })
@@ -304,14 +219,16 @@ describe('install command', () => {
       expect(processExitSpy).toHaveBeenCalledWith(1)
     })
 
-    it('should handle write errors', async () => {
-      registry.writeClaudeRegistry.mockRejectedValue(new Error('Write error'))
+    it('should handle symlink errors', async () => {
+      registry.installClaudeSkillSymlink.mockRejectedValue(
+        new Error('Symlink error')
+      )
 
       await cmdInstall('test-lib/SkillOnly', {})
 
       expect(consoleErrorSpy).toHaveBeenCalledWith(
         'Error installing integration:',
-        'Write error'
+        'Symlink error'
       )
       expect(processExitSpy).toHaveBeenCalledWith(1)
     })

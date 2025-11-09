@@ -1,71 +1,100 @@
 import fs from 'fs/promises'
 import path from 'path'
-import yaml from 'js-yaml'
 import { INTEGRATION_TYPES } from './types'
 
 /**
- * @import { ClaudeSkillEntry, IntegrationProvider } from './types.js'
+ * @import { IntegrationProvider } from './types.js'
  */
 
 /**
- * Reads the .claude file and returns Claude Skill entries
- * @param {string} claudeFilePath - Path to .claude file
- * @param {string} [baseDir=process.cwd()] - Base directory
- * @returns {Promise<ClaudeSkillEntry[]>} Array of skill entries
+ * Converts integration name to kebab-case for use in symlink names
+ * @param {string} name - Integration name
+ * @returns {string} Kebab-case name
  */
-export async function readClaudeRegistry(
-  claudeFilePath,
+function toKebabCase(name) {
+  return name
+    .replace(/([a-z])([A-Z])/g, '$1-$2')
+    .replace(/[\s_]+/g, '-')
+    .toLowerCase()
+}
+
+/**
+ * Checks if a Claude Skill is installed (symlink exists)
+ * @param {string} claudeSkillsDir - Path to .claude/skills directory
+ * @param {string} integrationName - Integration name
+ * @param {string} [baseDir=process.cwd()] - Base directory
+ * @returns {Promise<boolean>} True if symlink exists
+ */
+export async function isClaudeSkillInstalled(
+  claudeSkillsDir,
+  integrationName,
   baseDir = process.cwd()
 ) {
-  const fullPath = path.resolve(baseDir, claudeFilePath)
+  const skillName = toKebabCase(integrationName)
+  const symlinkPath = path.resolve(baseDir, claudeSkillsDir, skillName)
 
   try {
-    const content = await fs.readFile(fullPath, 'utf8')
-    const data = yaml.load(content)
+    await fs.lstat(symlinkPath)
 
-    if (!data || !Array.isArray(data.skills)) {
-      return []
-    }
-
-    return data.skills.filter(
-      (skill) =>
-        skill
-        && typeof skill.library === 'string'
-        && typeof skill.integration === 'string'
-    )
+    return true
   }
   catch (error) {
     if (error.code === 'ENOENT') {
-      return []
+      return false
     }
     throw error
   }
 }
 
 /**
- * Writes Claude Skill entries to .claude file
- * @param {string} claudeFilePath - Path to .claude file
- * @param {ClaudeSkillEntry[]} skills - Skill entries
+ * Installs a Claude Skill by creating a symlink
+ * @param {string} claudeSkillsDir - Path to .claude/skills directory
+ * @param {string} integrationName - Integration name
+ * @param {string} sourcePath - Path to claude-skill directory in library
  * @param {string} [baseDir=process.cwd()] - Base directory
  * @returns {Promise<void>}
  */
-export async function writeClaudeRegistry(
-  claudeFilePath,
-  skills,
+export async function installClaudeSkillSymlink(
+  claudeSkillsDir,
+  integrationName,
+  sourcePath,
   baseDir = process.cwd()
 ) {
-  const fullPath = path.resolve(baseDir, claudeFilePath)
+  const skillName = toKebabCase(integrationName)
+  const skillsDirPath = path.resolve(baseDir, claudeSkillsDir)
+  const symlinkPath = path.join(skillsDirPath, skillName)
 
-  const data = {
-    skills : skills.map((skill) => ({
-      library     : skill.library,
-      integration : skill.integration,
-      installedAt : skill.installedAt || new Date().toISOString(),
-    })),
+  // Ensure .claude/skills directory exists
+  await fs.mkdir(skillsDirPath, { recursive : true })
+
+  // Create symlink
+  await fs.symlink(sourcePath, symlinkPath, 'dir')
+}
+
+/**
+ * Removes a Claude Skill by deleting its symlink
+ * @param {string} claudeSkillsDir - Path to .claude/skills directory
+ * @param {string} integrationName - Integration name
+ * @param {string} [baseDir=process.cwd()] - Base directory
+ * @returns {Promise<void>}
+ */
+export async function removeClaudeSkillSymlink(
+  claudeSkillsDir,
+  integrationName,
+  baseDir = process.cwd()
+) {
+  const skillName = toKebabCase(integrationName)
+  const symlinkPath = path.resolve(baseDir, claudeSkillsDir, skillName)
+
+  try {
+    await fs.unlink(symlinkPath)
   }
-
-  const yamlContent = yaml.dump(data, { indent : 2, lineWidth : -1 })
-  await fs.writeFile(fullPath, yamlContent, 'utf8')
+  catch (error) {
+    if (error.code !== 'ENOENT') {
+      throw error
+    }
+    // Symlink doesn't exist, nothing to remove
+  }
 }
 
 /**
@@ -209,60 +238,65 @@ export async function writeGenericRegistry(
 /**
  * Loads installation status from registries and updates providers
  * @param {IntegrationProvider[]} providers - Providers to update
- * @param {string} claudeFilePath - Path to .claude file
+ * @param {string} claudeSkillsDir - Path to .claude/skills directory
  * @param {string[]} genericFilePaths - Paths to generic registry files
  * @param {string} [baseDir=process.cwd()] - Base directory
  * @returns {Promise<IntegrationProvider[]>} Updated providers
  */
 export async function loadInstallationStatus(
   providers,
-  claudeFilePath,
+  claudeSkillsDir,
   genericFilePaths,
   baseDir = process.cwd()
 ) {
-  const claudeSkills = await readClaudeRegistry(claudeFilePath, baseDir)
   const genericEntries = await readGenericRegistry(genericFilePaths, baseDir)
 
-  // Create lookup maps
-  const claudeMap = new Map()
-  for (const skill of claudeSkills) {
-    const key = `${skill.library}/${skill.integration}`
-    claudeMap.set(key, true)
-  }
-
+  // Create lookup map for generic integrations
   const genericMap = new Map()
   for (const entry of genericEntries) {
     const key = `${entry.library}/${entry.integration}`
     genericMap.set(key, true)
   }
 
-  // Update providers
-  return providers.map((provider) => ({
-    ...provider,
-    integrations : provider.integrations.map((integration) => {
-      const key = `${provider.libraryName}/${integration.name}`
-      const installedTypes = []
+  // Update providers with installation status
+  const updatedProviders = await Promise.all(
+    providers.map(async (provider) => ({
+      ...provider,
+      integrations : await Promise.all(
+        provider.integrations.map(async (integration) => {
+          const key = `${provider.libraryName}/${integration.name}`
+          const installedTypes = []
 
-      if (
-        integration.types.includes(INTEGRATION_TYPES.GENERIC)
-        && genericMap.has(key)
-      ) {
-        installedTypes.push(INTEGRATION_TYPES.GENERIC)
-      }
+          // Check generic installation (listed in markdown)
+          if (
+            integration.types.includes(INTEGRATION_TYPES.GENERIC)
+            && genericMap.has(key)
+          ) {
+            installedTypes.push(INTEGRATION_TYPES.GENERIC)
+          }
 
-      if (
-        integration.types.includes(INTEGRATION_TYPES.CLAUDE_SKILL)
-        && claudeMap.has(key)
-      ) {
-        installedTypes.push(INTEGRATION_TYPES.CLAUDE_SKILL)
-      }
+          // Check Claude Skill installation (symlink exists)
+          if (integration.types.includes(INTEGRATION_TYPES.CLAUDE_SKILL)) {
+            const isInstalled = await isClaudeSkillInstalled(
+              claudeSkillsDir,
+              integration.name,
+              baseDir
+            )
+            if (isInstalled) {
+              installedTypes.push(INTEGRATION_TYPES.CLAUDE_SKILL)
+            }
+          }
 
-      return {
-        ...integration,
-        installedTypes,
-      }
-    }),
-  }))
+          return {
+            ...integration,
+            installedTypes,
+          }
+        })
+      ),
+    }))
+  )
+
+  return updatedProviders
 }
 
 /**

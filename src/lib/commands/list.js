@@ -24,7 +24,7 @@ export async function cmdList(options) {
     // Load installation status
     const providersWithStatus = await loadInstallationStatus(
       providers,
-      DEFAULT_CONFIG.registryFiles.claude,
+      DEFAULT_CONFIG.registryFiles.claudeSkillsDir,
       DEFAULT_CONFIG.registryFiles.generic
     )
 

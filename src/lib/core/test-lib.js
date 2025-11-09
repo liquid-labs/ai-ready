@@ -85,9 +85,8 @@ export const makeProvider = (integrations) => ({
   version      : '1.0.0',
   path         : '/path',
   integrations : integrations.map((int) => ({
-    name           : int.name,
-    summary        : int.summary || 'Test',
-    types          : int.types,
-    installedTypes : [],
+    name    : int.name,
+    summary : int.summary || 'Test',
+    types   : int.types,
   })),
 })

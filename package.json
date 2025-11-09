@@ -18,7 +18,8 @@
   "dependencies": {
     "commander": "^14.0.2",
     "gray-matter": "^4.0.3",
-    "js-yaml": "^4.1.0"
+    "js-yaml": "^4.1.0",
+    "string-input": "^1.0.0-alpha.13"
   },
   "devDependencies": {
     "@liquid-labs/sdlc-resource-babel-and-rollup": "^1.0.0-alpha.12",

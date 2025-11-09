@@ -6,7 +6,12 @@
       "Bash(make lint:*)",
       "Bash(make lint-fix:*)",
       "Bash(cat:*)",
-      "Bash(tree:*)"
+      "Bash(tree:*)",
+      "Bash(npm test:*)",
+      "Bash(TEST=registry.test make test:*)",
+      "Bash(TEST=install.test make test:*)",
+      "Bash(TEST=remove.test make test:*)",
+      "Bash(TEST=list.test make test:*)"
     ],
     "deny": [],
     "ask": []

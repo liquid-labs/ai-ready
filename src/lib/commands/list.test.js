@@ -244,7 +244,7 @@ describe('list command', () => {
 
     expect(registry.loadInstallationStatus).toHaveBeenCalledWith(
       providers,
-      '.claude',
+      '.claude/skills',
       ['AGENTS.md', 'CLAUDE.md']
     )
   })
