@@ -1,8 +1,8 @@
-import { findProviderAndIntegration } from './data-lib'
-import { scanForProviders } from '../core/scanner'
-import { loadProvidersWithCache } from '../core/cache'
-import { loadInstallationStatus } from '../core/registry'
-import { DEFAULT_CONFIG } from '../core/types'
+import { findProviderAndIntegration } from './data-lib.js'
+import { scanAll } from '../core/scanner.js'
+import { loadProvidersWithCache } from '../core/cache.js'
+import { loadInstallationStatus } from '../core/registry.js'
+import { DEFAULT_CONFIG } from '../core/types.js'
 
 /**
  * @import { IntegrationProvider } from './types.js'
@@ -22,10 +22,12 @@ export async function cmdView(libraryIntegration) {
 
   try {
     // Load providers with caching
-    const providers = await loadProvidersWithCache(
+    const { npmProviders, remoteProviders } = await loadProvidersWithCache(
       DEFAULT_CONFIG.cacheFile,
-      () => scanForProviders(DEFAULT_CONFIG.scanPaths)
+      () => scanAll()
     )
+
+    const providers = [...npmProviders, ...remoteProviders]
 
     // Load installation status
     const providersWithStatus = await loadInstallationStatus(

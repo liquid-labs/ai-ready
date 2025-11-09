@@ -184,21 +184,21 @@ describe('types', () => {
       expect(isValidCache(cache)).toBe(false)
     })
 
-    it('should reject cache with invalid providers', () => {
+    it('should accept cache with legacy providers format', () => {
       const cache = {
         scannedAt        : '2025-11-07T12:00:00Z',
         packageJsonMTime : 1234567890,
         packageLockMTime : 1234567890,
         providers        : [
           {
-            libraryName  : '',
+            libraryName  : 'test-lib',
             version      : '1.0.0',
             path         : '/path',
             integrations : [],
           },
         ],
       }
-      expect(isValidCache(cache)).toBe(false)
+      expect(isValidCache(cache)).toBe(true)
     })
 
     it('should reject null or undefined', () => {

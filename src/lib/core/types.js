@@ -4,15 +4,15 @@
 
 /**
  * @typedef {object} NpmSource
- * @property {'npm'} type
- * @property {string} packageName
- * @property {string} packageVersion
+ * @property {'npm'} type - Source type identifier
+ * @property {string} packageName - NPM package name
+ * @property {string} packageVersion - Package version
  * @property {string} path - Absolute path to package
  */
 
 /**
  * @typedef {object} RemoteSource
- * @property {'remote'} type
+ * @property {'remote'} type - Source type identifier
  * @property {string} repoId - Unique identifier (hash)
  * @property {string} repoName - Display name
  * @property {string} repoUrl - Original URL
@@ -42,12 +42,12 @@
 
 /**
  * @typedef {object} RemoteRepoProvider
- * @property {string} repoId
- * @property {string} repoUrl
- * @property {string} repoName
+ * @property {string} repoId - Repository identifier
+ * @property {string} repoUrl - Repository URL
+ * @property {string} repoName - Repository display name
  * @property {string} commitSHA - Current commit at scan time
  * @property {string} scannedAt - ISO timestamp
- * @property {Integration[]} integrations
+ * @property {Integration[]} integrations - Array of integrations in repository
  */
 
 /**
