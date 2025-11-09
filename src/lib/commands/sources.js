@@ -369,4 +369,3 @@ const doUpdate = async (repo) => {
     wasClone : !cloned,
   }
 }
-ve

@@ -54,7 +54,12 @@ const run = () => {
     .option('--path <path>', 'Path to verify (defaults to current directory)')
     .action(cmdVerify)
 
-  // Sources command group
+  loadSourcesCommands()
+
+  program.parse()
+}
+
+const loadSourcesCommands = () => {
   const sourcesCmd = program
     .command('sources')
     .description('Manage remote skill repositories')
@@ -105,8 +110,6 @@ const run = () => {
         baseDir : process.cwd(),
       })
     })
-
-  program.parse()
 }
 
 export { run }
