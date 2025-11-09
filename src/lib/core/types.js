@@ -138,6 +138,11 @@ export const SOURCE_TYPE = {
 export const CONFIG_VERSION = '1.0.0'
 
 /**
+ * Standard repository sources
+ */
+export const STANDARD_REPOS = ['https://github.com/anthropics/skills']
+
+/**
  * Validates an Integration object
  * @param {Integration} integration - The Integration to validate
  * @returns {boolean} - True if the Integration is valid, false otherwise

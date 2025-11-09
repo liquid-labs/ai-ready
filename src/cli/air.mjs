@@ -67,29 +67,31 @@ const loadSourcesCommands = () => {
   sourcesCmd
     .command('list')
     .description('List configured repositories')
-    .action(async () => {
-      await listSources()
-    })
+    .action(listSources)
 
   sourcesCmd
-    .command('add <url>')
+    .command('add [url]')
     .description('Add a remote repository')
     .option('--no-clone', 'Add to config without cloning')
+    .option('--standard', 'Add all standard repositories')
     .action(async (url, options) => {
       await addSource(url, {
-        baseDir : process.cwd(),
-        noClone : !options.clone,
+        baseDir  : process.cwd(),
+        noClone  : !options.clone,
+        standard : options.standard,
       })
     })
 
   sourcesCmd
-    .command('remove <identifier>')
+    .command('remove [identifier]')
     .description('Remove a repository')
     .option('--keep-files', 'Keep local files after removal')
+    .option('--standard', 'Remove all standard repositories')
     .action(async (identifier, options) => {
       await removeSource(identifier, {
         baseDir   : process.cwd(),
         keepFiles : options.keepFiles,
+        standard  : options.standard,
       })
     })
 

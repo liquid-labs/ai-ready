@@ -1,6 +1,7 @@
 /* eslint-disable no-console, no-process-exit */
 
 import readline from 'readline'
+import { logErrAndExit } from './log-lib.js'
 import {
   loadConfig,
   saveConfig,
@@ -18,6 +19,7 @@ import {
   getRepoPath
 } from '../core/remote-repos.js'
 import { invalidateCache } from '../core/cache.js'
+import { STANDARD_REPOS } from '../core/types.js'
 
 /**
  * List configured repositories
@@ -55,14 +57,40 @@ export async function listSources() {
 
 /**
  * Add a repository
- * @param {string} url - Git repository URL
+ * @param {string} url - Git repository URL (null if using --standard)
  * @param {object} options - Command options
  * @param {string} [options.baseDir=process.cwd()] - Base directory
  * @param {boolean} [options.noClone=false] - Skip cloning immediately
+ * @param {boolean} [options.standard=false] - Add all standard repositories
  * @returns {Promise<void>}
  */
 export async function addSource(url, options = {}) {
-  const { baseDir = process.cwd(), noClone = false } = options
+  const { baseDir = process.cwd(), noClone = false, standard = false } = options
+
+  // Validate that --standard and URL argument are not both provided
+  if (standard && url) {
+    logErrAndExit(
+      'Error: Cannot specify both --standard flag and a URL argument'
+    )
+  }
+
+  // If --standard flag, add all standard repos
+  if (standard) {
+    console.log(
+      `Adding ${STANDARD_REPOS.length} standard ${STANDARD_REPOS.length === 1 ? 'repository' : 'repositories'}...\n`
+    )
+
+    for (const standardUrl of STANDARD_REPOS) {
+      await addSource(standardUrl, { baseDir, noClone })
+    }
+
+    return
+  }
+
+  // Require URL if not using --standard
+  if (!url) {
+    logErrAndExit('Error: URL argument required (or use --standard flag)')
+  }
 
   const config = await loadConfig()
 
@@ -73,8 +101,7 @@ export async function addSource(url, options = {}) {
   // Check if already exists
   const existing = findRepo(config, url)
   if (existing) {
-    console.error(`Repository already configured: ${existing.name}`)
-    process.exit(1)
+    logErrAndExit(`Repository already configured: ${existing.name}`)
   }
 
   await warnAndConfirmAddSource(url)
@@ -126,14 +153,66 @@ export async function addSource(url, options = {}) {
 
 /**
  * Remove a repository
- * @param {string} identifier - Repository ID, name, or URL
+ * @param {string} identifier - Repository ID, name, or URL (null if using --standard)
  * @param {object} options - Command options
  * @param {string} [options.baseDir=process.cwd()] - Base directory
  * @param {boolean} [options.keepFiles=false] - Keep local files after removal
+ * @param {boolean} [options.standard=false] - Remove all standard repositories
  * @returns {Promise<void>}
  */
 export async function removeSource(identifier, options = {}) {
-  const { baseDir = process.cwd(), keepFiles = false } = options
+  const {
+    baseDir = process.cwd(),
+    keepFiles = false,
+    standard = false,
+  } = options
+
+  // Validate that --standard and identifier argument are not both provided
+  if (standard && identifier) {
+    logErrAndExit(
+      'Error: Cannot specify both --standard flag and an identifier argument'
+    )
+  }
+
+  // If --standard flag, remove all standard repos
+  if (standard) {
+    const config = await loadConfig()
+    const standardReposToRemove = []
+
+    // Find all configured repos that match standard URLs
+    for (const standardUrl of STANDARD_REPOS) {
+      const normalizedStandardUrl = normalizeGitUrl(standardUrl)
+      const repo = config.repos.find(
+        (r) => r.normalizedUrl === normalizedStandardUrl
+      )
+      if (repo) {
+        standardReposToRemove.push(repo)
+      }
+    }
+
+    if (standardReposToRemove.length === 0) {
+      console.log('No standard repositories are currently configured.')
+
+      return
+    }
+
+    console.log(
+      `Removing ${standardReposToRemove.length} standard ${standardReposToRemove.length === 1 ? 'repository' : 'repositories'}...\n`
+    )
+
+    for (const repo of standardReposToRemove) {
+      await removeSource(repo.id, { baseDir, keepFiles })
+    }
+
+    return
+  }
+
+  // Require identifier if not using --standard
+  if (!identifier) {
+    logErrAndExit(
+      'Error: Identifier argument required (or use --standard flag)'
+    )
+  }
 
   const config = await loadConfig()
 
@@ -201,8 +280,7 @@ export async function updateSources(identifier, options = {}) {
   if (identifier) {
     const repo = findRepo(config, identifier)
     if (!repo) {
-      console.error(`Repository not found: ${identifier}`)
-      process.exit(1)
+      logErrAndExit(`Repository not found: ${identifier}`)
     }
     repos = [repo]
   }
@@ -263,8 +341,7 @@ export async function repairSource(identifier, options = {}) {
 
   const repo = findRepo(config, identifier)
   if (!repo) {
-    console.error(`Repository not found: ${identifier}`)
-    process.exit(1)
+    logErrAndExit(`Repository not found: ${identifier}`)
   }
 
   console.log(`Repairing repository: ${repo.name}`)
@@ -290,8 +367,7 @@ export async function repairSource(identifier, options = {}) {
     await invalidateCache(baseDir)
   }
   else {
-    console.error(`✗ Repair failed: ${result.error}`)
-    process.exit(1)
+    logErrAndExit(`✗ Repair failed: ${result.error}`)
   }
 }
 
