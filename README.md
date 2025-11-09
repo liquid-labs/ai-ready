@@ -407,18 +407,24 @@ Shows all configured remote repositories with their clone status.
 
 ```bash
 air sources add <git-url>
+air sources add --standard
 ```
 
 Adds a remote repository and clones it locally. The tool will display a security warning before proceeding, as remote skills have access to your AI agent.
 
-**Example:**
+**Examples:**
 
 ```bash
+# Add a specific repository
 air sources add https://github.com/user/my-skills-repo
+
+# Add all standard repositories (currently: anthropics/skills)
+air sources add --standard
 ```
 
 **Options:**
 - `--no-clone`: Add the repository to configuration without cloning immediately
+- `--standard`: Add all standard repositories (cannot be combined with a URL argument)
 
 #### Update Repositories
 
@@ -442,18 +448,24 @@ air sources update my-skills-repo
 
 ```bash
 air sources remove <identifier>
+air sources remove --standard
 ```
 
 Removes a repository from configuration. You can identify the repository by ID, name, or URL.
 
-**Options:**
-- `--keep-files`: Remove from configuration but keep the local cloned files
-
-**Example:**
+**Examples:**
 
 ```bash
+# Remove a specific repository
 air sources remove my-skills-repo
+
+# Remove all standard repositories
+air sources remove --standard
 ```
+
+**Options:**
+- `--keep-files`: Remove from configuration but keep the local cloned files
+- `--standard`: Remove all standard repositories (cannot be combined with an identifier argument)
 
 #### Repair a Repository
 
