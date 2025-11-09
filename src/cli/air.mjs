@@ -3,6 +3,7 @@ import { cmdList } from '../lib/commands/list'
 import { cmdInstall } from '../lib/commands/install'
 import { cmdRemove } from '../lib/commands/remove'
 import { cmdView } from '../lib/commands/view'
+import { cmdVerify } from '../lib/commands/verify'
 
 const run = () => {
   program
@@ -39,6 +40,12 @@ const run = () => {
     .command('view <libraryIntegration?>')
     .description('View details about a library or integration')
     .action(cmdView)
+
+  program
+    .command('verify')
+    .description('Verify AI integrations in the current directory')
+    .option('--path <path>', 'Path to verify (defaults to current directory)')
+    .action(cmdVerify)
 
   program.parse()
 }
