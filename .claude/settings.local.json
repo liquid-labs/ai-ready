@@ -11,7 +11,8 @@
       "Bash(TEST=registry.test make test:*)",
       "Bash(TEST=install.test make test:*)",
       "Bash(TEST=remove.test make test:*)",
-      "Bash(TEST=list.test make test:*)"
+      "Bash(TEST=list.test make test:*)",
+      "Bash(make:*)"
     ],
     "deny": [],
     "ask": []

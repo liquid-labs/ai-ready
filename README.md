@@ -21,6 +21,7 @@ Provide, discover and manage AI integrations in npm packages.
   - [`air view`](#air-view)
   - [`air install`](#air-install)
   - [`air remove`](#air-remove)
+  - [`air verify`](#air-verify)
 - [Key Concepts](#key-concepts)
 - [Examples](#examples)
 - [Configuration](#configuration)
@@ -303,6 +304,87 @@ Removing jest-ai/TestGenerator ...
 ✔ Generic integration removed
 ✔ Removal complete
 ```
+
+---
+
+### `air verify`
+
+Verify AI integrations in the current directory (for library authors).
+
+**Syntax:**
+
+```bash
+air verify [options]
+```
+
+**Options:**
+
+| Option | Description |
+|--------|-------------|
+| `--path <path>` | Path to verify (defaults to current directory) |
+
+**Examples:**
+
+```bash
+# Verify integrations in current directory
+air verify
+
+# Verify integrations in a specific directory
+air verify --path /path/to/library
+```
+
+**What it validates:**
+
+1. **Directory Structure:**
+   - Checks for `ai-ready/integrations/` directory
+   - Validates that it contains integration directories
+
+2. **Integration Files:**
+   - Validates `AI_INTEGRATION.md` frontmatter (if present)
+   - Validates `claude-skill/SKILL.md` frontmatter (if present)
+   - Checks for required fields: `name`, `summary`
+   - Ensures fields are non-empty
+
+3. **Content Quality:**
+   - Warns if no content exists after frontmatter
+   - Checks naming consistency between generic and skill types
+
+**Sample Output (Success):**
+
+```
+Verifying AI integrations in: /path/to/library
+
+Found 2 integration(s) to verify:
+
+✔ TestIntegration (generic)
+  Name: generic: "TestIntegration"
+  All checks passed
+
+✔ MySkill (skill, generic)
+  Name: generic: "MySkill", skill: "MySkill"
+  All checks passed
+
+✔ All integrations verified successfully
+```
+
+**Sample Output (Errors):**
+
+```
+Verifying AI integrations in: /path/to/library
+
+Found 1 integration(s) to verify:
+
+✗ BadIntegration (generic)
+  Name: generic: "BadIntegration"
+  ERROR: AI_INTEGRATION.md: Missing or invalid "summary" in frontmatter
+  WARNING: AI_INTEGRATION.md: No content after frontmatter
+
+✗ Verification failed with errors
+```
+
+**Use Case:**
+
+This command is primarily for **library authors** who want to validate their AI integrations before publishing. It ensures that integration metadata is correctly formatted and complete.
 
 ---
 

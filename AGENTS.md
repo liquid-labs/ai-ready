@@ -234,12 +234,22 @@ Cache is invalidated when:
 
 ## Key Files Reference
 
+### CLI Commands
 - `src/cli/air.mjs` - Command routing (Commander.js)
+- `src/lib/commands/list.js` - List integrations
+- `src/lib/commands/view.js` - View integration details
+- `src/lib/commands/install.js` - Install integrations
+- `src/lib/commands/remove.js` - Remove integrations
+- `src/lib/commands/verify.js` - Verify integration metadata
+
+### Core Modules
 - `src/lib/core/scanner.js` - Discovery logic
 - `src/lib/core/cache.js` - Performance optimization
 - `src/lib/core/registry.js` - Installation state management
 - `src/lib/core/types.js` - Type definitions and constants
 - `src/lib/core/test-lib.js` - Test fixture helper
+
+### Parsers
 - `src/lib/parsers/frontmatter.js` - YAML frontmatter parser
 
 ## Related Documentation
