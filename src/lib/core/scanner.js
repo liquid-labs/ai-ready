@@ -1,11 +1,131 @@
 import fs from 'fs/promises'
 import path from 'path'
+import simpleGit from 'simple-git'
 import { parseFrontmatter } from '../parsers/frontmatter.js'
-import { INTEGRATION_TYPES } from './types.js'
+import { INTEGRATION_TYPES, SOURCE_TYPE } from './types.js'
+import { loadConfig } from './config.js'
+import { isRepoCloned, getRepoPath } from './remote-repos.js'
 
 /**
- * @import { Integration, IntegrationProvider } from './types.js'
+ * @import { Integration, IntegrationProvider, RemoteRepoProvider } from './types.js'
  */
+
+/**
+ * Scans both npm and remote sources for integrations
+ * @param {object} options - Scan options
+ * @param {string} [options.baseDir=process.cwd()] - Base directory for npm scan
+ * @param {string} [options.source='all'] - Source type to scan ('npm', 'remote', or 'all')
+ * @returns {Promise<{npmProviders: IntegrationProvider[], remoteProviders: RemoteRepoProvider[]}>} Scan results
+ */
+export async function scanAll(options = {}) {
+  const { baseDir = process.cwd(), source = SOURCE_TYPE.ALL } = options
+
+  const results = {
+    npmProviders    : [],
+    remoteProviders : [],
+  }
+
+  if (source === SOURCE_TYPE.ALL || source === SOURCE_TYPE.NPM) {
+    results.npmProviders = await scanNpmProviders(baseDir)
+  }
+
+  if (source === SOURCE_TYPE.ALL || source === SOURCE_TYPE.REMOTE) {
+    results.remoteProviders = await scanRemoteProviders()
+  }
+
+  return results
+}
+
+/**
+ * Scans npm node_modules for integrations
+ * @param {string} [baseDir=process.cwd()] - Base directory for scan
+ * @returns {Promise<IntegrationProvider[]>} Array of npm providers
+ */
+export async function scanNpmProviders(baseDir = process.cwd()) {
+  return await scanForProviders(['node_modules'], baseDir)
+}
+
+/**
+ * Scans remote repositories for integrations
+ * @returns {Promise<RemoteRepoProvider[]>} Array of remote providers
+ */
+export async function scanRemoteProviders() {
+  const config = await loadConfig()
+  const providers = []
+
+  await Promise.all(
+    config.repos.map(async (repo) => {
+      // Skip if not cloned
+      if (!(await isRepoCloned(repo))) {
+        return
+      }
+
+      const repoPath = getRepoPath(repo.id)
+
+      // Get current commit SHA
+      let commitSHA = null
+      try {
+        const git = simpleGit(repoPath)
+        const log = await git.log({ maxCount : 1 })
+        commitSHA = log.latest?.hash || null
+      }
+      catch {
+        // Git error - skip this repo
+        return
+      }
+
+      // Scan for integrations
+      const integrations = await scanRepoIntegrations(repoPath, repo)
+
+      if (integrations.length > 0) {
+        providers.push({
+          repoId    : repo.id,
+          repoUrl   : repo.url,
+          repoName  : repo.name,
+          commitSHA : commitSHA || '',
+          scannedAt : new Date().toISOString(),
+          integrations,
+        })
+      }
+    })
+  )
+
+  return providers
+}
+
+/**
+ * Scans a repository for integrations
+ * @param {string} repoPath - Absolute path to repository
+ * @param {object} repo - Repository metadata
+ * @returns {Promise<Integration[]>} Array of integrations
+ */
+async function scanRepoIntegrations(repoPath, repo) {
+  const integrationsPath = path.join(repoPath, 'ai-ready', 'integrations')
+
+  try {
+    await fs.access(integrationsPath)
+  }
+  catch {
+    // No ai-ready/integrations directory
+    return []
+  }
+
+  const integrations = await scanIntegrations(integrationsPath)
+
+  // Add source metadata to each integration
+  integrations.forEach((integration) => {
+    integration.source = {
+      type      : 'remote',
+      repoId    : repo.id,
+      repoName  : repo.name,
+      repoUrl   : repo.url,
+      commitSHA : repo.lastReviewedCommit || '',
+      path      : repoPath,
+    }
+  })
+
+  return integrations
+}
 
 /**
  * Scans a list of paths for ai-ready libraries
@@ -83,6 +203,16 @@ async function scanLibrary(libraryName, libraryPath) {
   if (integrations.length === 0) {
     return null
   }
+
+  // Add npm source metadata to each integration
+  integrations.forEach((integration) => {
+    integration.source = {
+      type           : 'npm',
+      packageName    : libraryName,
+      packageVersion : version,
+      path           : libraryPath,
+    }
+  })
 
   return {
     libraryName,

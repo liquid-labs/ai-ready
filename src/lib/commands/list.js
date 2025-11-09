@@ -1,7 +1,7 @@
-import { scanForProviders } from '../core/scanner'
-import { loadProvidersWithCache } from '../core/cache'
-import { loadInstallationStatus } from '../core/registry'
-import { DEFAULT_CONFIG } from '../core/types'
+import { scanAll } from '../core/scanner.js'
+import { loadProvidersWithCache } from '../core/cache.js'
+import { loadInstallationStatus } from '../core/registry.js'
+import { DEFAULT_CONFIG } from '../core/types.js'
 
 /* eslint-disable no-console, no-process-exit */
 
@@ -16,14 +16,17 @@ import { DEFAULT_CONFIG } from '../core/types'
 export async function cmdList(options) {
   try {
     // Load providers with caching
-    const providers = await loadProvidersWithCache(
+    const { npmProviders, remoteProviders } = await loadProvidersWithCache(
       DEFAULT_CONFIG.cacheFile,
-      () => scanForProviders(DEFAULT_CONFIG.scanPaths)
+      () => scanAll()
     )
+
+    // Combine all providers for display
+    const allProviders = [...npmProviders, ...remoteProviders]
 
     // Load installation status
     const providersWithStatus = await loadInstallationStatus(
-      providers,
+      allProviders,
       DEFAULT_CONFIG.registryFiles.claudeSkillsDir,
       DEFAULT_CONFIG.registryFiles.generic
     )
@@ -32,7 +35,9 @@ export async function cmdList(options) {
     let filtered = providersWithStatus
 
     if (options.library) {
-      filtered = filtered.filter((p) => p.libraryName === options.library)
+      filtered = filtered.filter(
+        (p) => (p.libraryName || p.repoName) === options.library
+      )
     }
 
     // Filter integrations
@@ -49,7 +54,7 @@ export async function cmdList(options) {
         if (options.available && isInstalled && !isPartiallyInstalled) continue
 
         results.push({
-          library        : provider.libraryName,
+          library        : provider.libraryName || provider.repoName,
           integration    : integration.name,
           types          : integration.types,
           installedTypes : integration.installedTypes,

@@ -45,7 +45,10 @@ describe('view command', () => {
     consoleErrorSpy = jest.spyOn(console, 'error').mockImplementation()
     processExitSpy = jest.spyOn(process, 'exit').mockImplementation()
 
-    cache.loadProvidersWithCache.mockResolvedValue(mockProviders)
+    cache.loadProvidersWithCache.mockResolvedValue({
+      npmProviders    : mockProviders,
+      remoteProviders : [],
+    })
     registry.loadInstallationStatus.mockResolvedValue(mockProviders)
   })
 
@@ -159,7 +162,10 @@ describe('view command', () => {
         },
       ]
 
-      cache.loadProvidersWithCache.mockResolvedValue(providersWithDual)
+      cache.loadProvidersWithCache.mockResolvedValue({
+        npmProviders    : providersWithDual,
+        remoteProviders : [],
+      })
       registry.loadInstallationStatus.mockResolvedValue(providersWithDual)
 
       await cmdView('dual-lib/Dual')

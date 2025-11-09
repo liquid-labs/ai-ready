@@ -9,6 +9,20 @@ import fs from 'fs/promises'
 import path from 'path'
 import os from 'os'
 
+const writeTestPackageJson = async (tempDir) => {
+  const pkgPath = path.join(tempDir, 'package.json')
+  await fs.writeFile(pkgPath, JSON.stringify({ name : 'test' }), 'utf8')
+
+  return pkgPath
+}
+
+const writeTestPackageLockJson = async (tempDir) => {
+  const lockPath = path.join(tempDir, 'package-lock.json')
+  await fs.writeFile(lockPath, JSON.stringify({ version : '1.0.0' }), 'utf8')
+
+  return lockPath
+}
+
 describe('cache', () => {
   let tempDir
 
@@ -26,7 +40,7 @@ describe('cache', () => {
     scannedAt        : '2025-11-07T12:00:00Z',
     packageJsonMTime : 1234567890,
     packageLockMTime : 1234567890,
-    providers        : [
+    npmProviders     : [
       {
         libraryName  : 'test-lib',
         version      : '1.0.0',
@@ -34,6 +48,7 @@ describe('cache', () => {
         integrations : [],
       },
     ],
+    remoteProviders : [],
   }
 
   describe('readCache', () => {
@@ -194,39 +209,35 @@ describe('cache', () => {
 
   describe('createCacheData', () => {
     it('should create cache data with current timestamps', async () => {
-      const packageJsonPath = path.join(tempDir, 'package.json')
-      const packageLockPath = path.join(tempDir, 'package-lock.json')
+      await writeTestPackageJson(tempDir)
+      await writeTestPackageLockJson(tempDir)
 
-      await fs.writeFile(
-        packageJsonPath,
-        JSON.stringify({ name : 'test' }),
-        'utf8'
-      )
-      await fs.writeFile(
-        packageLockPath,
-        JSON.stringify({ version : '1.0.0' }),
-        'utf8'
-      )
-
-      const providers = [
-        {
-          libraryName  : 'test-lib',
-          version      : '1.0.0',
-          path         : '/path/to/test-lib',
-          integrations : [],
-        },
-      ]
+      const providers = {
+        npmProviders : [
+          {
+            libraryName  : 'test-lib',
+            version      : '1.0.0',
+            path         : '/path/to/test-lib',
+            integrations : [],
+          },
+        ],
+        remoteProviders : [],
+      }
 
       const cache = await createCacheData(providers, tempDir)
 
-      expect(cache.providers).toEqual(providers)
+      expect(cache.npmProviders).toEqual(providers.npmProviders)
+      expect(cache.remoteProviders).toEqual(providers.remoteProviders)
       expect(typeof cache.scannedAt).toBe('string')
       expect(cache.packageJsonMTime).toBeGreaterThan(0)
       expect(cache.packageLockMTime).toBeGreaterThan(0)
     })
 
     it('should set mtimes to 0 when files are missing', async () => {
-      const providers = []
+      const providers = {
+        npmProviders    : [],
+        remoteProviders : [],
+      }
       const cache = await createCacheData(providers, tempDir)
 
       expect(cache.packageJsonMTime).toBe(0)
@@ -234,7 +245,10 @@ describe('cache', () => {
     })
 
     it('should create valid ISO timestamp', async () => {
-      const cache = await createCacheData([], tempDir)
+      const cache = await createCacheData(
+        { npmProviders : [], remoteProviders : [] },
+        tempDir
+      )
       expect(() => new Date(cache.scannedAt)).not.toThrow()
       expect(new Date(cache.scannedAt).toISOString()).toBe(cache.scannedAt)
     })
@@ -243,20 +257,9 @@ describe('cache', () => {
   describe('loadProvidersWithCache', () => {
     it('should return cached providers when cache is valid', async () => {
       // Setup files
-      const packageJsonPath = path.join(tempDir, 'package.json')
-      const packageLockPath = path.join(tempDir, 'package-lock.json')
+      const packageJsonPath = await writeTestPackageJson(tempDir)
+      const packageLockPath = await writeTestPackageLockJson(tempDir)
       const cacheFile = '.aircache.json'
-
-      await fs.writeFile(
-        packageJsonPath,
-        JSON.stringify({ name : 'test' }),
-        'utf8'
-      )
-      await fs.writeFile(
-        packageLockPath,
-        JSON.stringify({ version : '1.0.0' }),
-        'utf8'
-      )
 
       const cache = {
         ...validCacheData,
@@ -269,27 +272,26 @@ describe('cache', () => {
       const scanFn = jest.fn()
       const providers = await loadProvidersWithCache(cacheFile, scanFn, tempDir)
 
-      expect(providers).toEqual(cache.providers)
+      expect(providers.npmProviders).toEqual(cache.npmProviders)
+      expect(providers.remoteProviders).toEqual(cache.remoteProviders)
       expect(scanFn).not.toHaveBeenCalled()
     })
 
     it('should call scan function when cache is invalid', async () => {
-      const packageJsonPath = path.join(tempDir, 'package.json')
-      await fs.writeFile(
-        packageJsonPath,
-        JSON.stringify({ name : 'test' }),
-        'utf8'
-      )
+      await writeTestPackageJson(tempDir)
 
       const cacheFile = '.aircache.json'
-      const newProviders = [
-        {
-          libraryName  : 'new-lib',
-          version      : '2.0.0',
-          path         : '/path/to/new-lib',
-          integrations : [],
-        },
-      ]
+      const newProviders = {
+        npmProviders : [
+          {
+            libraryName  : 'new-lib',
+            version      : '2.0.0',
+            path         : '/path/to/new-lib',
+            integrations : [],
+          },
+        ],
+        remoteProviders : [],
+      }
 
       const scanFn = jest.fn().mockResolvedValue(newProviders)
       const providers = await loadProvidersWithCache(cacheFile, scanFn, tempDir)
@@ -299,38 +301,32 @@ describe('cache', () => {
     })
 
     it('should write new cache after scanning', async () => {
-      const packageJsonPath = path.join(tempDir, 'package.json')
-      await fs.writeFile(
-        packageJsonPath,
-        JSON.stringify({ name : 'test' }),
-        'utf8'
-      )
+      await writeTestPackageJson(tempDir)
 
       const cacheFile = '.aircache.json'
-      const newProviders = [
-        {
-          libraryName  : 'new-lib',
-          version      : '2.0.0',
-          path         : '/path/to/new-lib',
-          integrations : [],
-        },
-      ]
+      const newProviders = {
+        npmProviders : [
+          {
+            libraryName  : 'new-lib',
+            version      : '2.0.0',
+            path         : '/path/to/new-lib',
+            integrations : [],
+          },
+        ],
+        remoteProviders : [],
+      }
 
       const scanFn = jest.fn().mockResolvedValue(newProviders)
       await loadProvidersWithCache(cacheFile, scanFn, tempDir)
 
       const cache = await readCache(cacheFile, tempDir)
       expect(cache).not.toBeNull()
-      expect(cache.providers).toEqual(newProviders)
+      expect(cache.npmProviders).toEqual(newProviders.npmProviders)
+      expect(cache.remoteProviders).toEqual(newProviders.remoteProviders)
     })
 
     it('should call scan function when cache file does not exist', async () => {
-      const packageJsonPath = path.join(tempDir, 'package.json')
-      await fs.writeFile(
-        packageJsonPath,
-        JSON.stringify({ name : 'test' }),
-        'utf8'
-      )
+      await writeTestPackageJson(tempDir)
 
       const cacheFile = '.aircache.json'
       const newProviders = []

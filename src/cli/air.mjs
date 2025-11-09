@@ -1,9 +1,16 @@
 import { program } from 'commander'
-import { cmdList } from '../lib/commands/list'
-import { cmdInstall } from '../lib/commands/install'
-import { cmdRemove } from '../lib/commands/remove'
-import { cmdView } from '../lib/commands/view'
-import { cmdVerify } from '../lib/commands/verify'
+import { cmdList } from '../lib/commands/list.js'
+import { cmdInstall } from '../lib/commands/install.js'
+import { cmdRemove } from '../lib/commands/remove.js'
+import { cmdView } from '../lib/commands/view.js'
+import { cmdVerify } from '../lib/commands/verify.js'
+import {
+  listSources,
+  addSource,
+  removeSource,
+  updateSources,
+  repairSource
+} from '../lib/commands/sources.js'
 
 const run = () => {
   program
@@ -47,7 +54,64 @@ const run = () => {
     .option('--path <path>', 'Path to verify (defaults to current directory)')
     .action(cmdVerify)
 
+  loadSourcesCommands()
+
   program.parse()
+}
+
+const loadSourcesCommands = () => {
+  const sourcesCmd = program
+    .command('sources')
+    .description('Manage remote skill repositories')
+
+  sourcesCmd
+    .command('list')
+    .description('List configured repositories')
+    .action(listSources)
+
+  sourcesCmd
+    .command('add [url]')
+    .description('Add a remote repository')
+    .option('--no-clone', 'Add to config without cloning')
+    .option('--standard', 'Add all standard repositories')
+    .action(async (url, options) => {
+      await addSource(url, {
+        baseDir  : process.cwd(),
+        noClone  : !options.clone,
+        standard : options.standard,
+      })
+    })
+
+  sourcesCmd
+    .command('remove [identifier]')
+    .description('Remove a repository')
+    .option('--keep-files', 'Keep local files after removal')
+    .option('--standard', 'Remove all standard repositories')
+    .action(async (identifier, options) => {
+      await removeSource(identifier, {
+        baseDir   : process.cwd(),
+        keepFiles : options.keepFiles,
+        standard  : options.standard,
+      })
+    })
+
+  sourcesCmd
+    .command('update [identifier]')
+    .description('Update repositories (all or specific)')
+    .action(async (identifier) => {
+      await updateSources(identifier, {
+        baseDir : process.cwd(),
+      })
+    })
+
+  sourcesCmd
+    .command('repair <identifier>')
+    .description('Repair a repository by re-cloning')
+    .action(async (identifier) => {
+      await repairSource(identifier, {
+        baseDir : process.cwd(),
+      })
+    })
 }
 
 export { run }

@@ -1,15 +1,15 @@
-import { logErrAndExit } from './log-lib'
-import { findProviderAndIntegration } from './data-lib'
-import { scanForProviders } from '../core/scanner'
-import { loadProvidersWithCache } from '../core/cache'
+import { logErrAndExit } from './ui-lib.js'
+import { findProviderAndIntegration } from './data-lib.js'
+import { scanAll } from '../core/scanner.js'
+import { loadProvidersWithCache } from '../core/cache.js'
 import {
   loadInstallationStatus,
   createBackup,
   installClaudeSkillSymlink,
   readGenericRegistry,
   writeGenericRegistry
-} from '../core/registry'
-import { DEFAULT_CONFIG, INTEGRATION_TYPES } from '../core/types'
+} from '../core/registry.js'
+import { DEFAULT_CONFIG, INTEGRATION_TYPES } from '../core/types.js'
 
 /**
  * @import { Integration } from './types.js'
@@ -36,10 +36,12 @@ export async function cmdInstall(libraryIntegration, options) {
     const [libraryName, integrationName] = libraryIntegration.split('/')
 
     // Load providers
-    const providers = await loadProvidersWithCache(
+    const { npmProviders, remoteProviders } = await loadProvidersWithCache(
       DEFAULT_CONFIG.cacheFile,
-      () => scanForProviders(DEFAULT_CONFIG.scanPaths)
+      () => scanAll()
     )
+
+    const providers = [...npmProviders, ...remoteProviders]
 
     const providersWithStatus = await loadInstallationStatus(
       providers,

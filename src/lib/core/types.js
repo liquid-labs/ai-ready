@@ -1,8 +1,35 @@
 /**
+ * @typedef {'npm' | 'remote'} SourceType
+ */
+
+/**
+ * @typedef {object} NpmSource
+ * @property {'npm'} type - Source type identifier
+ * @property {string} packageName - NPM package name
+ * @property {string} packageVersion - Package version
+ * @property {string} path - Absolute path to package
+ */
+
+/**
+ * @typedef {object} RemoteSource
+ * @property {'remote'} type - Source type identifier
+ * @property {string} repoId - Unique identifier (hash)
+ * @property {string} repoName - Display name
+ * @property {string} repoUrl - Original URL
+ * @property {string} commitSHA - Current commit
+ * @property {string} path - Absolute path to local clone
+ */
+
+/**
+ * @typedef {NpmSource | RemoteSource} IntegrationSource
+ */
+
+/**
  * @typedef {object} Integration
  * @property {string} name - Integration name
  * @property {string} summary - One-line summary of the integration
  * @property {string[]} types - Available integration types (e.g., ['genericIntegration', 'claudeSkill'])
+ * @property {IntegrationSource} [source] - Source information (npm or remote)
  */
 
 /**
@@ -14,11 +41,22 @@
  */
 
 /**
+ * @typedef {object} RemoteRepoProvider
+ * @property {string} repoId - Repository identifier
+ * @property {string} repoUrl - Repository URL
+ * @property {string} repoName - Repository display name
+ * @property {string} commitSHA - Current commit at scan time
+ * @property {string} scannedAt - ISO timestamp
+ * @property {Integration[]} integrations - Array of integrations in repository
+ */
+
+/**
  * @typedef {object} CacheData
  * @property {string} scannedAt - Timestamp of last scan
  * @property {number} packageJsonMTime - Modified time of package.json
  * @property {number} packageLockMTime - Modified time of package-lock.json
- * @property {IntegrationProvider[]} providers - Cached provider data
+ * @property {IntegrationProvider[]} npmProviders - Cached npm provider data
+ * @property {RemoteRepoProvider[]} remoteProviders - Cached remote repo provider data
  */
 
 /**
@@ -35,6 +73,26 @@
  */
 
 /**
+ * @typedef {object} RemoteRepo
+ * @property {string} id - SHA-256 hash of normalized URL
+ * @property {string} url - Original URL as provided by user
+ * @property {string} normalizedUrl - Canonical URL
+ * @property {string} name - Display name (derived from URL)
+ * @property {string} addedAt - ISO timestamp
+ * @property {string|null} clonedAt - ISO timestamp (null if not cloned)
+ * @property {string|null} lastUpdated - ISO timestamp of last pull
+ * @property {string|null} lastReviewedCommit - Commit SHA user last reviewed
+ * @property {boolean} allowAutoUpdate - Whether to auto-update (default false)
+ */
+
+/**
+ * @typedef {object} RemoteRepoConfig
+ * @property {string} version - Config schema version
+ * @property {SourceType[]} sourcePriority - Order for conflict resolution
+ * @property {RemoteRepo[]} repos - Remote repositories
+ */
+
+/**
  * Default configuration
  * @type {Config}
  */
@@ -48,12 +106,41 @@ export const DEFAULT_CONFIG = {
 }
 
 /**
+ * Default remote repo configuration
+ * @type {RemoteRepoConfig}
+ */
+export const DEFAULT_REMOTE_CONFIG = {
+  version        : '1.0.0',
+  sourcePriority : ['npm', 'remote'],
+  repos          : [],
+}
+
+/**
  * Integration types constants
  */
 export const INTEGRATION_TYPES = {
   GENERIC      : 'genericIntegration',
   CLAUDE_SKILL : 'claudeSkill',
 }
+
+/**
+ * Source type constants
+ */
+export const SOURCE_TYPE = {
+  NPM    : 'npm',
+  REMOTE : 'remote',
+  ALL    : 'all',
+}
+
+/**
+ * Config version
+ */
+export const CONFIG_VERSION = '1.0.0'
+
+/**
+ * Standard repository sources
+ */
+export const STANDARD_REPOS = ['https://github.com/anthropics/skills']
 
 /**
  * Validates an Integration object
@@ -99,7 +186,7 @@ export function isValidCache(cache) {
     && typeof cache.scannedAt === 'string'
     && typeof cache.packageJsonMTime === 'number'
     && typeof cache.packageLockMTime === 'number'
-    && Array.isArray(cache.providers)
-    && cache.providers.every(isValidProvider)
+    && Array.isArray(cache.npmProviders)
+    && Array.isArray(cache.remoteProviders)
   )
 }

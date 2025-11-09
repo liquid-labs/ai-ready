@@ -19,7 +19,10 @@ describe('list command', () => {
     processExitSpy = jest.spyOn(process, 'exit').mockImplementation()
 
     // Default mock implementations
-    cache.loadProvidersWithCache.mockResolvedValue([])
+    cache.loadProvidersWithCache.mockResolvedValue({
+      npmProviders    : [],
+      remoteProviders : [],
+    })
     registry.loadInstallationStatus.mockImplementation(
       async (providers) => providers // eslint-disable-line require-await
     )
@@ -49,7 +52,10 @@ describe('list command', () => {
       },
     ]
 
-    cache.loadProvidersWithCache.mockResolvedValue(providers)
+    cache.loadProvidersWithCache.mockResolvedValue({
+      npmProviders    : providers,
+      remoteProviders : [],
+    })
     registry.loadInstallationStatus.mockResolvedValue(providers)
 
     await cmdList({})
@@ -85,7 +91,10 @@ describe('list command', () => {
       },
     ]
 
-    cache.loadProvidersWithCache.mockResolvedValue(providers)
+    cache.loadProvidersWithCache.mockResolvedValue({
+      npmProviders    : providers,
+      remoteProviders : [],
+    })
     registry.loadInstallationStatus.mockResolvedValue(providers)
 
     await cmdList({ installed : true })
@@ -124,7 +133,10 @@ describe('list command', () => {
       },
     ]
 
-    cache.loadProvidersWithCache.mockResolvedValue(providers)
+    cache.loadProvidersWithCache.mockResolvedValue({
+      npmProviders    : providers,
+      remoteProviders : [],
+    })
     registry.loadInstallationStatus.mockResolvedValue(providers)
 
     await cmdList({ available : true })
@@ -165,7 +177,10 @@ describe('list command', () => {
       },
     ]
 
-    cache.loadProvidersWithCache.mockResolvedValue(providers)
+    cache.loadProvidersWithCache.mockResolvedValue({
+      npmProviders    : providers,
+      remoteProviders : [],
+    })
     registry.loadInstallationStatus.mockResolvedValue(providers)
 
     await cmdList({ library : 'lib-a' })
@@ -176,7 +191,10 @@ describe('list command', () => {
   })
 
   it('should show message when no integrations found', async () => {
-    cache.loadProvidersWithCache.mockResolvedValue([])
+    cache.loadProvidersWithCache.mockResolvedValue({
+      npmProviders    : [],
+      remoteProviders : [],
+    })
     registry.loadInstallationStatus.mockResolvedValue([])
 
     await cmdList({})
@@ -201,7 +219,10 @@ describe('list command', () => {
       },
     ]
 
-    cache.loadProvidersWithCache.mockResolvedValue(providers)
+    cache.loadProvidersWithCache.mockResolvedValue({
+      npmProviders    : providers,
+      remoteProviders : [],
+    })
     registry.loadInstallationStatus.mockResolvedValue(providers)
 
     await cmdList({})
@@ -237,7 +258,10 @@ describe('list command', () => {
 
   it('should call loadInstallationStatus with correct parameters', async () => {
     const providers = []
-    cache.loadProvidersWithCache.mockResolvedValue(providers)
+    cache.loadProvidersWithCache.mockResolvedValue({
+      npmProviders    : providers,
+      remoteProviders : [],
+    })
     registry.loadInstallationStatus.mockResolvedValue(providers)
 
     await cmdList({})
@@ -266,7 +290,10 @@ describe('list command', () => {
       },
     ]
 
-    cache.loadProvidersWithCache.mockResolvedValue(providers)
+    cache.loadProvidersWithCache.mockResolvedValue({
+      npmProviders    : providers,
+      remoteProviders : [],
+    })
     registry.loadInstallationStatus.mockResolvedValue(providers)
 
     await cmdList({})

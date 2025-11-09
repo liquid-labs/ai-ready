@@ -1,9 +1,13 @@
 import fs from 'fs/promises'
 import path from 'path'
+import simpleGit from 'simple-git'
 import { isValidCache } from './types.js'
+import { SOURCE_TYPE } from './types.js'
+import { loadConfig } from './config.js'
+import { getRepoPath, isRepoCloned } from './remote-repos.js'
 
 /**
- * @import { CacheData, IntegrationProvider } from './types.js'
+ * @import { CacheData, IntegrationProvider, RemoteRepoProvider } from './types.js'
  */
 
 /**
@@ -55,16 +59,136 @@ export async function writeCache(
 }
 
 /**
- * Checks if cache is valid based on package.json and lock file timestamps
+ * Checks if cache is valid based on package.json, lock file, and remote repo commits
  * @param {CacheData|null} cache - Cache data to validate
  * @param {string} [baseDir=process.cwd()] - Base directory
+ * @param {string} [source='all'] - Source type to validate ('npm', 'remote', or 'all')
  * @returns {Promise<boolean>} True if cache is valid
  */
-export async function isCacheValid(cache, baseDir = process.cwd()) {
+export async function isCacheValid(
+  cache,
+  baseDir = process.cwd(),
+  source = SOURCE_TYPE.ALL
+) {
   if (!cache) {
     return false
   }
 
+  const validations = []
+  // Check npm cache validity
+  if (source === SOURCE_TYPE.ALL || source === SOURCE_TYPE.NPM) {
+    validations.push(validateNpmCache(cache, baseDir))
+  }
+
+  // Check remote cache validity
+  if (source === SOURCE_TYPE.ALL || source === SOURCE_TYPE.REMOTE) {
+    validations.push(validateRemoteCache(cache))
+  }
+
+  const results = await Promise.all(validations)
+
+  return !results.some((result) => result === false)
+}
+
+/**
+ * Creates cache data from scan results
+ * @param {{npmProviders: IntegrationProvider[], remoteProviders: RemoteRepoProvider[]}} data - Scan results
+ * @param {string} [baseDir=process.cwd()] - Base directory
+ * @returns {Promise<CacheData>} Cache data object
+ */
+export async function createCacheData(data, baseDir = process.cwd()) {
+  const packageJsonPath = path.resolve(baseDir, 'package.json')
+  const packageLockPath = path.resolve(baseDir, 'package-lock.json')
+
+  let packageJsonMTime = 0
+  let packageLockMTime = 0
+
+  try {
+    const packageJsonStat = await fs.stat(packageJsonPath)
+    packageJsonMTime = Math.floor(packageJsonStat.mtimeMs)
+  }
+  catch (error) {
+    if (error.code !== 'ENOENT') {
+      throw error
+    }
+  }
+
+  try {
+    const packageLockStat = await fs.stat(packageLockPath)
+    packageLockMTime = Math.floor(packageLockStat.mtimeMs)
+  }
+  catch (error) {
+    if (error.code !== 'ENOENT') {
+      throw error
+    }
+  }
+
+  return {
+    scannedAt       : new Date().toISOString(),
+    packageJsonMTime,
+    packageLockMTime,
+    npmProviders    : data.npmProviders || [],
+    remoteProviders : data.remoteProviders || [],
+  }
+}
+
+/**
+ * Loads providers with caching
+ * @param {string} cacheFilePath - Path to cache file
+ * @param {Function} scanFunction - Function to call if cache is invalid: () => Promise<{npmProviders, remoteProviders}>
+ * @param {string} [baseDir=process.cwd()] - Base directory
+ * @param {string} [source='all'] - Source type to load ('npm', 'remote', or 'all')
+ * @returns {Promise<{npmProviders: IntegrationProvider[], remoteProviders: RemoteRepoProvider[]}>} Providers object
+ */
+export async function loadProvidersWithCache(
+  cacheFilePath,
+  scanFunction,
+  baseDir = process.cwd(),
+  source = SOURCE_TYPE.ALL
+) {
+  const cache = await readCache(cacheFilePath, baseDir)
+
+  if (await isCacheValid(cache, baseDir, source)) {
+    return {
+      npmProviders    : cache.npmProviders || [],
+      remoteProviders : cache.remoteProviders || [],
+    }
+  }
+
+  // Cache invalid or missing, perform scan
+  const scanResults = await scanFunction()
+
+  // Write new cache
+  const cacheData = await createCacheData(scanResults, baseDir)
+  await writeCache(cacheFilePath, cacheData, baseDir)
+
+  return scanResults
+}
+
+/**
+ * Invalidates the cache by deleting the cache file
+ * @param {string} [baseDir=process.cwd()] - Base directory
+ * @param {string} [cacheFilePath='.aircache.json'] - Path to cache file
+ * @returns {Promise<void>}
+ */
+export async function invalidateCache(
+  baseDir = process.cwd(),
+  cacheFilePath = '.aircache.json'
+) {
+  const fullPath = path.resolve(baseDir, cacheFilePath)
+
+  try {
+    await fs.unlink(fullPath)
+  }
+  catch (error) {
+    if (error.code !== 'ENOENT') {
+      throw error
+    }
+    // File doesn't exist, already invalid
+  }
+}
+
+const validateNpmCache = async (cache, baseDir) => {
   try {
     // Check package.json
     const packageJsonPath = path.resolve(baseDir, 'package.json')
@@ -97,8 +221,6 @@ export async function isCacheValid(cache, baseDir = process.cwd()) {
         throw error
       }
     }
-
-    return true
   }
   catch (error) {
     if (error.code === 'ENOENT') {
@@ -106,73 +228,65 @@ export async function isCacheValid(cache, baseDir = process.cwd()) {
     }
     throw error
   }
+
+  return true
 }
 
-/**
- * Creates cache data from providers
- * @param {IntegrationProvider[]} providers - Providers to cache
- * @param {string} [baseDir=process.cwd()] - Base directory
- * @returns {Promise<CacheData>} Cache data object
- */
-export async function createCacheData(providers, baseDir = process.cwd()) {
-  const packageJsonPath = path.resolve(baseDir, 'package.json')
-  const packageLockPath = path.resolve(baseDir, 'package-lock.json')
+const validateRemoteCache = async (cache) => {
+  const config = await loadConfig()
+  const remoteProviders = cache.remoteProviders || []
 
-  let packageJsonMTime = 0
-  let packageLockMTime = 0
+  // Check if any repos were added/removed
+  const cachedRepoIds = new Set(remoteProviders.map((p) => p.repoId))
+  const clonedRepos = []
 
-  try {
-    const packageJsonStat = await fs.stat(packageJsonPath)
-    packageJsonMTime = Math.floor(packageJsonStat.mtimeMs)
+  ;(
+    await Promise.all(
+      config.repos.map(async (repo) =>
+        (await isRepoCloned(repo)) ? repo : null)
+    )
+  ).forEach((r) => {
+    if (r !== null) {
+      clonedRepos.push(r)
+    }
+  })
+
+  const currentRepoIds = new Set(clonedRepos.map((r) => r.id))
+
+  // Check for added/removed repos
+  if (cachedRepoIds.size !== currentRepoIds.size) {
+    return false
   }
-  catch (error) {
-    if (error.code !== 'ENOENT') {
-      throw error
+
+  for (const repoId of cachedRepoIds) {
+    if (!currentRepoIds.has(repoId)) {
+      return false // Repo was removed
     }
   }
 
-  try {
-    const packageLockStat = await fs.stat(packageLockPath)
-    packageLockMTime = Math.floor(packageLockStat.mtimeMs)
-  }
-  catch (error) {
-    if (error.code !== 'ENOENT') {
-      throw error
+  // Check if any cached repos have new commits
+  for (const remoteProvider of remoteProviders) {
+    const repo = config.repos.find((r) => r.id === remoteProvider.repoId)
+    if (!repo) {
+      return false // Repo removed from config
+    }
+
+    try {
+      const repoPath = getRepoPath(repo.id)
+      const git = simpleGit(repoPath)
+      // normally, we would factor this out, but since this fails quick we don't want to wait on everything to resolve
+      // when it may not matter
+      const log = await git.log({ maxCount : 1 }) // eslint-disable-line no-await-in-loop
+      const currentSHA = log.latest?.hash
+
+      if (currentSHA !== remoteProvider.commitSHA) {
+        return false // Commit changed
+      }
+    }
+    catch {
+      return false // Git error or repo inaccessible
     }
   }
 
-  return {
-    scannedAt : new Date().toISOString(),
-    packageJsonMTime,
-    packageLockMTime,
-    providers,
-  }
-}
-
-/**
- * Loads providers with caching
- * @param {string} cacheFilePath - Path to cache file
- * @param {Function} scanFunction - Function to call if cache is invalid: () => Promise<IntegrationProvider[]>
- * @param {string} [baseDir=process.cwd()] - Base directory
- * @returns {Promise<IntegrationProvider[]>} Providers array
- */
-export async function loadProvidersWithCache(
-  cacheFilePath,
-  scanFunction,
-  baseDir = process.cwd()
-) {
-  const cache = await readCache(cacheFilePath, baseDir)
-
-  if (await isCacheValid(cache, baseDir)) {
-    return cache.providers
-  }
-
-  // Cache invalid or missing, perform scan
-  const providers = await scanFunction()
-
-  // Write new cache
-  const cacheData = await createCacheData(providers, baseDir)
-  await writeCache(cacheFilePath, cacheData, baseDir)
-
-  return providers
+  return true
 }
