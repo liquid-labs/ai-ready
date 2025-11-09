@@ -12,7 +12,17 @@
     "prepack": "make",
     "qa": "make qa"
   },
-  "keywords": [],
+  "bin": {
+    "air": "dist/ai-ready-exec.js"
+  },
+  "keywords": [
+    "ai-ready",
+    "air",
+    "ai-integration",
+    "claude",
+    "claude-skill",
+    "ai"
+  ],
   "author": "Zane Rockenbaugh <zane@liquid-labs.com>",
   "license": "Apache-2.0",
   "type": "commonjs",
@@ -22,9 +32,12 @@
   },
   "homepage": "https://github.com/liquid-labs/ai-ready#readme",
   "dependencies": {
+    "@folder/xdg": "^4.0.1",
+    "check-disk-space": "^3.4.0",
     "commander": "^14.0.2",
     "gray-matter": "^4.0.3",
     "js-yaml": "^4.1.0",
+    "simple-git": "^3.30.0",
     "string-input": "^1.0.0-alpha.13"
   },
   "devDependencies": {

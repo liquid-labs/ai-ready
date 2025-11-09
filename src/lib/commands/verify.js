@@ -10,7 +10,7 @@ import { INTEGRATION_TYPES } from '../core/types.js'
  * @param {string} [options.path] - Path to verify (defaults to current directory)
  * @returns {Promise<void>} Exits with code 1 on verification failure
  */
-export async function cmdVerify(options) { // eslint-disable-line max-lines-per-function
+export async function cmdVerify(options) {
   const baseDir = options.path || process.cwd()
   const integrationsPath = path.join(baseDir, 'ai-ready', 'integrations')
 
@@ -18,32 +18,16 @@ export async function cmdVerify(options) { // eslint-disable-line max-lines-per-
   console.log()
 
   try {
-    // Check if ai-ready/integrations directory exists
-    try {
-      const stat = await fs.stat(integrationsPath)
-      if (!stat.isDirectory()) {
-        console.error('✗ ai-ready/integrations exists but is not a directory')
-        process.exit(1) // eslint-disable-line no-process-exit
-      }
-    }
-    catch (error) {
-      if (error.code === 'ENOENT') {
-        console.error('✗ No ai-ready/integrations directory found')
-        console.log()
-        console.log('Expected structure:')
-        console.log('  ai-ready/integrations/<IntegrationName>/AI_INTEGRATION.md')
-        console.log('  ai-ready/integrations/<IntegrationName>/claude-skill/SKILL.md')
-        process.exit(1) // eslint-disable-line no-process-exit
-      }
-      throw error
-    }
+    await checkAiIntegrationDirectory(integrationsPath)
 
     // Scan integrations directory
     const entries = await fs.readdir(integrationsPath, { withFileTypes : true })
     const integrationDirs = entries.filter((entry) => entry.isDirectory())
 
     if (integrationDirs.length === 0) {
-      console.error('✗ No integration directories found in ai-ready/integrations/')
+      console.error(
+        '✗ No integration directories found in ai-ready/integrations/'
+      )
       process.exit(1) // eslint-disable-line no-process-exit
     }
 
@@ -115,11 +99,20 @@ async function verifyIntegration(integrationsPath, integrationName) {
       errors.push('AI_INTEGRATION.md: "summary" cannot be empty')
     }
     else if (!data.summary || typeof data.summary !== 'string') {
-      errors.push('AI_INTEGRATION.md: Missing or invalid "summary" in frontmatter')
+      errors.push(
+        'AI_INTEGRATION.md: Missing or invalid "summary" in frontmatter'
+      )
     }
 
     // If both fields are valid, mark as valid and store metadata
-    if (data.name && data.summary && typeof data.name === 'string' && typeof data.summary === 'string' && data.name.trim().length > 0 && data.summary.trim().length > 0) {
+    if (
+      data.name
+      && data.summary
+      && typeof data.name === 'string'
+      && typeof data.summary === 'string'
+      && data.name.trim().length > 0
+      && data.summary.trim().length > 0
+    ) {
       types.push(INTEGRATION_TYPES.GENERIC)
       genericMetadata = {
         name    : String(data.name),
@@ -154,7 +147,9 @@ async function verifyIntegration(integrationsPath, integrationName) {
       errors.push('claude-skill/SKILL.md: "name" cannot be empty')
     }
     else if (!data.name || typeof data.name !== 'string') {
-      errors.push('claude-skill/SKILL.md: Missing or invalid "name" in frontmatter')
+      errors.push(
+        'claude-skill/SKILL.md: Missing or invalid "name" in frontmatter'
+      )
     }
 
     // Validate summary field
@@ -162,11 +157,20 @@ async function verifyIntegration(integrationsPath, integrationName) {
       errors.push('claude-skill/SKILL.md: "summary" cannot be empty')
     }
     else if (!data.summary || typeof data.summary !== 'string') {
-      errors.push('claude-skill/SKILL.md: Missing or invalid "summary" in frontmatter')
+      errors.push(
+        'claude-skill/SKILL.md: Missing or invalid "summary" in frontmatter'
+      )
     }
 
     // If both fields are valid, mark as valid and store metadata
-    if (data.name && data.summary && typeof data.name === 'string' && typeof data.summary === 'string' && data.name.trim().length > 0 && data.summary.trim().length > 0) {
+    if (
+      data.name
+      && data.summary
+      && typeof data.name === 'string'
+      && typeof data.summary === 'string'
+      && data.name.trim().length > 0
+      && data.summary.trim().length > 0
+    ) {
       types.push(INTEGRATION_TYPES.CLAUDE_SKILL)
       skillMetadata = {
         name    : String(data.name),
@@ -195,13 +199,17 @@ async function verifyIntegration(integrationsPath, integrationName) {
   catch (error) {
     // File doesn't exist - this is okay, just means no skill integration
     if (error.code !== 'ENOENT') {
-      errors.push(`claude-skill/SKILL.md: Error reading file - ${error.message}`)
+      errors.push(
+        `claude-skill/SKILL.md: Error reading file - ${error.message}`
+      )
     }
   }
 
   // Must have at least one type
   if (types.length === 0) {
-    errors.push('No valid integration files found (AI_INTEGRATION.md or claude-skill/SKILL.md)')
+    errors.push(
+      'No valid integration files found (AI_INTEGRATION.md or claude-skill/SKILL.md)'
+    )
   }
 
   // Check naming consistency
@@ -209,7 +217,7 @@ async function verifyIntegration(integrationsPath, integrationName) {
     if (genericMetadata.name !== skillMetadata.name) {
       warnings.push(
         `Name mismatch: AI_INTEGRATION.md has "${genericMetadata.name}" `
-        + `but claude-skill/SKILL.md has "${skillMetadata.name}"`
+          + `but claude-skill/SKILL.md has "${skillMetadata.name}"`
       )
     }
   }
@@ -231,9 +239,10 @@ async function verifyIntegration(integrationsPath, integrationName) {
 function displayResults(results) {
   for (const result of results) {
     const status = result.errors.length === 0 ? '✔' : '✗'
-    const typesStr = result.types.length > 0
-      ? `(${result.types.map((t) => t === INTEGRATION_TYPES.CLAUDE_SKILL ? 'skill' : 'generic').join(', ')})`
-      : '(no types)'
+    const typesStr =
+      result.types.length > 0
+        ? `(${result.types.map((t) => (t === INTEGRATION_TYPES.CLAUDE_SKILL ? 'skill' : 'generic')).join(', ')})`
+        : '(no types)'
 
     console.log(`${status} ${result.name} ${typesStr}`)
 
@@ -259,5 +268,28 @@ function displayResults(results) {
     }
 
     console.log()
+  }
+}
+
+const checkAiIntegrationDirectory = async (integrationsPath) => {
+  try {
+    const stat = await fs.stat(integrationsPath)
+    if (!stat.isDirectory()) {
+      console.error('✗ ai-ready/integrations exists but is not a directory')
+      process.exit(1) // eslint-disable-line no-process-exit
+    }
+  }
+  catch (error) {
+    if (error.code === 'ENOENT') {
+      console.error('✗ No ai-ready/integrations directory found')
+      console.log()
+      console.log('Expected structure:')
+      console.log('  ai-ready/integrations/<IntegrationName>/AI_INTEGRATION.md')
+      console.log(
+        '  ai-ready/integrations/<IntegrationName>/claude-skill/SKILL.md'
+      )
+      process.exit(1) // eslint-disable-line no-process-exit
+    }
+    throw error
   }
 }

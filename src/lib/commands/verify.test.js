@@ -94,8 +94,12 @@ describe('verify command', () => {
       )
       expect(processExitSpy).toHaveBeenCalledWith(1)
 
-      const output = consoleLogSpy.mock.calls.map((call) => call.join(' ')).join('\n')
-      expect(output).toContain('ERROR: AI_INTEGRATION.md: Missing or invalid "name"')
+      const output = consoleLogSpy.mock.calls
+        .map((call) => call.join(' '))
+        .join('\n')
+      expect(output).toContain(
+        'ERROR: AI_INTEGRATION.md: Missing or invalid "name"'
+      )
     })
 
     it('should fail if generic integration missing summary', async () => {
@@ -111,8 +115,12 @@ describe('verify command', () => {
         '✗ Verification failed with errors'
       )
 
-      const output = consoleLogSpy.mock.calls.map((call) => call.join(' ')).join('\n')
-      expect(output).toContain('ERROR: AI_INTEGRATION.md: Missing or invalid "summary"')
+      const output = consoleLogSpy.mock.calls
+        .map((call) => call.join(' '))
+        .join('\n')
+      expect(output).toContain(
+        'ERROR: AI_INTEGRATION.md: Missing or invalid "summary"'
+      )
     })
 
     it('should fail if generic integration has empty name', async () => {
@@ -125,12 +133,21 @@ describe('verify command', () => {
 
       await cmdVerify({ path : tempDir })
 
-      const output = consoleLogSpy.mock.calls.map((call) => call.join(' ')).join('\n')
-      expect(output).toContain('ERROR: AI_INTEGRATION.md: Missing or invalid "name"')
+      const output = consoleLogSpy.mock.calls
+        .map((call) => call.join(' '))
+        .join('\n')
+      expect(output).toContain(
+        'ERROR: AI_INTEGRATION.md: Missing or invalid "name"'
+      )
     })
 
     it('should warn if generic integration has no content', async () => {
-      const integrationPath = path.join(tempDir, 'ai-ready', 'integrations', 'NoContent')
+      const integrationPath = path.join(
+        tempDir,
+        'ai-ready',
+        'integrations',
+        'NoContent'
+      )
       await fs.mkdir(integrationPath, { recursive : true })
 
       await fs.writeFile(
@@ -141,8 +158,12 @@ describe('verify command', () => {
 
       await cmdVerify({ path : tempDir })
 
-      const output = consoleLogSpy.mock.calls.map((call) => call.join(' ')).join('\n')
-      expect(output).toContain('WARNING: AI_INTEGRATION.md: No content after frontmatter')
+      const output = consoleLogSpy.mock.calls
+        .map((call) => call.join(' '))
+        .join('\n')
+      expect(output).toContain(
+        'WARNING: AI_INTEGRATION.md: No content after frontmatter'
+      )
     })
   })
 
@@ -171,8 +192,12 @@ describe('verify command', () => {
 
       await cmdVerify({ path : tempDir })
 
-      const output = consoleLogSpy.mock.calls.map((call) => call.join(' ')).join('\n')
-      expect(output).toContain('ERROR: claude-skill/SKILL.md: Missing or invalid "name"')
+      const output = consoleLogSpy.mock.calls
+        .map((call) => call.join(' '))
+        .join('\n')
+      expect(output).toContain(
+        'ERROR: claude-skill/SKILL.md: Missing or invalid "name"'
+      )
     })
 
     it('should fail if skill missing summary', async () => {
@@ -184,12 +209,21 @@ describe('verify command', () => {
 
       await cmdVerify({ path : tempDir })
 
-      const output = consoleLogSpy.mock.calls.map((call) => call.join(' ')).join('\n')
-      expect(output).toContain('ERROR: claude-skill/SKILL.md: Missing or invalid "summary"')
+      const output = consoleLogSpy.mock.calls
+        .map((call) => call.join(' '))
+        .join('\n')
+      expect(output).toContain(
+        'ERROR: claude-skill/SKILL.md: Missing or invalid "summary"'
+      )
     })
 
     it('should warn if skill has no content', async () => {
-      const integrationPath = path.join(tempDir, 'ai-ready', 'integrations', 'NoContent')
+      const integrationPath = path.join(
+        tempDir,
+        'ai-ready',
+        'integrations',
+        'NoContent'
+      )
       const skillPath = path.join(integrationPath, 'claude-skill')
       await fs.mkdir(skillPath, { recursive : true })
 
@@ -201,8 +235,12 @@ describe('verify command', () => {
 
       await cmdVerify({ path : tempDir })
 
-      const output = consoleLogSpy.mock.calls.map((call) => call.join(' ')).join('\n')
-      expect(output).toContain('WARNING: claude-skill/SKILL.md: No content after frontmatter')
+      const output = consoleLogSpy.mock.calls
+        .map((call) => call.join(' '))
+        .join('\n')
+      expect(output).toContain(
+        'WARNING: claude-skill/SKILL.md: No content after frontmatter'
+      )
     })
   })
 
@@ -225,7 +263,9 @@ describe('verify command', () => {
         '✔ All integrations verified successfully'
       )
 
-      const output = consoleLogSpy.mock.calls.map((call) => call.join(' ')).join('\n')
+      const output = consoleLogSpy.mock.calls
+        .map((call) => call.join(' '))
+        .join('\n')
       expect(output).toContain('(generic, skill)')
     })
 
@@ -243,7 +283,9 @@ describe('verify command', () => {
 
       await cmdVerify({ path : tempDir })
 
-      const output = consoleLogSpy.mock.calls.map((call) => call.join(' ')).join('\n')
+      const output = consoleLogSpy.mock.calls
+        .map((call) => call.join(' '))
+        .join('\n')
       expect(output).toContain(
         'WARNING: Name mismatch: AI_INTEGRATION.md has "GenericName" but claude-skill/SKILL.md has "SkillName"'
       )
@@ -252,12 +294,19 @@ describe('verify command', () => {
 
   describe('integration without valid files', () => {
     it('should fail if integration has no valid metadata files', async () => {
-      const integrationPath = path.join(tempDir, 'ai-ready', 'integrations', 'Empty')
+      const integrationPath = path.join(
+        tempDir,
+        'ai-ready',
+        'integrations',
+        'Empty'
+      )
       await fs.mkdir(integrationPath, { recursive : true })
 
       await cmdVerify({ path : tempDir })
 
-      const output = consoleLogSpy.mock.calls.map((call) => call.join(' ')).join('\n')
+      const output = consoleLogSpy.mock.calls
+        .map((call) => call.join(' '))
+        .join('\n')
       expect(output).toContain('ERROR: No valid integration files found')
     })
   })
@@ -284,7 +333,9 @@ describe('verify command', () => {
         '✔ All integrations verified successfully'
       )
 
-      const output = consoleLogSpy.mock.calls.map((call) => call.join(' ')).join('\n')
+      const output = consoleLogSpy.mock.calls
+        .map((call) => call.join(' '))
+        .join('\n')
       expect(output).toContain('Found 2 integration(s) to verify')
       expect(output).toContain('✔ Integration1')
       expect(output).toContain('✔ Integration2')
@@ -306,11 +357,15 @@ describe('verify command', () => {
 
       await cmdVerify({ path : tempDir })
 
-      const output = consoleLogSpy.mock.calls.map((call) => call.join(' ')).join('\n')
+      const output = consoleLogSpy.mock.calls
+        .map((call) => call.join(' '))
+        .join('\n')
       expect(output).toContain('✔ Good')
       expect(output).toContain('✗ Bad')
       expect(output).toContain('ERROR:')
-      expect(consoleErrorSpy).toHaveBeenCalledWith('✗ Verification failed with errors')
+      expect(consoleErrorSpy).toHaveBeenCalledWith(
+        '✗ Verification failed with errors'
+      )
     })
   })
 
@@ -325,7 +380,9 @@ describe('verify command', () => {
 
       await cmdVerify({ path : tempDir })
 
-      const output = consoleLogSpy.mock.calls.map((call) => call.join(' ')).join('\n')
+      const output = consoleLogSpy.mock.calls
+        .map((call) => call.join(' '))
+        .join('\n')
       expect(output).toContain('✔ TestIntegration (generic)')
     })
 
@@ -339,7 +396,9 @@ describe('verify command', () => {
 
       await cmdVerify({ path : tempDir })
 
-      const output = consoleLogSpy.mock.calls.map((call) => call.join(' ')).join('\n')
+      const output = consoleLogSpy.mock.calls
+        .map((call) => call.join(' '))
+        .join('\n')
       expect(output).toContain('Name: generic: "MyGenericName"')
     })
   })

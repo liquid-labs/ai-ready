@@ -22,6 +22,7 @@ Provide, discover and manage AI integrations in npm packages.
   - [`air install`](#air-install)
   - [`air remove`](#air-remove)
   - [`air verify`](#air-verify)
+- [Remote Skill Repositories](#remote-skill-repositories)
 - [Key Concepts](#key-concepts)
 - [Examples](#examples)
 - [Configuration](#configuration)
@@ -34,12 +35,12 @@ Provide, discover and manage AI integrations in npm packages.
 
 ### What is ai-ready?
 
-`ai-ready` is a command-line interface that scans your `node_modules` directory to discover AI integrations provided by installed packages. It allows you to:
+`ai-ready` is a command-line interface that scans your `node_modules` directory and remote Git repositories to discover AI integrations. It allows you to:
 
-- **Discover** what AI integrations are available in your dependencies
+- **Discover** what AI integrations are available in your npm dependencies and remote repositories
 - **View** detailed information about libraries and their integrations
 - **Install** integrations to make them available to AI assistants
-- **Manage** installed integrations by removing those you no longer need
+- **Manage** installed integrations and remote skill repositories
 
 ### What problem does it solve?
 
@@ -385,6 +386,101 @@ Found 1 integration(s) to verify:
 **Use Case:**
 
 This command is primarily for **library authors** who want to validate their AI integrations before publishing. It ensures that integration metadata is correctly formatted and complete.
+
+---
+
+## Remote Skill Repositories
+
+In addition to discovering integrations from your npm packages, `ai-ready` can manage remote Git repositories containing skills. This allows you to add skill collections from any Git repository.
+
+### Managing Remote Repositories
+
+#### List Configured Repositories
+
+```bash
+air sources list
+```
+
+Shows all configured remote repositories with their clone status.
+
+#### Add a Repository
+
+```bash
+air sources add <git-url>
+```
+
+Adds a remote repository and clones it locally. The tool will display a security warning before proceeding, as remote skills have access to your AI agent.
+
+**Example:**
+
+```bash
+air sources add https://github.com/user/my-skills-repo
+```
+
+**Options:**
+- `--no-clone`: Add the repository to configuration without cloning immediately
+
+#### Update Repositories
+
+```bash
+air sources update [repo-id]
+```
+
+Updates all repositories (or a specific one) by pulling the latest changes. If a repository hasn't been cloned yet, it will be cloned.
+
+**Examples:**
+
+```bash
+# Update all repositories
+air sources update
+
+# Update a specific repository
+air sources update my-skills-repo
+```
+
+#### Remove a Repository
+
+```bash
+air sources remove <identifier>
+```
+
+Removes a repository from configuration. You can identify the repository by ID, name, or URL.
+
+**Options:**
+- `--keep-files`: Remove from configuration but keep the local cloned files
+
+**Example:**
+
+```bash
+air sources remove my-skills-repo
+```
+
+#### Repair a Repository
+
+```bash
+air sources repair <identifier>
+```
+
+Deletes and re-clones a repository. Useful if the local clone becomes corrupted.
+
+### Security Considerations
+
+**⚠️ WARNING:** Remote repositories can contain code that will be executed by your AI agent. Only add repositories from sources you trust.
+
+When you add a repository, `ai-ready` displays a security warning explaining that skills can:
+- Read and modify files in your projects
+- Execute commands on your system
+- Access environment variables and secrets
+
+Always review the contents of a repository before adding it.
+
+### How It Works
+
+1. **Configuration**: Remote repositories are stored in your XDG config directory (`~/.config/ai-ready/config.json` on Linux/macOS)
+2. **Storage**: Cloned repositories are stored in your XDG data directory (`~/.local/share/ai-ready/` on Linux/macOS)
+3. **Discovery**: Skills from remote repositories are discovered alongside npm package integrations
+4. **Installation**: Skills are symlinked to `.claude/skills/` just like npm-based skills
+5. **Caching**: Remote repository commit SHAs are tracked in the cache for efficient invalidation
 
 ---
 
