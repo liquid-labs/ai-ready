@@ -1,16 +1,19 @@
 import { cmdRemove } from './remove'
 import * as cache from '../core/cache'
 import * as registry from '../core/registry'
+import * as pluginRegistry from '../core/plugin-registry'
 import { INTEGRATION_TYPES } from '../core/types'
 
 jest.mock('../core/scanner')
 jest.mock('../core/cache')
 jest.mock('../core/registry')
+jest.mock('../core/plugin-registry')
 
 describe('remove command', () => {
   let consoleLogSpy
   let consoleErrorSpy
   let processExitSpy
+  let mockRegistryInstance
 
   const mockProviders = [
     {
@@ -54,13 +57,21 @@ describe('remove command', () => {
     consoleErrorSpy = jest.spyOn(console, 'error').mockImplementation()
     processExitSpy = jest.spyOn(process, 'exit').mockImplementation()
 
+    // Create mock registry instance
+    mockRegistryInstance = {
+      removePlugin      : jest.fn().mockResolvedValue(undefined),
+      isPluginInstalled : jest.fn().mockResolvedValue(false),
+    }
+
+    // Mock getDefaultRegistry to return our mock instance
+    pluginRegistry.getDefaultRegistry = jest.fn().mockReturnValue(mockRegistryInstance)
+
     cache.loadProvidersWithCache.mockResolvedValue({
       npmProviders    : mockProviders,
       remoteProviders : [],
     })
     registry.loadInstallationStatus.mockResolvedValue(mockProviders)
     registry.createBackup.mockResolvedValue(undefined)
-    registry.removeClaudeSkillSymlink.mockResolvedValue(undefined)
     registry.readGenericRegistry.mockResolvedValue([
       { library : 'test-lib', integration : 'GenericInstalled' },
       { library : 'test-lib', integration : 'BothInstalled' },
@@ -117,8 +128,8 @@ describe('remove command', () => {
     it('should remove Claude Skill type', async () => {
       await cmdRemove('test-lib/SkillInstalled', {})
 
-      expect(registry.removeClaudeSkillSymlink).toHaveBeenCalledWith(
-        '.claude/skills',
+      expect(mockRegistryInstance.removePlugin).toHaveBeenCalledWith(
+        'test-lib',
         'SkillInstalled'
       )
       expect(consoleLogSpy).toHaveBeenCalledWith('✔ Claude Skill removed')
@@ -127,7 +138,7 @@ describe('remove command', () => {
     it('should remove Claude Skill with --skill flag', async () => {
       await cmdRemove('test-lib/BothInstalled', { skill : true })
 
-      expect(registry.removeClaudeSkillSymlink).toHaveBeenCalled()
+      expect(mockRegistryInstance.removePlugin).toHaveBeenCalled()
       expect(registry.writeGenericRegistry).not.toHaveBeenCalled()
       expect(consoleLogSpy).toHaveBeenCalledWith('✔ Claude Skill removed')
     })
@@ -159,7 +170,7 @@ describe('remove command', () => {
       await cmdRemove('test-lib/BothInstalled', { generic : true })
 
       expect(registry.writeGenericRegistry).toHaveBeenCalled()
-      expect(registry.removeClaudeSkillSymlink).not.toHaveBeenCalled()
+      expect(mockRegistryInstance.removePlugin).not.toHaveBeenCalled()
       expect(consoleLogSpy).toHaveBeenCalledWith(
         '✔ Generic integration removed'
       )
@@ -177,7 +188,7 @@ describe('remove command', () => {
     it('should remove all types when no flags specified', async () => {
       await cmdRemove('test-lib/BothInstalled', {})
 
-      expect(registry.removeClaudeSkillSymlink).toHaveBeenCalled()
+      expect(mockRegistryInstance.removePlugin).toHaveBeenCalled()
       expect(registry.writeGenericRegistry).toHaveBeenCalled()
       expect(consoleLogSpy).toHaveBeenCalledWith('✔ Claude Skill removed')
       expect(consoleLogSpy).toHaveBeenCalledWith(
@@ -188,7 +199,7 @@ describe('remove command', () => {
     it('should remove all types when both flags specified', async () => {
       await cmdRemove('test-lib/BothInstalled', { skill : true, generic : true })
 
-      expect(registry.removeClaudeSkillSymlink).toHaveBeenCalled()
+      expect(mockRegistryInstance.removePlugin).toHaveBeenCalled()
       expect(registry.writeGenericRegistry).toHaveBeenCalled()
     })
   })
@@ -240,15 +251,15 @@ describe('remove command', () => {
       expect(processExitSpy).toHaveBeenCalledWith(1)
     })
 
-    it('should handle symlink removal errors', async () => {
-      registry.removeClaudeSkillSymlink.mockRejectedValue(
-        new Error('Symlink error')
+    it('should handle plugin removal errors', async () => {
+      mockRegistryInstance.removePlugin.mockRejectedValue(
+        new Error('Plugin error')
       )
 
       await cmdRemove('test-lib/SkillInstalled', {})
 
       expect(consoleErrorSpy).toHaveBeenCalledWith(
-        'Error removing integration: Symlink error'
+        'Error removing integration: Plugin error'
       )
       expect(processExitSpy).toHaveBeenCalledWith(1)
     })

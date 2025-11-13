@@ -3,22 +3,24 @@ import path from 'path'
 import os from 'os'
 
 import {
-  isClaudeSkillInstalled,
-  installClaudeSkillSymlink,
-  removeClaudeSkillSymlink,
   readGenericRegistry,
   writeGenericRegistry,
   loadInstallationStatus,
   createBackup
 } from './registry'
+import { ClaudePluginRegistry } from './plugin-registry'
 import { mkTable, makeProvider } from './test-lib'
 import { INTEGRATION_TYPES } from './types'
 
 describe('registry', () => {
   let tempDir
+  let testRegistry
 
   beforeEach(async () => {
     tempDir = await fs.mkdtemp(path.join(os.tmpdir(), 'air-registry-test-'))
+
+    // Create a test-specific plugin registry using factory method
+    testRegistry = ClaudePluginRegistry.createForTest(tempDir)
   })
 
   afterEach(async () => {
@@ -45,23 +47,30 @@ describe('registry', () => {
     fileName = 'AGENTS.md'
   ) => {
     if (claudeSkills?.length > 0) {
-      // Create .claude/skills directory and symlinks
-      const skillsDir = path.join(tempDir, '.claude', 'skills')
-      await fs.mkdir(skillsDir, { recursive : true })
-
+      // Install skills via test plugin registry
       for (const skill of normalizeEntries(claudeSkills)) {
-        // Create fake source directory
-        const sourcePath = path.join(tempDir, 'fake-source', skill.integration)
-        await fs.mkdir(sourcePath, { recursive : true }) // eslint-disable-line no-await-in-loop
-
-        // Convert integration name to kebab-case for symlink
-        const skillName = skill.integration
+        // Create fake library directory structure
+        const libraryPath = path.join(tempDir, 'node_modules', skill.library)
+        const integrationDirName = skill.integration
           .replace(/([a-z])([A-Z])/g, '$1-$2')
           .replace(/[\s_]+/g, '-')
           .toLowerCase()
+        const skillPath = path.join(
+          libraryPath,
+          'ai-ready',
+          'integrations',
+          integrationDirName,
+          'claude-skill'
+        )
+        await fs.mkdir(skillPath, { recursive : true }) // eslint-disable-line no-await-in-loop
 
-        // Create symlink
-        await fs.symlink(sourcePath, path.join(skillsDir, skillName), 'dir') // eslint-disable-line no-await-in-loop
+        // Install via test plugin registry
+        await testRegistry.installPlugin( // eslint-disable-line no-await-in-loop
+          skill.library,
+          skill.integration,
+          libraryPath,
+          '1.0.0'
+        )
       }
     }
     if (genericEntries?.length > 0) {
@@ -80,62 +89,52 @@ describe('registry', () => {
     }
   }
 
-  describe('Claude Skill symlinks', () => {
-    it('should check if skill is installed (symlink exists)', async () => {
+  describe('Claude Skill plugins', () => {
+    it('should check if skill is installed (plugin exists)', async () => {
       await setupRegistries([
         { library : 'lib', integration : 'TestIntegration' },
       ])
 
-      const isInstalled = await isClaudeSkillInstalled(
-        '.claude/skills',
-        'TestIntegration',
-        tempDir
-      )
+      const isInstalled = await testRegistry.isPluginInstalled('lib', 'TestIntegration')
 
       expect(isInstalled).toBe(true)
     })
 
     it('should return false when skill is not installed', async () => {
-      const isInstalled = await isClaudeSkillInstalled(
-        '.claude/skills',
-        'NonExistent',
-        tempDir
-      )
+      const isInstalled = await testRegistry.isPluginInstalled('lib', 'NonExistent')
 
       expect(isInstalled).toBe(false)
     })
 
-    it('should install skill by creating symlink', async () => {
-      const sourcePath = path.join(tempDir, 'source-skill')
-      await fs.mkdir(sourcePath, { recursive : true })
-
-      await installClaudeSkillSymlink(
-        '.claude/skills',
-        'TestSkill',
-        sourcePath,
-        tempDir
+    it('should install skill via plugin registry', async () => {
+      const libraryPath = path.join(tempDir, 'node_modules', 'test-lib')
+      const skillPath = path.join(
+        libraryPath,
+        'ai-ready',
+        'integrations',
+        'test-skill',
+        'claude-skill'
       )
+      await fs.mkdir(skillPath, { recursive : true })
 
-      const symlinkPath = path.join(tempDir, '.claude/skills/test-skill')
-      const stats = await fs.lstat(symlinkPath)
-      expect(stats.isSymbolicLink()).toBe(true)
+      await testRegistry.installPlugin('test-lib', 'TestSkill', libraryPath, '1.0.0')
 
-      const targetPath = await fs.readlink(symlinkPath)
-      expect(targetPath).toBe(sourcePath)
+      const isInstalled = await testRegistry.isPluginInstalled('test-lib', 'TestSkill')
+      expect(isInstalled).toBe(true)
     })
 
-    it('should remove skill by deleting symlink', async () => {
+    it('should remove skill from plugin registry', async () => {
       await setupRegistries([{ library : 'lib', integration : 'ToRemove' }])
 
-      await removeClaudeSkillSymlink('.claude/skills', 'ToRemove', tempDir)
+      await testRegistry.removePlugin('lib', 'ToRemove')
 
-      const symlinkPath = path.join(tempDir, '.claude/skills/to-remove')
-      await expect(fs.access(symlinkPath)).rejects.toThrow()
+      const isInstalled = await testRegistry.isPluginInstalled('lib', 'ToRemove')
+      expect(isInstalled).toBe(false)
     })
 
     it('should not throw when removing non-existent skill', async () => {
       await expect(
-        removeClaudeSkillSymlink('.claude/skills', 'NonExistent', tempDir)
+        testRegistry.removePlugin('lib', 'NonExistent')
       ).resolves.not.toThrow()
     })
   })
@@ -240,7 +239,8 @@ describe('registry', () => {
         providers,
         '.claude/skills',
         ['AGENTS.md'],
-        tempDir
+        tempDir,
+        testRegistry
       )
 
       expect(updated[0].integrations[0].installedTypes).toEqual([
@@ -271,7 +271,8 @@ describe('registry', () => {
         providers,
         '.claude/skills',
         ['AGENTS.md'],
-        tempDir
+        tempDir,
+        testRegistry
       )
 
       expect(updated[0].integrations[0].installedTypes).toEqual([
@@ -291,7 +292,8 @@ describe('registry', () => {
         providers,
         '.claude/skills',
         ['AGENTS.md'],
-        tempDir
+        tempDir,
+        testRegistry
       )
 
       expect(updated[0].integrations[0].installedTypes).toEqual([])

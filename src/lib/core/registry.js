@@ -4,98 +4,8 @@ import { INTEGRATION_TYPES } from './types'
 
 /**
  * @import { IntegrationProvider } from './types.js'
+ * @import { ClaudePluginRegistry } from './plugin-registry.js'
  */
-
-/**
- * Converts integration name to kebab-case for use in symlink names
- * @param {string} name - Integration name
- * @returns {string} Kebab-case name
- */
-function toKebabCase(name) {
-  return name
-    .replace(/([a-z])([A-Z])/g, '$1-$2')
-    .replace(/[\s_]+/g, '-')
-    .toLowerCase()
-}
-
-/**
- * Checks if a Claude Skill is installed (symlink exists)
- * @param {string} claudeSkillsDir - Path to .claude/skills directory
- * @param {string} integrationName - Integration name
- * @param {string} [baseDir=process.cwd()] - Base directory
- * @returns {Promise<boolean>} True if symlink exists
- */
-export async function isClaudeSkillInstalled(
-  claudeSkillsDir,
-  integrationName,
-  baseDir = process.cwd()
-) {
-  const skillName = toKebabCase(integrationName)
-  const symlinkPath = path.resolve(baseDir, claudeSkillsDir, skillName)
-
-  try {
-    await fs.lstat(symlinkPath)
-
-    return true
-  }
-  catch (error) {
-    if (error.code === 'ENOENT') {
-      return false
-    }
-    throw error
-  }
-}
-
-/**
- * Installs a Claude Skill by creating a symlink
- * @param {string} claudeSkillsDir - Path to .claude/skills directory
- * @param {string} integrationName - Integration name
- * @param {string} sourcePath - Path to claude-skill directory in library
- * @param {string} [baseDir=process.cwd()] - Base directory
- * @returns {Promise<void>}
- */
-export async function installClaudeSkillSymlink(
-  claudeSkillsDir,
-  integrationName,
-  sourcePath,
-  baseDir = process.cwd()
-) {
-  const skillName = toKebabCase(integrationName)
-  const skillsDirPath = path.resolve(baseDir, claudeSkillsDir)
-  const symlinkPath = path.join(skillsDirPath, skillName)
-
-  // Ensure .claude/skills directory exists
-  await fs.mkdir(skillsDirPath, { recursive : true })
-
-  // Create symlink
-  await fs.symlink(sourcePath, symlinkPath, 'dir')
-}
-
-/**
- * Removes a Claude Skill by deleting its symlink
- * @param {string} claudeSkillsDir - Path to .claude/skills directory
- * @param {string} integrationName - Integration name
- * @param {string} [baseDir=process.cwd()] - Base directory
- * @returns {Promise<void>}
- */
-export async function removeClaudeSkillSymlink(
-  claudeSkillsDir,
-  integrationName,
-  baseDir = process.cwd()
-) {
-  const skillName = toKebabCase(integrationName)
-  const symlinkPath = path.resolve(baseDir, claudeSkillsDir, skillName)
-
-  try {
-    await fs.unlink(symlinkPath)
-  }
-  catch (error) {
-    if (error.code !== 'ENOENT') {
-      throw error
-    }
-    // Symlink doesn't exist, nothing to remove
-  }
-}
 
 /**
  * Reads generic integration entries from markdown table files
@@ -238,16 +148,18 @@ export async function writeGenericRegistry(
 /**
  * Loads installation status from registries and updates providers
  * @param {IntegrationProvider[]} providers - Providers to update
- * @param {string} claudeSkillsDir - Path to .claude/skills directory
+ * @param {string} claudeSkillsDir - Path to .claude/skills directory (unused, kept for backward compatibility)
  * @param {string[]} genericFilePaths - Paths to generic registry files
  * @param {string} [baseDir=process.cwd()] - Base directory
+ * @param {ClaudePluginRegistry} [pluginRegistry] - Plugin registry to use (optional, for testing)
  * @returns {Promise<IntegrationProvider[]>} Updated providers
  */
 export async function loadInstallationStatus(
   providers,
   claudeSkillsDir,
   genericFilePaths,
-  baseDir = process.cwd()
+  baseDir = process.cwd(),
+  pluginRegistry = null
 ) {
   const genericEntries = await readGenericRegistry(genericFilePaths, baseDir)
 
@@ -275,12 +187,11 @@ export async function loadInstallationStatus(
             installedTypes.push(INTEGRATION_TYPES.GENERIC)
           }
 
-          // Check Claude Skill installation (symlink exists)
-          if (integration.types.includes(INTEGRATION_TYPES.CLAUDE_SKILL)) {
-            const isInstalled = await isClaudeSkillInstalled(
-              claudeSkillsDir,
-              integration.name,
-              baseDir
+          // Check Claude Skill installation (via plugin registry)
+          if (integration.types.includes(INTEGRATION_TYPES.CLAUDE_SKILL) && pluginRegistry) {
+            const isInstalled = await pluginRegistry.isPluginInstalled(
+              provider.libraryName,
+              integration.name
             )
             if (isInstalled) {
               installedTypes.push(INTEGRATION_TYPES.CLAUDE_SKILL)

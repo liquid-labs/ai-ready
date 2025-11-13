@@ -5,10 +5,10 @@ import { loadProvidersWithCache } from '../core/cache.js'
 import {
   loadInstallationStatus,
   createBackup,
-  removeClaudeSkillSymlink,
   readGenericRegistry,
   writeGenericRegistry
 } from '../core/registry.js'
+import { getDefaultRegistry } from '../core/plugin-registry.js'
 import { DEFAULT_CONFIG, INTEGRATION_TYPES } from '../core/types.js'
 
 /* eslint-disable no-console, no-process-exit */
@@ -41,10 +41,13 @@ export async function cmdRemove(libraryIntegration, options) {
 
     const providers = [...npmProviders, ...remoteProviders]
 
+    const pluginRegistry = getDefaultRegistry()
     const providersWithStatus = await loadInstallationStatus(
       providers,
       DEFAULT_CONFIG.registryFiles.claudeSkillsDir,
-      DEFAULT_CONFIG.registryFiles.generic
+      DEFAULT_CONFIG.registryFiles.generic,
+      process.cwd(),
+      pluginRegistry
     )
 
     // Find integration
@@ -71,6 +74,11 @@ export async function cmdRemove(libraryIntegration, options) {
     )
 
     console.log('✔ Removal complete')
+
+    // Check if any Claude Skills were removed
+    if (typesToRemove.includes(INTEGRATION_TYPES.CLAUDE_SKILL)) {
+      console.log('\n⚠️  Please restart Claude Code for the skill changes to take effect.')
+    }
   }
   catch (error) {
     logErrAndExit(`Error removing integration: ${error.message}`)
@@ -118,7 +126,7 @@ function determineTypesToRemove(integration, options) {
  */
 async function removeType(libraryName, integrationName, type) {
   if (type === INTEGRATION_TYPES.CLAUDE_SKILL) {
-    await removeClaudeSkill(libraryName, integrationName)
+    await removeClaudeSkillIntegration(libraryName, integrationName)
     console.log('✔ Claude Skill removed')
   }
   else if (type === INTEGRATION_TYPES.GENERIC) {
@@ -128,16 +136,14 @@ async function removeType(libraryName, integrationName, type) {
 }
 
 /**
- * Removes a Claude Skill by deleting its symlink
- * @param {string} libraryName - Library name (unused, kept for signature compatibility)
+ * Removes a Claude Skill from plugin registry
+ * @param {string} libraryName - Library name
  * @param {string} integrationName - Integration name
  * @returns {Promise<void>}
  */
-async function removeClaudeSkill(libraryName, integrationName) {
-  const claudeSkillsDir = DEFAULT_CONFIG.registryFiles.claudeSkillsDir
-
-  // Remove symlink
-  await removeClaudeSkillSymlink(claudeSkillsDir, integrationName)
+async function removeClaudeSkillIntegration(libraryName, integrationName) {
+  const registry = getDefaultRegistry()
+  await registry.removePlugin(libraryName, integrationName)
 }
 
 /**

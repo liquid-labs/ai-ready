@@ -1,16 +1,19 @@
 import { cmdInstall } from './install'
 import * as cache from '../core/cache'
 import * as registry from '../core/registry'
+import * as pluginRegistry from '../core/plugin-registry'
 import { INTEGRATION_TYPES } from '../core/types'
 
 jest.mock('../core/scanner')
 jest.mock('../core/cache')
 jest.mock('../core/registry')
+jest.mock('../core/plugin-registry')
 
 describe('install command', () => {
   let consoleLogSpy
   let consoleErrorSpy
   let processExitSpy
+  let mockRegistryInstance
 
   const mockProviders = [
     {
@@ -51,13 +54,21 @@ describe('install command', () => {
     consoleErrorSpy = jest.spyOn(console, 'error').mockImplementation()
     processExitSpy = jest.spyOn(process, 'exit').mockImplementation()
 
+    // Create mock registry instance
+    mockRegistryInstance = {
+      installPlugin     : jest.fn().mockResolvedValue(undefined),
+      isPluginInstalled : jest.fn().mockResolvedValue(false),
+    }
+
+    // Mock getDefaultRegistry to return our mock instance
+    pluginRegistry.getDefaultRegistry = jest.fn().mockReturnValue(mockRegistryInstance)
+
     cache.loadProvidersWithCache.mockResolvedValue({
       npmProviders    : mockProviders,
       remoteProviders : [],
     })
     registry.loadInstallationStatus.mockResolvedValue(mockProviders)
     registry.createBackup.mockResolvedValue(undefined)
-    registry.installClaudeSkillSymlink.mockResolvedValue(undefined)
     registry.readGenericRegistry.mockResolvedValue([])
     registry.writeGenericRegistry.mockResolvedValue(undefined)
   })
@@ -111,12 +122,11 @@ describe('install command', () => {
     it('should install Claude Skill type', async () => {
       await cmdInstall('test-lib/SkillOnly', {})
 
-      expect(registry.installClaudeSkillSymlink).toHaveBeenCalledWith(
-        '.claude/skills',
+      expect(mockRegistryInstance.installPlugin).toHaveBeenCalledWith(
+        'test-lib',
         'SkillOnly',
-        expect.stringContaining(
-          '/ai-ready/integrations/skill-only/claude-skill'
-        )
+        '/path',
+        '1.0.0'
       )
       expect(consoleLogSpy).toHaveBeenCalledWith('✔ Claude Skill installed')
     })
@@ -124,7 +134,7 @@ describe('install command', () => {
     it('should install Claude Skill with --skill flag', async () => {
       await cmdInstall('test-lib/DualType', { skill : true })
 
-      expect(registry.installClaudeSkillSymlink).toHaveBeenCalled()
+      expect(mockRegistryInstance.installPlugin).toHaveBeenCalled()
       expect(registry.writeGenericRegistry).not.toHaveBeenCalled()
     })
 
@@ -133,7 +143,7 @@ describe('install command', () => {
 
       const output = consoleLogSpy.mock.calls.map((call) => call[0]).join('\n')
       expect(output).toContain('No types available to install')
-      expect(registry.installClaudeSkillSymlink).not.toHaveBeenCalled()
+      expect(mockRegistryInstance.installPlugin).not.toHaveBeenCalled()
     })
   })
 
@@ -161,7 +171,7 @@ describe('install command', () => {
       await cmdInstall('test-lib/DualType', { generic : true })
 
       expect(registry.writeGenericRegistry).toHaveBeenCalled()
-      expect(registry.installClaudeSkillSymlink).not.toHaveBeenCalled()
+      expect(mockRegistryInstance.installPlugin).not.toHaveBeenCalled()
     })
 
     it('should not install generic for skill-only integration', async () => {
@@ -177,7 +187,7 @@ describe('install command', () => {
     it('should install all types when no flags specified', async () => {
       await cmdInstall('test-lib/DualType', {})
 
-      expect(registry.installClaudeSkillSymlink).toHaveBeenCalled()
+      expect(mockRegistryInstance.installPlugin).toHaveBeenCalled()
       expect(registry.writeGenericRegistry).toHaveBeenCalled()
       expect(consoleLogSpy).toHaveBeenCalledWith('✔ Claude Skill installed')
       expect(consoleLogSpy).toHaveBeenCalledWith(
@@ -188,7 +198,7 @@ describe('install command', () => {
     it('should install all types when both flags specified', async () => {
       await cmdInstall('test-lib/DualType', { skill : true, generic : true })
 
-      expect(registry.installClaudeSkillSymlink).toHaveBeenCalled()
+      expect(mockRegistryInstance.installPlugin).toHaveBeenCalled()
       expect(registry.writeGenericRegistry).toHaveBeenCalled()
     })
   })
@@ -222,15 +232,15 @@ describe('install command', () => {
       expect(processExitSpy).toHaveBeenCalledWith(1)
     })
 
-    it('should handle symlink errors', async () => {
-      registry.installClaudeSkillSymlink.mockRejectedValue(
-        new Error('Symlink error')
+    it('should handle plugin installation errors', async () => {
+      mockRegistryInstance.installPlugin.mockRejectedValue(
+        new Error('Plugin error')
       )
 
       await cmdInstall('test-lib/SkillOnly', {})
 
       expect(consoleErrorSpy).toHaveBeenCalledWith(
-        'Error installing integration: Symlink error'
+        'Error installing integration: Plugin error'
       )
       expect(processExitSpy).toHaveBeenCalledWith(1)
     })
