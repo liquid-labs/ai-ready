@@ -43,7 +43,7 @@
   "devDependencies": {
     "@liquid-labs/sdlc-resource-babel-and-rollup": "^1.0.0-alpha.12",
     "@liquid-labs/sdlc-resource-jest": "^1.0.0-alpha.9",
-    "@sdlcforge/format-and-lint": "^1.0.0-alpha.28"
+    "@sdlcforge/format-and-lint": "^1.0.0-alpha.29"
   },
   "_comply": {
     "orgKey": "@liquid-labs"
