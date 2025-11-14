@@ -1,13 +1,13 @@
-import { logErrAndExit } from './ui-lib.js'
-import { findProviderAndIntegration } from './data-lib.js'
-import { scanAll } from '../core/scanner.js'
-import { loadProvidersWithCache } from '../storage/cache.js'
-import { loadInstallationStatus, createBackup, readGenericRegistry, writeGenericRegistry } from '../storage/registry.js'
-import { getDefaultRegistry } from '../storage/claude-plugin-registry.js'
-import { DEFAULT_CONFIG, INTEGRATION_TYPES } from '../core/types.js'
+import { logErrAndExit } from './ui-lib'
+import { findProviderAndIntegration } from './data-lib'
+import { scanAll } from '../scanner'
+import { loadProvidersWithCache } from '../storage/cache'
+import { loadInstallationStatus, createBackup, readGenericRegistry, writeGenericRegistry } from '../storage/registry'
+import { getDefaultRegistry } from '../storage/claude-plugin-registry'
+import { DEFAULT_CONFIG, INTEGRATION_TYPES } from '../types'
 
 /**
- * @import { Integration, IntegrationProvider } from './types.js'
+ * @import { Integration, IntegrationProvider } from '../types.js'
  */
 /* eslint-disable no-console */
 

@@ -1,4 +1,4 @@
-import { DEFAULT_CONFIG, INTEGRATION_TYPES, isValidIntegration, isValidProvider, isValidCache } from './types.js'
+import { DEFAULT_CONFIG, INTEGRATION_TYPES, isValidIntegration, isValidProvider, isValidCache } from './types'
 
 describe('types', () => {
   describe('DEFAULT_CONFIG', () => {

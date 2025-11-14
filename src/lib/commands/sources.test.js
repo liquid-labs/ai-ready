@@ -1,8 +1,8 @@
-import { addSource, removeSource, listSources, updateSources, repairSource } from './sources.js'
-import * as config from '../storage/config.js'
-import * as remoteRepos from '../storage/remote-repos.js'
-import * as cache from '../storage/cache.js'
-import { STANDARD_REPOS } from '../core/types.js'
+import { addSource, removeSource, listSources, updateSources, repairSource } from './sources'
+import * as config from '../storage/config'
+import * as remoteRepos from '../storage/remote-repos'
+import * as cache from '../storage/cache'
+import { STANDARD_REPOS } from '../types'
 
 // Mock modules
 jest.mock('../storage/config.js')

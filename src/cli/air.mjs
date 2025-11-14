@@ -1,10 +1,10 @@
 import { program } from 'commander'
-import { cmdList } from '../lib/commands/list.js'
-import { cmdInstall } from '../lib/commands/install.js'
-import { cmdRemove } from '../lib/commands/remove.js'
-import { cmdView } from '../lib/commands/view.js'
-import { cmdVerify } from '../lib/commands/verify.js'
-import { listSources, addSource, removeSource, updateSources, repairSource } from '../lib/commands/sources.js'
+import { cmdList } from '../lib/commands/list'
+import { cmdInstall } from '../lib/commands/install'
+import { cmdRemove } from '../lib/commands/remove'
+import { cmdView } from '../lib/commands/view'
+import { cmdVerify } from '../lib/commands/verify'
+import { listSources, addSource, removeSource, updateSources, repairSource } from '../lib/commands/sources'
 
 const run = () => {
   program.name('air').description('AIR (AI Ready) integration management CLI').version('0.1.0')

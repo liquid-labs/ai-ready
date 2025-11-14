@@ -1,4 +1,4 @@
-import { parseFrontmatter, parseFrontmatterFromString } from './frontmatter.js'
+import { parseFrontmatter, parseFrontmatterFromString } from './frontmatter'
 import fs from 'fs/promises'
 import path from 'path'
 import os from 'os'

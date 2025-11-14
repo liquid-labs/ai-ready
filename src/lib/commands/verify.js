@@ -1,6 +1,6 @@
 import fs from 'fs/promises'
 import path from 'path'
-import { INTEGRATION_TYPES } from '../core/types.js'
+import { INTEGRATION_TYPES } from '../types'
 
 /* eslint-disable no-console */
 

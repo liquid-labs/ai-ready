@@ -25,7 +25,7 @@ make all           # Build + generate documentation
 ### Running Single Tests
 ```bash
 # Tests run against transpiled code in test-staging/
-cd test-staging && npx jest lib/core/scanner.test.js
+cd test-staging && npx jest lib/scanner.test.js
 ```
 
 ### Important Build Details
@@ -43,12 +43,12 @@ cd test-staging && npx jest lib/core/scanner.test.js
 Scanner → Cache → Registry → Commands
 ```
 
-1. **Scanner** (`src/lib/core/scanner.js`)
+1. **Scanner** (`src/lib/scanner.js`)
    - Discovers integrations in `node_modules/*/ai-ready/integrations/`
    - Parses frontmatter from `AI_INTEGRATION.md` (generic) and `claude-skill/SKILL.md` (skills)
    - Returns `IntegrationProvider[]` with available types
 
-2. **Cache** (`src/lib/core/cache.js`)
+2. **Cache** (`src/lib/storage/cache.js`)
    - Stores scan results in `.aircache.json`
    - Validates cache against `package.json` and `package-lock.json` mtimes
    - Invalidates on dependency changes
@@ -83,7 +83,7 @@ Scanner → Cache → Registry → Commands
 
 ### Key Data Types
 
-From `src/lib/core/types.js`:
+From `src/lib/types.js`:
 
 ```javascript
 Integration {
@@ -111,8 +111,8 @@ CacheData {
 ### Module Organization
 
 **Directory Structure:**
+- `src/lib/` - Core modules (scanner, types, test helpers)
 - `src/lib/commands/` - CLI command implementations
-- `src/lib/core/` - Core business logic (scanner, types, test helpers)
 - `src/lib/storage/` - **Persistent state & file I/O operations** (cache, registry, config, repos)
 - `src/lib/parsers/` - Data format parsing utilities
 - `src/lib/utils/` - General utilities (git operations)
@@ -123,7 +123,7 @@ CLI (air.mjs)
   ↓
 Commands (commands/*.js)
   ↓
-Core (core/*.js) + Storage (storage/*.js)
+Core (scanner.js, types.js) + Storage (storage/*.js)
   ↓
 Parsers (parsers/*.js) + Utilities (utils/*.js)
 ```
@@ -137,7 +137,7 @@ Parsers (parsers/*.js) + Utilities (utils/*.js)
 ## Testing Patterns
 
 ### Test Helper
-Use `createTestLibrary()` from `src/lib/core/test-lib.js` to create fixture libraries:
+Use `createTestLibrary()` from `src/lib/test-lib.js` to create fixture libraries:
 
 ```javascript
 await createTestLibrary(tempDir, 'my-lib', [
@@ -165,7 +165,7 @@ it.each([
 
 ### JSDoc Type System
 - All modules use JSDoc (no TypeScript)
-- Import types: `@import { Integration } from './types.js'`
+- Import types: `@import { Integration } from './types'`
 - Inline types: `@param {string[]} scanPaths`
 - Return types: `@returns {Promise<IntegrationProvider[]>}`
 
@@ -254,13 +254,13 @@ try {
 
 ```javascript
 // Production: Use singleton via getDefaultRegistry()
-import { getDefaultRegistry } from './storage/claude-plugin-registry.js'
+import { getDefaultRegistry } from './storage/claude-plugin-registry'
 
 const registry = getDefaultRegistry()
 await registry.installPlugin('my-lib', 'MySkill', '/path/to/lib', '1.0.0')
 
 // Testing: Use factory method with test directory
-import { ClaudePluginRegistry } from './storage/claude-plugin-registry.js'
+import { ClaudePluginRegistry } from './storage/claude-plugin-registry'
 
 const testRegistry = ClaudePluginRegistry.createForTest(tempDir)
 await testRegistry.installPlugin('test-lib', 'TestSkill', '/path', '1.0.0')
@@ -305,9 +305,9 @@ Cache is invalidated when:
 - `src/lib/commands/verify.js` - Verify integration metadata
 
 ### Core Modules
-- `src/lib/core/scanner.js` - Discovery logic
-- `src/lib/core/types.js` - Type definitions and constants
-- `src/lib/core/test-lib.js` - Test fixture helper
+- `src/lib/scanner.js` - Discovery logic
+- `src/lib/types.js` - Type definitions and constants
+- `src/lib/test-lib.js` - Test fixture helper
 
 ### Storage (Persistent State & File I/O)
 - `src/lib/storage/cache.js` - Performance optimization cache

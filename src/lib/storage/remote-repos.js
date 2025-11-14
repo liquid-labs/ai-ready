@@ -1,6 +1,6 @@
 /**
  * Git repository management for remote skills.
- * @import { RemoteRepo } from '../core/types.js'
+ * @import { RemoteRepo } from '../types.js'
  */
 
 import fs from 'fs/promises'

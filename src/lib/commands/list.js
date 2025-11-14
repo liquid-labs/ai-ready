@@ -1,7 +1,7 @@
-import { scanAll } from '../core/scanner.js'
-import { loadProvidersWithCache } from '../storage/cache.js'
-import { loadInstallationStatus } from '../storage/registry.js'
-import { DEFAULT_CONFIG } from '../core/types.js'
+import { scanAll } from '../scanner'
+import { loadProvidersWithCache } from '../storage/cache'
+import { loadInstallationStatus } from '../storage/registry'
+import { DEFAULT_CONFIG } from '../types'
 
 /* eslint-disable no-console, no-process-exit */
 

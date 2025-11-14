@@ -1,9 +1,9 @@
 import fs from 'fs/promises'
 import path from 'path'
-import { INTEGRATION_TYPES } from '../core/types'
+import { INTEGRATION_TYPES } from '../types'
 
 /**
- * @import { IntegrationProvider } from '../core/types.js'
+ * @import { IntegrationProvider } from '../types.js'
  * @import { ClaudePluginRegistry } from './claude-plugin-registry.js'
  */
 

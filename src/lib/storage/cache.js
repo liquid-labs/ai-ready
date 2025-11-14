@@ -1,13 +1,13 @@
 import fs from 'fs/promises'
 import path from 'path'
 import simpleGit from 'simple-git'
-import { isValidCache } from '../core/types.js'
-import { SOURCE_TYPE } from '../core/types.js'
-import { loadConfig } from './config.js'
-import { getRepoPath, isRepoCloned } from './remote-repos.js'
+import { isValidCache } from '../types'
+import { SOURCE_TYPE } from '../types'
+import { loadConfig } from './config'
+import { getRepoPath, isRepoCloned } from './remote-repos'
 
 /**
- * @import { CacheData, IntegrationProvider, RemoteRepoProvider } from '../core/types.js'
+ * @import { CacheData, IntegrationProvider, RemoteRepoProvider } from '../types.js'
  */
 
 /**

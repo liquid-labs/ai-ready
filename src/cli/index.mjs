@@ -1,3 +1,3 @@
-import { run } from './air.mjs'
+import { run } from './air'
 
 run()

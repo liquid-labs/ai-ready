@@ -1,10 +1,10 @@
 import { cmdList } from './list'
 import * as cache from '../storage/cache'
 import * as registry from '../storage/registry'
-import { INTEGRATION_TYPES } from '../core/types'
+import { INTEGRATION_TYPES } from '../types'
 
 // Mock modules
-jest.mock('../core/scanner')
+jest.mock('../scanner')
 jest.mock('../storage/cache')
 jest.mock('../storage/registry')
 

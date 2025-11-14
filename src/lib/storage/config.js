@@ -1,13 +1,13 @@
 /**
  * Configuration management for remote repositories using XDG Base Directory specification.
- * @import { RemoteRepoConfig, RemoteRepo } from '../core/types.js'
+ * @import { RemoteRepoConfig, RemoteRepo } from '../types.js'
  */
 
 import fs from 'fs/promises'
 import path from 'path'
 import crypto from 'crypto'
 import xdg from '@folder/xdg'
-import { DEFAULT_REMOTE_CONFIG } from '../core/types.js'
+import { DEFAULT_REMOTE_CONFIG } from '../types'
 
 const xdgDirs = xdg()
 const CONFIG_DIR = xdgDirs.config

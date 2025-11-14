@@ -1,7 +1,7 @@
 import { logErrAndExit } from './ui-lib'
 
 /**
- * @import { IntegrationProvider, Integration } from '../core/types.js'
+ * @import { IntegrationProvider, Integration } from '../types.js'
  */
 
 /**

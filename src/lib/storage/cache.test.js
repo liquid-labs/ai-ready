@@ -1,4 +1,4 @@
-import { readCache, writeCache, isCacheValid, createCacheData, loadProvidersWithCache } from '../storage/cache.js'
+import { readCache, writeCache, isCacheValid, createCacheData, loadProvidersWithCache } from './cache'
 import fs from 'fs/promises'
 import path from 'path'
 import os from 'os'

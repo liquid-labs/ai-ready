@@ -1,9 +1,9 @@
-import { cmdView } from './view.js'
-import * as cache from '../storage/cache.js'
-import * as registry from '../storage/registry.js'
-import { INTEGRATION_TYPES } from '../core/types.js'
+import { cmdView } from './view'
+import * as cache from '../storage/cache'
+import * as registry from '../storage/registry'
+import { INTEGRATION_TYPES } from '../types'
 
-jest.mock('../core/scanner.js')
+jest.mock('../scanner.js')
 jest.mock('../storage/cache.js')
 jest.mock('../storage/registry.js')
 
