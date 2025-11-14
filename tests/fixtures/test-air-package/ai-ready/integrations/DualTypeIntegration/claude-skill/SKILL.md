@@ -1,5 +1,5 @@
 ---
-name: DualTypeSkill
+name: DualTypeIntegration
 summary: Claude Skill component of dual-type test integration
 ---
 

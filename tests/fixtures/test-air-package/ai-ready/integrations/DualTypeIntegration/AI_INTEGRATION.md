@@ -1,5 +1,5 @@
 ---
-name: DualTypeGeneric
+name: DualTypeIntegration
 summary: Generic integration component of dual-type test integration
 ---
 

@@ -244,8 +244,8 @@ export async function setupClaudePluginDir (baseDir) {
   const installedPluginsPath = path.join(pluginsDir, 'installed_plugins.json')
   const marketplacesPath = path.join(pluginsDir, 'known_marketplaces.json')
 
-  // Initialize empty plugin files
-  await fs.writeFile(installedPluginsPath, JSON.stringify({}, null, 2))
+  // Initialize empty plugin files with correct structure
+  await fs.writeFile(installedPluginsPath, JSON.stringify({ version: 1, plugins: {} }, null, 2))
   await fs.writeFile(marketplacesPath, JSON.stringify({}, null, 2))
 
   return { pluginsDir, installedPluginsPath, marketplacesPath }

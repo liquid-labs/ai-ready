@@ -55,7 +55,7 @@ describe('air remove (functional)', () => {
       const installedPlugins = await readJsonFile(
         path.join(pluginDir, 'installed_plugins.json')
       )
-      expect(Object.keys(installedPlugins)).not.toContain('skillonlyintegration@test-air-package-marketplace')
+      expect(Object.keys(installedPlugins)).not.toContain('skillonly@test-air-package-marketplace')
     })
 
     it('should remove an installed generic integration', async () => {
@@ -80,7 +80,7 @@ describe('air remove (functional)', () => {
       const agentsContent = await readFile(path.join(testDir, 'AGENTS.md'))
       if (agentsContent) {
         const entries = parseMarkdownTable(agentsContent)
-        const genericEntry = entries.find(e => e.name === 'GenericOnlyIntegration')
+        const genericEntry = entries.find(e => e.name === 'GenericOnly')
         expect(genericEntry).toBeFalsy()
       }
     })
@@ -106,13 +106,13 @@ describe('air remove (functional)', () => {
       const installedPlugins = await readJsonFile(
         path.join(pluginDir, 'installed_plugins.json')
       )
-      expect(Object.keys(installedPlugins)).not.toContain('dualtypeskill@test-air-package-marketplace')
+      expect(Object.keys(installedPlugins)).not.toContain('dualtypeintegration@test-air-package-marketplace')
 
       // Verify generic removed
       const agentsContent = await readFile(path.join(testDir, 'AGENTS.md'))
       if (agentsContent) {
         const entries = parseMarkdownTable(agentsContent)
-        const dualTypeEntry = entries.find(e => e.name === 'DualTypeGeneric')
+        const dualTypeEntry = entries.find(e => e.name === 'DualTypeIntegration')
         expect(dualTypeEntry).toBeFalsy()
       }
     })
@@ -140,13 +140,13 @@ describe('air remove (functional)', () => {
       const installedPlugins = await readJsonFile(
         path.join(pluginDir, 'installed_plugins.json')
       )
-      expect(Object.keys(installedPlugins)).not.toContain('dualtypeskill@test-air-package-marketplace')
+      expect(Object.keys(installedPlugins)).not.toContain('dualtypeintegration@test-air-package-marketplace')
 
       // Verify generic still installed
       const agentsContent = await readFile(path.join(testDir, 'AGENTS.md'))
       expect(agentsContent).toBeTruthy()
       const entries = parseMarkdownTable(agentsContent)
-      const dualTypeEntry = entries.find(e => e.name === 'DualTypeGeneric')
+      const dualTypeEntry = entries.find(e => e.name === 'DualTypeIntegration')
       expect(dualTypeEntry).toBeTruthy()
     })
 
@@ -171,7 +171,7 @@ describe('air remove (functional)', () => {
       const agentsContent = await readFile(path.join(testDir, 'AGENTS.md'))
       if (agentsContent) {
         const entries = parseMarkdownTable(agentsContent)
-        const dualTypeEntry = entries.find(e => e.name === 'DualTypeGeneric')
+        const dualTypeEntry = entries.find(e => e.name === 'DualTypeIntegration')
         expect(dualTypeEntry).toBeFalsy()
       }
 
@@ -179,7 +179,7 @@ describe('air remove (functional)', () => {
       const installedPlugins = await readJsonFile(
         path.join(pluginDir, 'installed_plugins.json')
       )
-      expect(Object.keys(installedPlugins)).toContain('dualtypeskill@test-air-package-marketplace')
+      expect(Object.keys(installedPlugins)).toContain('dualtypeintegration@test-air-package-marketplace')
     })
   })
 
@@ -323,7 +323,7 @@ describe('air remove (functional)', () => {
 
       // Backup should contain the skill that was removed
       const backup = JSON.parse(backupContent)
-      expect(Object.keys(backup)).toContain('skillonlyintegration@test-air-package-marketplace')
+      expect(Object.keys(backup)).toContain('skillonly@test-air-package-marketplace')
     })
 
     it('should create backup of AGENTS.md before removal', async () => {
@@ -347,7 +347,7 @@ describe('air remove (functional)', () => {
 
       // Backup should contain the entry that was removed
       const entries = parseMarkdownTable(backupContent)
-      const genericEntry = entries.find(e => e.name === 'GenericOnlyIntegration')
+      const genericEntry = entries.find(e => e.name === 'GenericOnly')
       expect(genericEntry).toBeTruthy()
     })
   })

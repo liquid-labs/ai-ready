@@ -48,7 +48,7 @@ describe('air install (functional)', () => {
         path.join(pluginDir, 'installed_plugins.json')
       )
       expect(installedPlugins).toBeTruthy()
-      expect(Object.keys(installedPlugins)).toContain('skillonlyintegration@test-air-package-marketplace')
+      expect(Object.keys(installedPlugins)).toContain('skillonly@test-air-package-marketplace')
     })
 
     it('should install a generic integration', async () => {
@@ -67,7 +67,7 @@ describe('air install (functional)', () => {
 
       const entries = parseMarkdownTable(agentsContent)
       expect(entries).toHaveLength(1)
-      expect(entries[0].name).toBe('GenericOnlyIntegration')
+      expect(entries[0].name).toBe('GenericOnly')
       expect(entries[0].library).toBe('test-air-package')
     })
 
@@ -85,12 +85,12 @@ describe('air install (functional)', () => {
       const installedPlugins = await readJsonFile(
         path.join(pluginDir, 'installed_plugins.json')
       )
-      expect(Object.keys(installedPlugins)).toContain('dualtypeskill@test-air-package-marketplace')
+      expect(Object.keys(installedPlugins)).toContain('dualtypeintegration@test-air-package-marketplace')
 
       // Verify generic installed
       const agentsContent = await readFile(path.join(testDir, 'AGENTS.md'))
       const entries = parseMarkdownTable(agentsContent)
-      const dualTypeEntry = entries.find(e => e.name === 'DualTypeGeneric')
+      const dualTypeEntry = entries.find(e => e.name === 'DualTypeIntegration')
       expect(dualTypeEntry).toBeTruthy()
     })
   })
@@ -109,13 +109,13 @@ describe('air install (functional)', () => {
       const installedPlugins = await readJsonFile(
         path.join(pluginDir, 'installed_plugins.json')
       )
-      expect(Object.keys(installedPlugins)).toContain('dualtypeskill@test-air-package-marketplace')
+      expect(Object.keys(installedPlugins)).toContain('dualtypeintegration@test-air-package-marketplace')
 
       // Verify generic NOT installed
       const agentsContent = await readFile(path.join(testDir, 'AGENTS.md'))
       if (agentsContent) {
         const entries = parseMarkdownTable(agentsContent)
-        const dualTypeEntry = entries.find(e => e.name === 'DualTypeGeneric')
+        const dualTypeEntry = entries.find(e => e.name === 'DualTypeIntegration')
         expect(dualTypeEntry).toBeFalsy()
       }
     })
@@ -133,14 +133,14 @@ describe('air install (functional)', () => {
       const agentsContent = await readFile(path.join(testDir, 'AGENTS.md'))
       expect(agentsContent).toBeTruthy()
       const entries = parseMarkdownTable(agentsContent)
-      const dualTypeEntry = entries.find(e => e.name === 'DualTypeGeneric')
+      const dualTypeEntry = entries.find(e => e.name === 'DualTypeIntegration')
       expect(dualTypeEntry).toBeTruthy()
 
       // Verify skill NOT installed
       const installedPlugins = await readJsonFile(
         path.join(pluginDir, 'installed_plugins.json')
       )
-      expect(Object.keys(installedPlugins)).not.toContain('dualtypeskill@test-air-package-marketplace')
+      expect(Object.keys(installedPlugins)).not.toContain('dualtypeintegration@test-air-package-marketplace')
     })
   })
 
@@ -236,12 +236,12 @@ describe('air install (functional)', () => {
       const installedPlugins = await readJsonFile(
         path.join(pluginDir, 'installed_plugins.json')
       )
-      expect(Object.keys(installedPlugins)).toContain('skillonlyintegration@test-air-package-marketplace')
+      expect(Object.keys(installedPlugins)).toContain('skillonly@test-air-package-marketplace')
 
       const agentsContent = await readFile(path.join(testDir, 'AGENTS.md'))
       const entries = parseMarkdownTable(agentsContent)
       expect(entries).toHaveLength(1)
-      expect(entries[0].name).toBe('GenericOnlyIntegration')
+      expect(entries[0].name).toBe('GenericOnly')
     })
 
     it('should install different types from dual-type integration separately', async () => {
@@ -263,11 +263,11 @@ describe('air install (functional)', () => {
       const installedPlugins = await readJsonFile(
         path.join(pluginDir, 'installed_plugins.json')
       )
-      expect(Object.keys(installedPlugins)).toContain('dualtypeskill@test-air-package-marketplace')
+      expect(Object.keys(installedPlugins)).toContain('dualtypeintegration@test-air-package-marketplace')
 
       const agentsContent = await readFile(path.join(testDir, 'AGENTS.md'))
       const entries = parseMarkdownTable(agentsContent)
-      const dualTypeEntry = entries.find(e => e.name === 'DualTypeGeneric')
+      const dualTypeEntry = entries.find(e => e.name === 'DualTypeIntegration')
       expect(dualTypeEntry).toBeTruthy()
     })
   })

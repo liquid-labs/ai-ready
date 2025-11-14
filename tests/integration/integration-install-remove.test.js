@@ -76,7 +76,7 @@ describe('Integration: Install and Remove workflows', () => {
         path.join(testDir, '.claude/plugins/installed_plugins.json')
       )
       expect(pluginRegistry).toBeTruthy()
-      expect(Object.keys(pluginRegistry)).toContain('skillonlyintegration@test-air-package-marketplace')
+      expect(Object.keys(pluginRegistry)).toContain('skillonly@test-air-package-marketplace')
     })
 
     it('should install generic integration to project directory', async () => {
@@ -84,7 +84,7 @@ describe('Integration: Install and Remove workflows', () => {
 
       // Verify AGENTS.md in project directory
       const agentsContent = await fs.readFile(path.join(testDir, 'AGENTS.md'), 'utf8')
-      expect(agentsContent).toContain('GenericOnlyIntegration')
+      expect(agentsContent).toContain('GenericOnly')
       expect(agentsContent).toContain('test-air-package')
     })
 
@@ -99,7 +99,7 @@ describe('Integration: Install and Remove workflows', () => {
       const pluginRegistry = await readJsonFile(
         path.join(testDir, '.claude/plugins/installed_plugins.json')
       )
-      expect(Object.keys(pluginRegistry || {})).not.toContain('skillonlyintegration@test-air-package-marketplace')
+      expect(Object.keys(pluginRegistry || {})).not.toContain('skillonly@test-air-package-marketplace')
     })
 
     it('should remove generic integration from project directory', async () => {
@@ -112,7 +112,7 @@ describe('Integration: Install and Remove workflows', () => {
       // Verify removed
       const agentsContent = await readFile(path.join(testDir, 'AGENTS.md'))
       if (agentsContent) {
-        expect(agentsContent).not.toContain('GenericOnlyIntegration')
+        expect(agentsContent).not.toContain('GenericOnly')
       }
     })
   })
@@ -125,11 +125,11 @@ describe('Integration: Install and Remove workflows', () => {
       const pluginRegistry = await readJsonFile(
         path.join(testDir, '.claude/plugins/installed_plugins.json')
       )
-      expect(Object.keys(pluginRegistry || {})).toContain('dualtypeskill@test-air-package-marketplace')
+      expect(Object.keys(pluginRegistry || {})).toContain('dualtypeintegration@test-air-package-marketplace')
 
       // Verify generic installed
       const agentsContent = await fs.readFile(path.join(testDir, 'AGENTS.md'), 'utf8')
-      expect(agentsContent).toContain('DualTypeGeneric')
+      expect(agentsContent).toContain('DualTypeIntegration')
     })
 
     it('should allow selective installation with --skill flag', async () => {
@@ -139,11 +139,11 @@ describe('Integration: Install and Remove workflows', () => {
       const pluginRegistry = await readJsonFile(
         path.join(testDir, '.claude/plugins/installed_plugins.json')
       )
-      expect(Object.keys(pluginRegistry || {})).toContain('dualtypeskill@test-air-package-marketplace')
+      expect(Object.keys(pluginRegistry || {})).toContain('dualtypeintegration@test-air-package-marketplace')
 
       // Verify generic NOT installed
       const agentsContent = await readFile(path.join(testDir, 'AGENTS.md'))
-      expect(agentsContent).not.toContain('DualTypeGeneric')
+      expect(agentsContent).not.toContain('DualTypeIntegration')
     })
 
     it('should allow selective installation with --generic flag', async () => {
@@ -151,13 +151,13 @@ describe('Integration: Install and Remove workflows', () => {
 
       // Verify generic installed
       const agentsContent = await fs.readFile(path.join(testDir, 'AGENTS.md'), 'utf8')
-      expect(agentsContent).toContain('DualTypeGeneric')
+      expect(agentsContent).toContain('DualTypeIntegration')
 
       // Verify skill NOT installed
       const pluginRegistry = await readJsonFile(
         path.join(testDir, '.claude/plugins/installed_plugins.json')
       )
-      expect(Object.keys(pluginRegistry || {})).not.toContain('dualtypeskill@test-air-package-marketplace')
+      expect(Object.keys(pluginRegistry || {})).not.toContain('dualtypeintegration@test-air-package-marketplace')
     })
 
     it('should allow removing only skill type', async () => {
@@ -171,11 +171,11 @@ describe('Integration: Install and Remove workflows', () => {
       const pluginRegistry = await readJsonFile(
         path.join(testDir, '.claude/plugins/installed_plugins.json')
       )
-      expect(Object.keys(pluginRegistry || {})).not.toContain('dualtypeskill@test-air-package-marketplace')
+      expect(Object.keys(pluginRegistry || {})).not.toContain('dualtypeintegration@test-air-package-marketplace')
 
       // Verify generic still installed
       const agentsContent = await fs.readFile(path.join(testDir, 'AGENTS.md'), 'utf8')
-      expect(agentsContent).toContain('DualTypeGeneric')
+      expect(agentsContent).toContain('DualTypeIntegration')
     })
 
     it('should allow removing only generic type', async () => {
@@ -187,13 +187,13 @@ describe('Integration: Install and Remove workflows', () => {
 
       // Verify generic removed
       const agentsContent = await readFile(path.join(testDir, 'AGENTS.md'))
-      expect(agentsContent).not.toContain('DualTypeGeneric')
+      expect(agentsContent).not.toContain('DualTypeIntegration')
 
       // Verify skill still installed
       const pluginRegistry = await readJsonFile(
         path.join(testDir, '.claude/plugins/installed_plugins.json')
       )
-      expect(Object.keys(pluginRegistry || {})).toContain('dualtypeskill@test-air-package-marketplace')
+      expect(Object.keys(pluginRegistry || {})).toContain('dualtypeintegration@test-air-package-marketplace')
     })
   })
 

@@ -1,5 +1,5 @@
 ---
-name: SkillOnlyIntegration
+name: SkillOnly
 summary: A Claude Skill without generic component
 ---
 

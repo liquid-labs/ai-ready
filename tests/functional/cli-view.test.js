@@ -35,7 +35,7 @@ describe('air view (functional)', () => {
       )
 
       expect(exitCode).toBe(0)
-      expect(stdout).toContain('SkillOnlyIntegration')
+      expect(stdout).toContain('SkillOnly')
       expect(stdout).toContain('A Claude Skill without generic component')
       expect(stdout).toContain('test-air-package')
     })
@@ -48,7 +48,7 @@ describe('air view (functional)', () => {
       )
 
       expect(exitCode).toBe(0)
-      expect(stdout).toContain('GenericOnlyIntegration')
+      expect(stdout).toContain('GenericOnly')
       expect(stdout).toContain('Generic instructions without Claude Skill component')
       expect(stdout).toContain('test-air-package')
     })
@@ -63,7 +63,7 @@ describe('air view (functional)', () => {
       expect(exitCode).toBe(0)
       // Should show both type names
       expect(stdout).toContain('DualTypeSkill')
-      expect(stdout).toContain('DualTypeGeneric')
+      expect(stdout).toContain('DualTypeIntegration')
       expect(stdout).toContain('test-air-package')
     })
   })

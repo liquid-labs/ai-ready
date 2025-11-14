@@ -1,5 +1,5 @@
 ---
-name: GenericOnlyIntegration
+name: GenericOnly
 summary: Generic instructions without Claude Skill component
 ---
 
