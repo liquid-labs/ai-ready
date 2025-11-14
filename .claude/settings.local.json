@@ -18,7 +18,10 @@
       "Bash(TEST=view.test make test:*)",
       "Bash(TEST=types.test make test:*)",
       "Bash(git rev-parse:*)",
-      "Bash(git mv:*)"
+      "Bash(git mv:*)",
+      "WebSearch",
+      "Bash(node --version:*)",
+      "Bash(npx jest:*)"
     ],
     "deny": [],
     "ask": []
