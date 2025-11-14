@@ -53,7 +53,7 @@ Scanner → Cache → Registry → Commands
    - Validates cache against `package.json` and `package-lock.json` mtimes
    - Invalidates on dependency changes
 
-3. **Registry** (`src/lib/core/registry.js` + `src/lib/core/plugin-registry.js`)
+3. **Registry** (`src/lib/storage/registry.js` + `src/lib/storage/claude-plugin-registry.js`)
    - Tracks installed integrations in two formats:
      - `$HOME/.claude/plugins/installed_plugins.json` - Claude Skills (via plugin system)
      - `AGENTS.md` (Markdown table) - Generic integrations
@@ -110,20 +110,29 @@ CacheData {
 
 ### Module Organization
 
+**Directory Structure:**
+- `src/lib/commands/` - CLI command implementations
+- `src/lib/core/` - Core business logic (scanner, types, test helpers)
+- `src/lib/storage/` - **Persistent state & file I/O operations** (cache, registry, config, repos)
+- `src/lib/parsers/` - Data format parsing utilities
+- `src/lib/utils/` - General utilities (git operations)
+
 **Layered Dependencies:**
 ```
 CLI (air.mjs)
   ↓
 Commands (commands/*.js)
   ↓
-Core (core/*.js)
+Core (core/*.js) + Storage (storage/*.js)
   ↓
-Parsers (parsers/*.js)
+Parsers (parsers/*.js) + Utilities (utils/*.js)
 ```
 
+**Key Principles:**
 - **No circular dependencies**
 - **Named exports only** (no default exports)
 - **types.js is dependency-free** (pure data/constants)
+- **Storage layer** - All file I/O operations consolidated in `src/lib/storage/`
 
 ## Testing Patterns
 
@@ -231,12 +240,12 @@ try {
 
 **Key Classes:**
 
-1. **`ClaudePluginConfig`** (`src/lib/config/claude-config.js`)
+1. **`ClaudePluginConfig`** (`src/lib/storage/claude-config.js`)
    - Pure configuration class holding plugin directory paths
    - Factory methods: `createDefault()` for production, `createForTest(testDir)` for tests
    - Separates configuration from operations (SRP)
 
-2. **`ClaudePluginRegistry`** (`src/lib/core/plugin-registry.js`)
+2. **`ClaudePluginRegistry`** (`src/lib/storage/claude-plugin-registry.js`)
    - Manages Claude Skills registration in the plugin system
    - Factory methods: `createDefault()` for production, `createForTest(testDir)` for tests
    - Operations: `installPlugin()`, `removePlugin()`, `isPluginInstalled()`
@@ -245,13 +254,13 @@ try {
 
 ```javascript
 // Production: Use singleton via getDefaultRegistry()
-import { getDefaultRegistry } from './core/plugin-registry.js'
+import { getDefaultRegistry } from './storage/claude-plugin-registry.js'
 
 const registry = getDefaultRegistry()
 await registry.installPlugin('my-lib', 'MySkill', '/path/to/lib', '1.0.0')
 
 // Testing: Use factory method with test directory
-import { ClaudePluginRegistry } from './core/plugin-registry.js'
+import { ClaudePluginRegistry } from './storage/claude-plugin-registry.js'
 
 const testRegistry = ClaudePluginRegistry.createForTest(tempDir)
 await testRegistry.installPlugin('test-lib', 'TestSkill', '/path', '1.0.0')
@@ -297,14 +306,16 @@ Cache is invalidated when:
 
 ### Core Modules
 - `src/lib/core/scanner.js` - Discovery logic
-- `src/lib/core/cache.js` - Performance optimization
-- `src/lib/core/registry.js` - Installation state management
-- `src/lib/core/plugin-registry.js` - Claude plugin system integration
 - `src/lib/core/types.js` - Type definitions and constants
 - `src/lib/core/test-lib.js` - Test fixture helper
 
-### Configuration
-- `src/lib/config/claude-config.js` - Plugin configuration class
+### Storage (Persistent State & File I/O)
+- `src/lib/storage/cache.js` - Performance optimization cache
+- `src/lib/storage/registry.js` - Installation state management
+- `src/lib/storage/claude-plugin-registry.js` - Claude plugin system integration
+- `src/lib/storage/claude-config.js` - Plugin configuration class
+- `src/lib/storage/config.js` - Remote repository configuration storage
+- `src/lib/storage/remote-repos.js` - Git repository management
 
 ### Utilities
 - `src/lib/utils/git.js` - Git repository utilities

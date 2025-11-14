@@ -1,6 +1,6 @@
 import { scanAll } from '../core/scanner.js'
-import { loadProvidersWithCache } from '../core/cache.js'
-import { loadInstallationStatus } from '../core/registry.js'
+import { loadProvidersWithCache } from '../storage/cache.js'
+import { loadInstallationStatus } from '../storage/registry.js'
 import { DEFAULT_CONFIG } from '../core/types.js'
 
 /* eslint-disable no-console, no-process-exit */
@@ -16,10 +16,7 @@ import { DEFAULT_CONFIG } from '../core/types.js'
 export async function cmdList(options) {
   try {
     // Load providers with caching
-    const { npmProviders, remoteProviders } = await loadProvidersWithCache(
-      DEFAULT_CONFIG.cacheFile,
-      () => scanAll()
-    )
+    const { npmProviders, remoteProviders } = await loadProvidersWithCache(DEFAULT_CONFIG.cacheFile, () => scanAll())
 
     // Combine all providers for display
     const allProviders = [...npmProviders, ...remoteProviders]
@@ -35,9 +32,7 @@ export async function cmdList(options) {
     let filtered = providersWithStatus
 
     if (options.library) {
-      filtered = filtered.filter(
-        (p) => (p.libraryName || p.repoName) === options.library
-      )
+      filtered = filtered.filter((p) => (p.libraryName || p.repoName) === options.library)
     }
 
     // Filter integrations
@@ -46,8 +41,7 @@ export async function cmdList(options) {
       for (const integration of provider.integrations) {
         const isInstalled = integration.installedTypes.length > 0
         const isPartiallyInstalled =
-          integration.installedTypes.length > 0
-          && integration.installedTypes.length < integration.types.length
+          integration.installedTypes.length > 0 && integration.installedTypes.length < integration.types.length
 
         // Apply filters
         if (options.installed && !isInstalled) continue
@@ -88,11 +82,8 @@ function displayTable(results) {
     library        : Math.max(7, ...results.map((r) => r.library.length)),
     integration    : Math.max(11, ...results.map((r) => r.integration.length)),
     types          : Math.max(5, ...results.map((r) => formatTypes(r.types).length)),
-    installedTypes : Math.max(
-      14,
-      ...results.map((r) => formatTypes(r.installedTypes).length)
-    ),
-    summary : Math.max(7, ...results.map((r) => r.summary.length)),
+    installedTypes : Math.max(14, ...results.map((r) => formatTypes(r.installedTypes).length)),
+    summary        : Math.max(7, ...results.map((r) => r.summary.length)),
   }
 
   // Header

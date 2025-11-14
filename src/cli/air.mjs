@@ -4,19 +4,10 @@ import { cmdInstall } from '../lib/commands/install.js'
 import { cmdRemove } from '../lib/commands/remove.js'
 import { cmdView } from '../lib/commands/view.js'
 import { cmdVerify } from '../lib/commands/verify.js'
-import {
-  listSources,
-  addSource,
-  removeSource,
-  updateSources,
-  repairSource
-} from '../lib/commands/sources.js'
+import { listSources, addSource, removeSource, updateSources, repairSource } from '../lib/commands/sources.js'
 
 const run = () => {
-  program
-    .name('air')
-    .description('AIR (AI Ready) integration management CLI')
-    .version('0.1.0')
+  program.name('air').description('AIR (AI Ready) integration management CLI').version('0.1.0')
 
   program
     .command('list')
@@ -60,14 +51,9 @@ const run = () => {
 }
 
 const loadSourcesCommands = () => {
-  const sourcesCmd = program
-    .command('sources')
-    .description('Manage remote skill repositories')
+  const sourcesCmd = program.command('sources').description('Manage remote skill repositories')
 
-  sourcesCmd
-    .command('list')
-    .description('List configured repositories')
-    .action(listSources)
+  sourcesCmd.command('list').description('List configured repositories').action(listSources)
 
   sourcesCmd
     .command('add [url]')

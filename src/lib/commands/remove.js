@@ -1,14 +1,9 @@
 import { logErrAndExit } from './ui-lib.js'
 import { findProviderAndIntegration } from './data-lib.js'
 import { scanAll } from '../core/scanner.js'
-import { loadProvidersWithCache } from '../core/cache.js'
-import {
-  loadInstallationStatus,
-  createBackup,
-  readGenericRegistry,
-  writeGenericRegistry
-} from '../core/registry.js'
-import { getDefaultRegistry } from '../core/plugin-registry.js'
+import { loadProvidersWithCache } from '../storage/cache.js'
+import { loadInstallationStatus, createBackup, readGenericRegistry, writeGenericRegistry } from '../storage/registry.js'
+import { getDefaultRegistry } from '../storage/claude-plugin-registry.js'
 import { DEFAULT_CONFIG, INTEGRATION_TYPES } from '../core/types.js'
 
 /* eslint-disable no-console, no-process-exit */
@@ -23,9 +18,7 @@ import { DEFAULT_CONFIG, INTEGRATION_TYPES } from '../core/types.js'
  */
 export async function cmdRemove(libraryIntegration, options) {
   if (!libraryIntegration || !libraryIntegration.includes('/')) {
-    console.error(
-      'Error: Please specify library/integration format (e.g., my-lib/MyIntegration)'
-    )
+    console.error('Error: Please specify library/integration format (e.g., my-lib/MyIntegration)')
     process.exit(1)
   }
 
@@ -34,10 +27,7 @@ export async function cmdRemove(libraryIntegration, options) {
     const [libraryName, integrationName] = libraryIntegration.split('/')
 
     // Load providers
-    const { npmProviders, remoteProviders } = await loadProvidersWithCache(
-      DEFAULT_CONFIG.cacheFile,
-      () => scanAll()
-    )
+    const { npmProviders, remoteProviders } = await loadProvidersWithCache(DEFAULT_CONFIG.cacheFile, () => scanAll())
 
     const providers = [...npmProviders, ...remoteProviders]
 
@@ -51,11 +41,7 @@ export async function cmdRemove(libraryIntegration, options) {
     )
 
     // Find integration
-    const { integration } = findProviderAndIntegration(
-      providersWithStatus,
-      libraryName,
-      integrationName
-    )
+    const { integration } = findProviderAndIntegration(providersWithStatus, libraryName, integrationName)
 
     // Determine types to remove
     const typesToRemove = determineTypesToRemove(integration, options)
@@ -68,10 +54,7 @@ export async function cmdRemove(libraryIntegration, options) {
     console.log(`Removing ${libraryName}/${integrationName} ...`)
 
     // Remove each type
-    await Promise.all(
-      typesToRemove.map((type) =>
-        removeType(libraryName, integrationName, type))
-    )
+    await Promise.all(typesToRemove.map((type) => removeType(libraryName, integrationName, type)))
 
     console.log('✔ Removal complete')
 
@@ -93,24 +76,15 @@ export async function cmdRemove(libraryIntegration, options) {
  */
 function determineTypesToRemove(integration, options) {
   // If both flags or neither flag, remove all installed types
-  if (
-    (!options.skill && !options.generic)
-    || (options.skill && options.generic)
-  ) {
+  if ((!options.skill && !options.generic) || (options.skill && options.generic)) {
     return [...integration.installedTypes]
   }
 
   const typesToRemove = []
-  if (
-    options.skill
-    && integration.installedTypes.includes(INTEGRATION_TYPES.CLAUDE_SKILL)
-  ) {
+  if (options.skill && integration.installedTypes.includes(INTEGRATION_TYPES.CLAUDE_SKILL)) {
     typesToRemove.push(INTEGRATION_TYPES.CLAUDE_SKILL)
   }
-  if (
-    options.generic
-    && integration.installedTypes.includes(INTEGRATION_TYPES.GENERIC)
-  ) {
+  if (options.generic && integration.installedTypes.includes(INTEGRATION_TYPES.GENERIC)) {
     typesToRemove.push(INTEGRATION_TYPES.GENERIC)
   }
 
@@ -160,14 +134,10 @@ async function removeGenericIntegration(libraryName, integrationName) {
   await createBackup(genericFile)
 
   // Read existing entries from all generic files
-  const allEntries = await readGenericRegistry(
-    DEFAULT_CONFIG.registryFiles.generic
-  )
+  const allEntries = await readGenericRegistry(DEFAULT_CONFIG.registryFiles.generic)
 
   // Filter out the entry
-  const filtered = allEntries.filter(
-    (e) => !(e.library === libraryName && e.integration === integrationName)
-  )
+  const filtered = allEntries.filter((e) => !(e.library === libraryName && e.integration === integrationName))
 
   await writeGenericRegistry(genericFile, filtered)
 }

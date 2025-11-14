@@ -1,10 +1,10 @@
 import fs from 'fs/promises'
 import path from 'path'
-import { INTEGRATION_TYPES } from './types'
+import { INTEGRATION_TYPES } from '../core/types'
 
 /**
- * @import { IntegrationProvider } from './types.js'
- * @import { ClaudePluginRegistry } from './plugin-registry.js'
+ * @import { IntegrationProvider } from '../core/types.js'
+ * @import { ClaudePluginRegistry } from './claude-plugin-registry.js'
  */
 
 /**
@@ -13,10 +13,7 @@ import { INTEGRATION_TYPES } from './types'
  * @param {string} [baseDir=process.cwd()] - Base directory
  * @returns {Promise<Array<{library: string, integration: string}>>} Array of generic entries
  */
-export async function readGenericRegistry(
-  genericFilePaths,
-  baseDir = process.cwd()
-) {
+export async function readGenericRegistry(genericFilePaths, baseDir = process.cwd()) {
   const readPromises = genericFilePaths.map(async (filePath) => {
     const fullPath = path.resolve(baseDir, filePath)
 
@@ -117,11 +114,7 @@ function parseTableRow(row) {
  * @param {string} [baseDir=process.cwd()] - Base directory
  * @returns {Promise<void>}
  */
-export async function writeGenericRegistry(
-  genericFilePath,
-  entries,
-  baseDir = process.cwd()
-) {
+export async function writeGenericRegistry(genericFilePath, entries, baseDir = process.cwd()) {
   const fullPath = path.resolve(baseDir, genericFilePath)
 
   const header = `# Generic AI Integrations
@@ -180,19 +173,13 @@ export async function loadInstallationStatus(
           const installedTypes = []
 
           // Check generic installation (listed in markdown)
-          if (
-            integration.types.includes(INTEGRATION_TYPES.GENERIC)
-            && genericMap.has(key)
-          ) {
+          if (integration.types.includes(INTEGRATION_TYPES.GENERIC) && genericMap.has(key)) {
             installedTypes.push(INTEGRATION_TYPES.GENERIC)
           }
 
           // Check Claude Skill installation (via plugin registry)
           if (integration.types.includes(INTEGRATION_TYPES.CLAUDE_SKILL) && pluginRegistry) {
-            const isInstalled = await pluginRegistry.isPluginInstalled(
-              provider.libraryName,
-              integration.name
-            )
+            const isInstalled = await pluginRegistry.isPluginInstalled(provider.libraryName, integration.name)
             if (isInstalled) {
               installedTypes.push(INTEGRATION_TYPES.CLAUDE_SKILL)
             }

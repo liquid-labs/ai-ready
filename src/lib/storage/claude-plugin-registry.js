@@ -1,10 +1,10 @@
 import fs from 'fs/promises'
 import path from 'path'
-import { ClaudePluginConfig } from '../config/claude-config.js'
+import { ClaudePluginConfig } from './claude-config.js'
 import { getGitCommitSha } from '../utils/git.js'
 
 /**
- * @import { IntegrationProvider } from './types.js'
+ * @import { IntegrationProvider } from '../core/types.js'
  */
 
 /**
@@ -34,18 +34,16 @@ import { getGitCommitSha } from '../utils/git.js'
 /**
  * @typedef {object} PluginsConfig
  * @property {number} version - Config version
- * @property {Object<string, PluginEntry>} plugins - Installed plugins
+ * @property {Record<string, PluginEntry>} plugins - Installed plugins
  */
 
 /**
  * Claude Plugin Registry Manager
  * Handles registration of Claude Skills in the plugin system
- *
  * @example
  * // Production usage with default config
  * const registry = ClaudePluginRegistry.createDefault()
  * await registry.installPlugin('my-lib', 'MySkill', '/path/to/lib', '1.0.0')
- *
  * @example
  * // Testing with temporary directory
  * const registry = ClaudePluginRegistry.createForTest('/tmp/test-dir')
@@ -63,7 +61,6 @@ export class ClaudePluginRegistry {
   /**
    * Creates a default registry instance for production use
    * Uses ~/.claude/plugins for plugin storage
-   *
    * @returns {ClaudePluginRegistry} Default registry instance
    * @example
    * const registry = ClaudePluginRegistry.createDefault()
@@ -76,7 +73,6 @@ export class ClaudePluginRegistry {
   /**
    * Creates a test registry instance with custom directory
    * Used for testing to avoid modifying global plugin registry
-   *
    * @param {string} testDir - Temporary directory for test plugins
    * @returns {ClaudePluginRegistry} Test registry instance
    * @example
@@ -105,18 +101,19 @@ export class ClaudePluginRegistry {
    * @returns {Promise<void>}
    */
   async ensurePluginsDir() {
-    await fs.mkdir(this.config.pluginsDir, { recursive: true })
+    await fs.mkdir(this.config.pluginsDir, { recursive : true })
   }
 
   /**
    * Reads known_marketplaces.json, creating it if it doesn't exist
-   * @returns {Promise<Object<string, MarketplaceEntry>>} Marketplace entries
+   * @returns {Promise<Record<string, MarketplaceEntry>>} Marketplace entries
    */
   async readKnownMarketplaces() {
     await this.ensurePluginsDir()
 
     try {
       const content = await fs.readFile(this.config.knownMarketplacesPath, 'utf8')
+
       return JSON.parse(content)
     }
     catch (error) {
@@ -129,16 +126,12 @@ export class ClaudePluginRegistry {
 
   /**
    * Writes known_marketplaces.json
-   * @param {Object<string, MarketplaceEntry>} marketplaces - Marketplace entries
+   * @param {Record<string, MarketplaceEntry>} marketplaces - Marketplace entries
    * @returns {Promise<void>}
    */
   async writeKnownMarketplaces(marketplaces) {
     await this.ensurePluginsDir()
-    await fs.writeFile(
-      this.config.knownMarketplacesPath,
-      JSON.stringify(marketplaces, null, 2),
-      'utf8'
-    )
+    await fs.writeFile(this.config.knownMarketplacesPath, JSON.stringify(marketplaces, null, 2), 'utf8')
   }
 
   /**
@@ -150,13 +143,14 @@ export class ClaudePluginRegistry {
 
     try {
       const content = await fs.readFile(this.config.installedPluginsPath, 'utf8')
+
       return JSON.parse(content)
     }
     catch (error) {
       if (error.code === 'ENOENT') {
         return {
-          version: 1,
-          plugins: {}
+          version : 1,
+          plugins : {},
         }
       }
       throw error
@@ -170,11 +164,7 @@ export class ClaudePluginRegistry {
    */
   async writeInstalledPlugins(config) {
     await this.ensurePluginsDir()
-    await fs.writeFile(
-      this.config.installedPluginsPath,
-      JSON.stringify(config, null, 2),
-      'utf8'
-    )
+    await fs.writeFile(this.config.installedPluginsPath, JSON.stringify(config, null, 2), 'utf8')
   }
 
   /**
@@ -187,17 +177,16 @@ export class ClaudePluginRegistry {
     const marketplaces = await this.readKnownMarketplaces()
 
     marketplaces[marketplaceName] = {
-      source: {
-        source: 'directory',
-        path: libraryPath
+      source : {
+        source : 'directory',
+        path   : libraryPath,
       },
-      installLocation: libraryPath,
-      lastUpdated: new Date().toISOString()
+      installLocation : libraryPath,
+      lastUpdated     : new Date().toISOString(),
     }
 
     await this.writeKnownMarketplaces(marketplaces)
   }
-
 
   /**
    * Installs a Claude Skill plugin
@@ -218,13 +207,7 @@ export class ClaudePluginRegistry {
     await this.addOrUpdateMarketplace(marketplaceName, libraryPath)
 
     // Get skill path
-    const skillPath = path.join(
-      libraryPath,
-      'ai-ready',
-      'integrations',
-      integrationDirName,
-      'claude-skill'
-    )
+    const skillPath = path.join(libraryPath, 'ai-ready', 'integrations', integrationDirName, 'claude-skill')
 
     // Get git commit SHA
     const gitCommitSha = await getGitCommitSha(libraryPath)
@@ -235,11 +218,11 @@ export class ClaudePluginRegistry {
 
     pluginsConfig.plugins[pluginKey] = {
       version,
-      installedAt: pluginsConfig.plugins[pluginKey]?.installedAt || new Date().toISOString(),
-      lastUpdated: new Date().toISOString(),
-      installPath: skillPath,
+      installedAt : pluginsConfig.plugins[pluginKey]?.installedAt || new Date().toISOString(),
+      lastUpdated : new Date().toISOString(),
+      installPath : skillPath,
       gitCommitSha,
-      isLocal: true
+      isLocal     : true,
     }
 
     await this.writeInstalledPlugins(pluginsConfig)
@@ -274,6 +257,7 @@ export class ClaudePluginRegistry {
     const pluginKey = `${this.toKebabCase(integrationName)}@${marketplaceName}`
 
     const pluginsConfig = await this.readInstalledPlugins()
+
     return !!pluginsConfig.plugins[pluginKey]
   }
 }
@@ -289,6 +273,7 @@ export function getDefaultRegistry() {
   if (!defaultRegistry) {
     defaultRegistry = new ClaudePluginRegistry()
   }
+
   return defaultRegistry
 }
 

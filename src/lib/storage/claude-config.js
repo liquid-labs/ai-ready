@@ -45,7 +45,7 @@ export class ClaudePluginConfig {
    */
   static createForTest(testDir) {
     return new ClaudePluginConfig({
-      pluginsDir: path.join(testDir, '.claude', 'plugins')
+      pluginsDir : path.join(testDir, '.claude', 'plugins'),
     })
   }
 }

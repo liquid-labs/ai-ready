@@ -1,10 +1,4 @@
-import {
-  readCache,
-  writeCache,
-  isCacheValid,
-  createCacheData,
-  loadProvidersWithCache
-} from './cache.js'
+import { readCache, writeCache, isCacheValid, createCacheData, loadProvidersWithCache } from '../storage/cache.js'
 import fs from 'fs/promises'
 import path from 'path'
 import os from 'os'
@@ -93,9 +87,7 @@ describe('cache', () => {
 
     it('should throw error for invalid cache data', async () => {
       const invalidData = { invalid : 'data' }
-      await expect(
-        writeCache('.aircache.json', invalidData, tempDir)
-      ).rejects.toThrow('Invalid cache data')
+      await expect(writeCache('.aircache.json', invalidData, tempDir)).rejects.toThrow('Invalid cache data')
     })
 
     it('should format JSON with 2-space indentation', async () => {
@@ -149,8 +141,7 @@ describe('cache', () => {
         expectedValid       : false,
       },
       {
-        description :
-          'should handle missing package-lock.json when cache expects it',
+        description         : 'should handle missing package-lock.json when cache expects it',
         createPackageLock   : false,
         getPackageJsonMTime : async (packageJsonPath) => {
           return Math.floor((await fs.stat(packageJsonPath)).mtimeMs)
@@ -160,8 +151,7 @@ describe('cache', () => {
         expectedValid       : false,
       },
       {
-        description :
-          'should be valid when package-lock.json is missing and cache expects no lock file',
+        description         : 'should be valid when package-lock.json is missing and cache expects no lock file',
         createPackageLock   : false,
         getPackageJsonMTime : async (packageJsonPath) => {
           return Math.floor((await fs.stat(packageJsonPath)).mtimeMs)
@@ -170,41 +160,25 @@ describe('cache', () => {
         getPackageLockMTime : async () => 0, // expects no lock file
         expectedValid       : true,
       },
-    ])(
-      '$description',
-      async ({
-        createPackageLock,
-        getPackageJsonMTime,
-        getPackageLockMTime,
-        expectedValid,
-      }) => {
-        const packageJsonPath = path.join(tempDir, 'package.json')
-        await fs.writeFile(
-          packageJsonPath,
-          JSON.stringify({ name : 'test' }),
-          'utf8'
-        )
+    ])('$description', async ({ createPackageLock, getPackageJsonMTime, getPackageLockMTime, expectedValid }) => {
+      const packageJsonPath = path.join(tempDir, 'package.json')
+      await fs.writeFile(packageJsonPath, JSON.stringify({ name : 'test' }), 'utf8')
 
-        let packageLockPath
-        if (createPackageLock) {
-          packageLockPath = path.join(tempDir, 'package-lock.json')
-          await fs.writeFile(
-            packageLockPath,
-            JSON.stringify({ version : '1.0.0' }),
-            'utf8'
-          )
-        }
-
-        const cache = {
-          ...validCacheData,
-          packageJsonMTime : await getPackageJsonMTime(packageJsonPath),
-          packageLockMTime : await getPackageLockMTime(packageLockPath),
-        }
-
-        const isValid = await isCacheValid(cache, tempDir)
-        expect(isValid).toBe(expectedValid)
+      let packageLockPath
+      if (createPackageLock) {
+        packageLockPath = path.join(tempDir, 'package-lock.json')
+        await fs.writeFile(packageLockPath, JSON.stringify({ version : '1.0.0' }), 'utf8')
       }
-    )
+
+      const cache = {
+        ...validCacheData,
+        packageJsonMTime : await getPackageJsonMTime(packageJsonPath),
+        packageLockMTime : await getPackageLockMTime(packageLockPath),
+      }
+
+      const isValid = await isCacheValid(cache, tempDir)
+      expect(isValid).toBe(expectedValid)
+    })
   })
 
   describe('createCacheData', () => {
@@ -245,10 +219,7 @@ describe('cache', () => {
     })
 
     it('should create valid ISO timestamp', async () => {
-      const cache = await createCacheData(
-        { npmProviders : [], remoteProviders : [] },
-        tempDir
-      )
+      const cache = await createCacheData({ npmProviders : [], remoteProviders : [] }, tempDir)
       expect(() => new Date(cache.scannedAt)).not.toThrow()
       expect(new Date(cache.scannedAt).toISOString()).toBe(cache.scannedAt)
     })

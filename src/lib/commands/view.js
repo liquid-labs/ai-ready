@@ -1,7 +1,7 @@
 import { findProviderAndIntegration } from './data-lib.js'
 import { scanAll } from '../core/scanner.js'
-import { loadProvidersWithCache } from '../core/cache.js'
-import { loadInstallationStatus } from '../core/registry.js'
+import { loadProvidersWithCache } from '../storage/cache.js'
+import { loadInstallationStatus } from '../storage/registry.js'
 import { DEFAULT_CONFIG } from '../core/types.js'
 
 /**
@@ -22,10 +22,7 @@ export async function cmdView(libraryIntegration) {
 
   try {
     // Load providers with caching
-    const { npmProviders, remoteProviders } = await loadProvidersWithCache(
-      DEFAULT_CONFIG.cacheFile,
-      () => scanAll()
-    )
+    const { npmProviders, remoteProviders } = await loadProvidersWithCache(DEFAULT_CONFIG.cacheFile, () => scanAll())
 
     const providers = [...npmProviders, ...remoteProviders]
 
@@ -42,11 +39,7 @@ export async function cmdView(libraryIntegration) {
     const integrationName = parts[1] || null
 
     // Find library and optionally integration
-    const { provider, integration } = findProviderAndIntegration(
-      providersWithStatus,
-      libraryName,
-      integrationName
-    )
+    const { provider, integration } = findProviderAndIntegration(providersWithStatus, libraryName, integrationName)
 
     // Display library or integration
     if (integration) {
@@ -78,8 +71,7 @@ function displayLibrary(provider) {
   }
 
   for (const integration of provider.integrations) {
-    const installed =
-      integration.installedTypes.length > 0 ? ' [installed]' : ''
+    const installed = integration.installedTypes.length > 0 ? ' [installed]' : ''
     console.log(`  - ${integration.name}${installed}`)
     console.log(`    ${integration.summary}`)
   }

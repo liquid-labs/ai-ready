@@ -1,13 +1,13 @@
 import { cmdInstall } from './install'
-import * as cache from '../core/cache'
-import * as registry from '../core/registry'
-import * as pluginRegistry from '../core/plugin-registry'
+import * as cache from '../storage/cache'
+import * as registry from '../storage/registry'
+import * as pluginRegistry from '../storage/claude-plugin-registry'
 import { INTEGRATION_TYPES } from '../core/types'
 
 jest.mock('../core/scanner')
-jest.mock('../core/cache')
-jest.mock('../core/registry')
-jest.mock('../core/plugin-registry')
+jest.mock('../storage/cache')
+jest.mock('../storage/registry')
+jest.mock('../storage/claude-plugin-registry')
 
 describe('install command', () => {
   let consoleLogSpy
@@ -61,6 +61,7 @@ describe('install command', () => {
     }
 
     // Mock getDefaultRegistry to return our mock instance
+    // eslint-disable-next-line no-import-assign
     pluginRegistry.getDefaultRegistry = jest.fn().mockReturnValue(mockRegistryInstance)
 
     cache.loadProvidersWithCache.mockResolvedValue({
@@ -102,18 +103,14 @@ describe('install command', () => {
     it('should error for non-existent library', async () => {
       await cmdInstall('nonexistent/Integration', {})
 
-      expect(consoleErrorSpy).toHaveBeenCalledWith(
-        "Error: Library 'nonexistent' not found"
-      )
+      expect(consoleErrorSpy).toHaveBeenCalledWith("Error: Library 'nonexistent' not found")
       expect(processExitSpy).toHaveBeenCalledWith(1)
     })
 
     it('should error for non-existent integration', async () => {
       await cmdInstall('test-lib/NonExistent', {})
 
-      expect(consoleErrorSpy).toHaveBeenCalledWith(
-        "Error: Integration 'NonExistent' not found in library 'test-lib'"
-      )
+      expect(consoleErrorSpy).toHaveBeenCalledWith("Error: Integration 'NonExistent' not found in library 'test-lib'")
       expect(processExitSpy).toHaveBeenCalledWith(1)
     })
   })
@@ -122,12 +119,7 @@ describe('install command', () => {
     it('should install Claude Skill type', async () => {
       await cmdInstall('test-lib/SkillOnly', {})
 
-      expect(mockRegistryInstance.installPlugin).toHaveBeenCalledWith(
-        'test-lib',
-        'SkillOnly',
-        '/path',
-        '1.0.0'
-      )
+      expect(mockRegistryInstance.installPlugin).toHaveBeenCalledWith('test-lib', 'SkillOnly', '/path', '1.0.0')
       expect(consoleLogSpy).toHaveBeenCalledWith('✔ Claude Skill installed')
     })
 
@@ -162,9 +154,7 @@ describe('install command', () => {
           }),
         ])
       )
-      expect(consoleLogSpy).toHaveBeenCalledWith(
-        '✔ Generic integration installed'
-      )
+      expect(consoleLogSpy).toHaveBeenCalledWith('✔ Generic integration installed')
     })
 
     it('should install generic with --generic flag', async () => {
@@ -190,9 +180,7 @@ describe('install command', () => {
       expect(mockRegistryInstance.installPlugin).toHaveBeenCalled()
       expect(registry.writeGenericRegistry).toHaveBeenCalled()
       expect(consoleLogSpy).toHaveBeenCalledWith('✔ Claude Skill installed')
-      expect(consoleLogSpy).toHaveBeenCalledWith(
-        '✔ Generic integration installed'
-      )
+      expect(consoleLogSpy).toHaveBeenCalledWith('✔ Generic integration installed')
     })
 
     it('should install all types when both flags specified', async () => {
@@ -226,22 +214,16 @@ describe('install command', () => {
 
       await cmdInstall('test-lib/Integration', {})
 
-      expect(consoleErrorSpy).toHaveBeenCalledWith(
-        'Error installing integration: Cache error'
-      )
+      expect(consoleErrorSpy).toHaveBeenCalledWith('Error installing integration: Cache error')
       expect(processExitSpy).toHaveBeenCalledWith(1)
     })
 
     it('should handle plugin installation errors', async () => {
-      mockRegistryInstance.installPlugin.mockRejectedValue(
-        new Error('Plugin error')
-      )
+      mockRegistryInstance.installPlugin.mockRejectedValue(new Error('Plugin error'))
 
       await cmdInstall('test-lib/SkillOnly', {})
 
-      expect(consoleErrorSpy).toHaveBeenCalledWith(
-        'Error installing integration: Plugin error'
-      )
+      expect(consoleErrorSpy).toHaveBeenCalledWith('Error installing integration: Plugin error')
       expect(processExitSpy).toHaveBeenCalledWith(1)
     })
   })
@@ -250,9 +232,7 @@ describe('install command', () => {
     it('should show installation progress message', async () => {
       await cmdInstall('test-lib/SkillOnly', {})
 
-      expect(consoleLogSpy).toHaveBeenCalledWith(
-        'Installing test-lib/SkillOnly ...'
-      )
+      expect(consoleLogSpy).toHaveBeenCalledWith('Installing test-lib/SkillOnly ...')
       expect(consoleLogSpy).toHaveBeenCalledWith('✔ Installation complete')
     })
   })

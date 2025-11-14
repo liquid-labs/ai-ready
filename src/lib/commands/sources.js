@@ -1,23 +1,9 @@
 /* eslint-disable no-console, no-process-exit */
 
 import { confirm, logErrAndExit } from './ui-lib.js'
-import {
-  loadConfig,
-  saveConfig,
-  findRepo,
-  deriveRepoName,
-  normalizeGitUrl,
-  generateRepoId
-} from '../core/config.js'
-import {
-  cloneRepo,
-  updateRepo,
-  removeRepo,
-  repairRepo,
-  isRepoCloned,
-  getRepoPath
-} from '../core/remote-repos.js'
-import { invalidateCache } from '../core/cache.js'
+import { loadConfig, saveConfig, findRepo, deriveRepoName, normalizeGitUrl, generateRepoId } from '../storage/config.js'
+import { cloneRepo, updateRepo, removeRepo, repairRepo, isRepoCloned, getRepoPath } from '../storage/remote-repos.js'
+import { invalidateCache } from '../storage/cache.js'
 import { STANDARD_REPOS } from '../core/types.js'
 
 /**
@@ -68,9 +54,7 @@ export async function addSource(url, options = {}) {
 
   // Validate that --standard and URL argument are not both provided
   if (standard && url) {
-    logErrAndExit(
-      'Error: Cannot specify both --standard flag and a URL argument'
-    )
+    logErrAndExit('Error: Cannot specify both --standard flag and a URL argument')
   }
 
   // If --standard flag, add all standard repos
@@ -145,17 +129,11 @@ export async function addSource(url, options = {}) {
  * @returns {Promise<void>}
  */
 export async function removeSource(identifier, options = {}) {
-  const {
-    baseDir = process.cwd(),
-    keepFiles = false,
-    standard = false,
-  } = options
+  const { baseDir = process.cwd(), keepFiles = false, standard = false } = options
 
   // Validate that --standard and identifier argument are not both provided
   if (standard && identifier) {
-    logErrAndExit(
-      'Error: Cannot specify both --standard flag and an identifier argument'
-    )
+    logErrAndExit('Error: Cannot specify both --standard flag and an identifier argument')
   }
 
   // If --standard flag, remove all standard repos
@@ -167,9 +145,7 @@ export async function removeSource(identifier, options = {}) {
 
   // Require identifier if not using --standard
   if (!identifier) {
-    logErrAndExit(
-      'Error: Identifier argument required (or use --standard flag)'
-    )
+    logErrAndExit('Error: Identifier argument required (or use --standard flag)')
   }
 
   const config = await loadConfig()
@@ -245,9 +221,7 @@ export async function updateSources(identifier, options = {}) {
     return
   }
 
-  console.log(
-    `Updating ${repos.length} ${repos.length === 1 ? 'repository' : 'repositories'}...\n`
-  )
+  console.log(`Updating ${repos.length} ${repos.length === 1 ? 'repository' : 'repositories'}...\n`)
 
   const results = await Promise.all(repos.map(doUpdate))
 
@@ -275,9 +249,7 @@ export async function updateSources(identifier, options = {}) {
   // Invalidate cache if any succeeded
   if (successCount > 0) {
     await invalidateCache(baseDir)
-    console.log(
-      '\nCache invalidated. Run `air list` to see updated integrations.'
-    )
+    console.log('\nCache invalidated. Run `air list` to see updated integrations.')
   }
 }
 
@@ -325,9 +297,7 @@ const warnAndConfirmAddSource = async (url) => {
   // Show security warning
   console.log('\n⚠️  SECURITY WARNING ⚠️\n')
   console.log('You are adding a remote skill repository.')
-  console.log(
-    '\nSkills from this repository will have access to your AI agent and can:'
-  )
+  console.log('\nSkills from this repository will have access to your AI agent and can:')
   console.log('  • Read and modify files in your projects')
   console.log('  • Execute commands on your system')
   console.log('  • Access environment variables and secrets')
@@ -401,9 +371,7 @@ const removeStandardRepos = async (baseDir, keepFiles) => {
   // Find all configured repos that match standard URLs
   for (const standardUrl of STANDARD_REPOS) {
     const normalizedStandardUrl = normalizeGitUrl(standardUrl)
-    const repo = config.repos.find(
-      (r) => r.normalizedUrl === normalizedStandardUrl
-    )
+    const repo = config.repos.find((r) => r.normalizedUrl === normalizedStandardUrl)
     if (repo) {
       standardReposToRemove.push(repo)
     }

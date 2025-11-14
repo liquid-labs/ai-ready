@@ -165,12 +165,7 @@ describe('scanner', () => {
 
     it('should skip integration directories without metadata files', async () => {
       const libraryPath = path.join(tempDir, 'node_modules', 'test-lib')
-      const integrationPath = path.join(
-        libraryPath,
-        'ai-ready',
-        'integrations',
-        'InvalidIntegration'
-      )
+      const integrationPath = path.join(libraryPath, 'ai-ready', 'integrations', 'InvalidIntegration')
       await fs.mkdir(integrationPath, { recursive : true })
       await fs.writeFile(
         path.join(libraryPath, 'package.json'),
@@ -185,18 +180,9 @@ describe('scanner', () => {
 
     it('should handle missing package.json gracefully', async () => {
       const libraryPath = path.join(tempDir, 'node_modules', 'no-package-lib')
-      const integrationPath = path.join(
-        libraryPath,
-        'ai-ready',
-        'integrations',
-        'TestIntegration'
-      )
+      const integrationPath = path.join(libraryPath, 'ai-ready', 'integrations', 'TestIntegration')
       await fs.mkdir(integrationPath, { recursive : true })
-      await fs.writeFile(
-        path.join(integrationPath, 'AI_INTEGRATION.md'),
-        '---\nname: Test\nsummary: Test\n---',
-        'utf8'
-      )
+      await fs.writeFile(path.join(integrationPath, 'AI_INTEGRATION.md'), '---\nname: Test\nsummary: Test\n---', 'utf8')
 
       const providers = await scanForProviders(['node_modules'], tempDir)
 
@@ -222,33 +208,21 @@ describe('scanner', () => {
       const otherPath = path.join(tempDir, 'other-modules')
       await fs.mkdir(otherPath, { recursive : true })
       const lib2Path = path.join(otherPath, 'lib-2')
-      await fs.mkdir(
-        path.join(lib2Path, 'ai-ready', 'integrations', 'Integration2'),
-        {
-          recursive : true,
-        }
-      )
+      await fs.mkdir(path.join(lib2Path, 'ai-ready', 'integrations', 'Integration2'), {
+        recursive : true,
+      })
       await fs.writeFile(
         path.join(lib2Path, 'package.json'),
         JSON.stringify({ name : 'lib-2', version : '2.0.0' }),
         'utf8'
       )
       await fs.writeFile(
-        path.join(
-          lib2Path,
-          'ai-ready',
-          'integrations',
-          'Integration2',
-          'AI_INTEGRATION.md'
-        ),
+        path.join(lib2Path, 'ai-ready', 'integrations', 'Integration2', 'AI_INTEGRATION.md'),
         '---\nname: Integration2\nsummary: Test 2\n---',
         'utf8'
       )
 
-      const providers = await scanForProviders(
-        ['node_modules', 'other-modules'],
-        tempDir
-      )
+      const providers = await scanForProviders(['node_modules', 'other-modules'], tempDir)
 
       expect(providers).toHaveLength(2)
       expect(providers.find((p) => p.libraryName === 'lib-1')).toBeDefined()
@@ -257,11 +231,7 @@ describe('scanner', () => {
 
     it('should skip non-directory entries in scan path', async () => {
       await fs.mkdir(path.join(tempDir, 'node_modules'), { recursive : true })
-      await fs.writeFile(
-        path.join(tempDir, 'node_modules', 'file.txt'),
-        'test',
-        'utf8'
-      )
+      await fs.writeFile(path.join(tempDir, 'node_modules', 'file.txt'), 'test', 'utf8')
 
       const providers = await scanForProviders(['node_modules'], tempDir)
       expect(providers).toHaveLength(0)

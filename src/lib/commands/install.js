@@ -1,18 +1,13 @@
 import { logErrAndExit } from './ui-lib.js'
 import { findProviderAndIntegration } from './data-lib.js'
 import { scanAll } from '../core/scanner.js'
-import { loadProvidersWithCache } from '../core/cache.js'
-import {
-  loadInstallationStatus,
-  createBackup,
-  readGenericRegistry,
-  writeGenericRegistry
-} from '../core/registry.js'
-import { getDefaultRegistry } from '../core/plugin-registry.js'
+import { loadProvidersWithCache } from '../storage/cache.js'
+import { loadInstallationStatus, createBackup, readGenericRegistry, writeGenericRegistry } from '../storage/registry.js'
+import { getDefaultRegistry } from '../storage/claude-plugin-registry.js'
 import { DEFAULT_CONFIG, INTEGRATION_TYPES } from '../core/types.js'
 
 /**
- * @import { Integration } from './types.js'
+ * @import { Integration, IntegrationProvider } from './types.js'
  */
 /* eslint-disable no-console */
 
@@ -26,9 +21,7 @@ import { DEFAULT_CONFIG, INTEGRATION_TYPES } from '../core/types.js'
  */
 export async function cmdInstall(libraryIntegration, options) {
   if (!libraryIntegration || !libraryIntegration.includes('/')) {
-    logErrAndExit(
-      'Error: Please specify library/integration format (e.g., my-lib/MyIntegration)'
-    )
+    logErrAndExit('Error: Please specify library/integration format (e.g., my-lib/MyIntegration)')
   }
 
   try {
@@ -36,10 +29,7 @@ export async function cmdInstall(libraryIntegration, options) {
     const [libraryName, integrationName] = libraryIntegration.split('/')
 
     // Load providers
-    const { npmProviders, remoteProviders } = await loadProvidersWithCache(
-      DEFAULT_CONFIG.cacheFile,
-      () => scanAll()
-    )
+    const { npmProviders, remoteProviders } = await loadProvidersWithCache(DEFAULT_CONFIG.cacheFile, () => scanAll())
 
     const providers = [...npmProviders, ...remoteProviders]
 
@@ -53,11 +43,7 @@ export async function cmdInstall(libraryIntegration, options) {
     )
 
     // Find integration
-    const { provider, integration } = findProviderAndIntegration(
-      providersWithStatus,
-      libraryName,
-      integrationName
-    )
+    const { provider, integration } = findProviderAndIntegration(providersWithStatus, libraryName, integrationName)
 
     // Determine types to install
     const typesToInstall = determineTypesToInstall(integration, options)
@@ -72,14 +58,7 @@ export async function cmdInstall(libraryIntegration, options) {
 
     // Install each type
     const installations = typesToInstall.map((type) =>
-      installType(
-        libraryName,
-        integrationName,
-        integration,
-        type,
-        provider.path,
-        provider
-      ))
+      installType(libraryName, integrationName, integration, type, provider.path, provider))
 
     await Promise.all(installations)
     console.log('✔ Installation complete')
@@ -104,31 +83,20 @@ function determineTypesToInstall(integration, options) {
   const requestedTypes = []
 
   // If both flags or neither flag, install all available types
-  if (
-    (!options.skill && !options.generic)
-    || (options.skill && options.generic)
-  ) {
+  if ((!options.skill && !options.generic) || (options.skill && options.generic)) {
     requestedTypes.push(...integration.types)
   }
   else {
-    if (
-      options.skill
-      && integration.types.includes(INTEGRATION_TYPES.CLAUDE_SKILL)
-    ) {
+    if (options.skill && integration.types.includes(INTEGRATION_TYPES.CLAUDE_SKILL)) {
       requestedTypes.push(INTEGRATION_TYPES.CLAUDE_SKILL)
     }
-    if (
-      options.generic
-      && integration.types.includes(INTEGRATION_TYPES.GENERIC)
-    ) {
+    if (options.generic && integration.types.includes(INTEGRATION_TYPES.GENERIC)) {
       requestedTypes.push(INTEGRATION_TYPES.GENERIC)
     }
   }
 
   // Filter out already installed types
-  return requestedTypes.filter(
-    (type) => !integration.installedTypes.includes(type)
-  )
+  return requestedTypes.filter((type) => !integration.installedTypes.includes(type))
 }
 
 /**
@@ -138,31 +106,16 @@ function determineTypesToInstall(integration, options) {
  * @param {Integration} integration - Integration object
  * @param {string} type - Type to install
  * @param {string} libraryPath - Path to library root
+ * @param {IntegrationProvider} provider - Provider object
  * @returns {Promise<void>}
  */
-async function installType(
-  libraryName,
-  integrationName,
-  integration,
-  type,
-  libraryPath,
-  provider
-) {
+async function installType(libraryName, integrationName, integration, type, libraryPath, provider) {
   if (type === INTEGRATION_TYPES.CLAUDE_SKILL) {
-    await installClaudeSkillIntegration(
-      libraryName,
-      integrationName,
-      libraryPath,
-      provider.version
-    )
+    await installClaudeSkillIntegration(libraryName, integrationName, libraryPath, provider.version)
     console.log('✔ Claude Skill installed')
   }
   else if (type === INTEGRATION_TYPES.GENERIC) {
-    await installGenericIntegration(
-      libraryName,
-      integrationName,
-      integration.summary
-    )
+    await installGenericIntegration(libraryName, integrationName, integration.summary)
     console.log('✔ Generic integration installed')
   }
 }
@@ -175,12 +128,7 @@ async function installType(
  * @param {string} version - Library version
  * @returns {Promise<void>}
  */
-async function installClaudeSkillIntegration(
-  libraryName,
-  integrationName,
-  libraryPath,
-  version
-) {
+async function installClaudeSkillIntegration(libraryName, integrationName, libraryPath, version) {
   const registry = getDefaultRegistry()
   await registry.installPlugin(libraryName, integrationName, libraryPath, version)
 }
@@ -192,11 +140,7 @@ async function installClaudeSkillIntegration(
  * @param {string} summary - Integration summary
  * @returns {Promise<void>}
  */
-async function installGenericIntegration(
-  libraryName,
-  integrationName,
-  summary
-) {
+async function installGenericIntegration(libraryName, integrationName, summary) {
   // Use first generic file path (AGENTS.md or CLAUDE.md)
   const genericFile = DEFAULT_CONFIG.registryFiles.generic[0]
 
@@ -204,14 +148,10 @@ async function installGenericIntegration(
   await createBackup(genericFile)
 
   // Read existing entries
-  const entries = await readGenericRegistry(
-    DEFAULT_CONFIG.registryFiles.generic
-  )
+  const entries = await readGenericRegistry(DEFAULT_CONFIG.registryFiles.generic)
 
   // Check if already exists
-  const exists = entries.some(
-    (e) => e.library === libraryName && e.integration === integrationName
-  )
+  const exists = entries.some((e) => e.library === libraryName && e.integration === integrationName)
 
   if (!exists) {
     entries.push({

@@ -1,13 +1,13 @@
 import fs from 'fs/promises'
 import path from 'path'
 import simpleGit from 'simple-git'
-import { isValidCache } from './types.js'
-import { SOURCE_TYPE } from './types.js'
+import { isValidCache } from '../core/types.js'
+import { SOURCE_TYPE } from '../core/types.js'
 import { loadConfig } from './config.js'
 import { getRepoPath, isRepoCloned } from './remote-repos.js'
 
 /**
- * @import { CacheData, IntegrationProvider, RemoteRepoProvider } from './types.js'
+ * @import { CacheData, IntegrationProvider, RemoteRepoProvider } from '../core/types.js'
  */
 
 /**
@@ -44,11 +44,7 @@ export async function readCache(cacheFilePath, baseDir = process.cwd()) {
  * @param {string} [baseDir=process.cwd()] - Base directory
  * @returns {Promise<void>}
  */
-export async function writeCache(
-  cacheFilePath,
-  cacheData,
-  baseDir = process.cwd()
-) {
+export async function writeCache(cacheFilePath, cacheData, baseDir = process.cwd()) {
   const fullPath = path.resolve(baseDir, cacheFilePath)
 
   if (!isValidCache(cacheData)) {
@@ -65,11 +61,7 @@ export async function writeCache(
  * @param {string} [source='all'] - Source type to validate ('npm', 'remote', or 'all')
  * @returns {Promise<boolean>} True if cache is valid
  */
-export async function isCacheValid(
-  cache,
-  baseDir = process.cwd(),
-  source = SOURCE_TYPE.ALL
-) {
+export async function isCacheValid(cache, baseDir = process.cwd(), source = SOURCE_TYPE.ALL) {
   if (!cache) {
     return false
   }
@@ -171,10 +163,7 @@ export async function loadProvidersWithCache(
  * @param {string} [cacheFilePath='.aircache.json'] - Path to cache file
  * @returns {Promise<void>}
  */
-export async function invalidateCache(
-  baseDir = process.cwd(),
-  cacheFilePath = '.aircache.json'
-) {
+export async function invalidateCache(baseDir = process.cwd(), cacheFilePath = '.aircache.json') {
   const fullPath = path.resolve(baseDir, cacheFilePath)
 
   try {
@@ -240,12 +229,7 @@ const validateRemoteCache = async (cache) => {
   const cachedRepoIds = new Set(remoteProviders.map((p) => p.repoId))
   const clonedRepos = []
 
-  ;(
-    await Promise.all(
-      config.repos.map(async (repo) =>
-        (await isRepoCloned(repo)) ? repo : null)
-    )
-  ).forEach((r) => {
+  ;(await Promise.all(config.repos.map(async (repo) => ((await isRepoCloned(repo)) ? repo : null)))).forEach((r) => {
     if (r !== null) {
       clonedRepos.push(r)
     }
