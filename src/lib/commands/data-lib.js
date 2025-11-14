@@ -1,7 +1,7 @@
 import { logErrAndExit } from './ui-lib'
 
 /**
- * @import { IntegrationProvider, Integration } from '../core/types.js'
+ * @import { IntegrationProvider, Integration } from '../types.js'
  */
 
 /**
@@ -11,15 +11,9 @@ import { logErrAndExit } from './ui-lib'
  * @param {string} [integrationName] - Optional integration name to find
  * @returns {{ provider: IntegrationProvider, integration: Integration | null }} - Found provider and integration (if requested)
  */
-export function findProviderAndIntegration(
-  providersWithStatus,
-  libraryName,
-  integrationName
-) {
+export function findProviderAndIntegration(providersWithStatus, libraryName, integrationName) {
   // Find provider
-  const provider = providersWithStatus.find(
-    (p) => p.libraryName === libraryName
-  )
+  const provider = providersWithStatus.find((p) => p.libraryName === libraryName)
   if (!provider) {
     logErrAndExit(`Error: Library '${libraryName}' not found`)
   }
@@ -29,9 +23,7 @@ export function findProviderAndIntegration(
   if (integrationName) {
     integration = provider.integrations.find((i) => i.name === integrationName)
     if (!integration) {
-      logErrAndExit(
-        `Error: Integration '${integrationName}' not found in library '${libraryName}'`
-      )
+      logErrAndExit(`Error: Integration '${integrationName}' not found in library '${libraryName}'`)
     }
   }
 

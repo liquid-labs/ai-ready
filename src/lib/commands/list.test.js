@@ -1,12 +1,12 @@
 import { cmdList } from './list'
-import * as cache from '../core/cache'
-import * as registry from '../core/registry'
-import { INTEGRATION_TYPES } from '../core/types'
+import * as cache from '../storage/cache'
+import * as registry from '../storage/registry'
+import { INTEGRATION_TYPES } from '../types'
 
 // Mock modules
-jest.mock('../core/scanner')
-jest.mock('../core/cache')
-jest.mock('../core/registry')
+jest.mock('../scanner')
+jest.mock('../storage/cache')
+jest.mock('../storage/registry')
 
 describe('list command', () => {
   let consoleLogSpy
@@ -237,10 +237,7 @@ describe('list command', () => {
 
     await cmdList({})
 
-    expect(consoleErrorSpy).toHaveBeenCalledWith(
-      'Error listing integrations:',
-      'Test error'
-    )
+    expect(consoleErrorSpy).toHaveBeenCalledWith('Error listing integrations:', 'Test error')
     expect(processExitSpy).toHaveBeenCalledWith(1)
   })
 
@@ -250,10 +247,7 @@ describe('list command', () => {
 
     await cmdList({})
 
-    expect(cache.loadProvidersWithCache).toHaveBeenCalledWith(
-      '.aircache.json',
-      expect.any(Function)
-    )
+    expect(cache.loadProvidersWithCache).toHaveBeenCalledWith('.aircache.json', expect.any(Function))
   })
 
   it('should call loadInstallationStatus with correct parameters', async () => {
@@ -266,11 +260,10 @@ describe('list command', () => {
 
     await cmdList({})
 
-    expect(registry.loadInstallationStatus).toHaveBeenCalledWith(
-      providers,
-      '.claude/skills',
-      ['AGENTS.md', 'CLAUDE.md']
-    )
+    expect(registry.loadInstallationStatus).toHaveBeenCalledWith(providers, '.claude/skills', [
+      'AGENTS.md',
+      'CLAUDE.md',
+    ])
   })
 
   it('should handle empty installedTypes', async () => {

@@ -1,16 +1,19 @@
 import { cmdRemove } from './remove'
-import * as cache from '../core/cache'
-import * as registry from '../core/registry'
-import { INTEGRATION_TYPES } from '../core/types'
+import * as cache from '../storage/cache'
+import * as registry from '../storage/registry'
+import * as pluginRegistry from '../storage/claude-plugin-registry'
+import { INTEGRATION_TYPES } from '../types'
 
-jest.mock('../core/scanner')
-jest.mock('../core/cache')
-jest.mock('../core/registry')
+jest.mock('../scanner')
+jest.mock('../storage/cache')
+jest.mock('../storage/registry')
+jest.mock('../storage/claude-plugin-registry')
 
 describe('remove command', () => {
   let consoleLogSpy
   let consoleErrorSpy
   let processExitSpy
+  let mockRegistryInstance
 
   const mockProviders = [
     {
@@ -34,10 +37,7 @@ describe('remove command', () => {
           name           : 'BothInstalled',
           summary        : 'Both types installed',
           types          : [INTEGRATION_TYPES.GENERIC, INTEGRATION_TYPES.CLAUDE_SKILL],
-          installedTypes : [
-            INTEGRATION_TYPES.GENERIC,
-            INTEGRATION_TYPES.CLAUDE_SKILL,
-          ],
+          installedTypes : [INTEGRATION_TYPES.GENERIC, INTEGRATION_TYPES.CLAUDE_SKILL],
         },
         {
           name           : 'NotInstalled',
@@ -54,13 +54,22 @@ describe('remove command', () => {
     consoleErrorSpy = jest.spyOn(console, 'error').mockImplementation()
     processExitSpy = jest.spyOn(process, 'exit').mockImplementation()
 
+    // Create mock registry instance
+    mockRegistryInstance = {
+      removePlugin      : jest.fn().mockResolvedValue(undefined),
+      isPluginInstalled : jest.fn().mockResolvedValue(false),
+    }
+
+    // Mock getDefaultRegistry to return our mock instance
+    // eslint-disable-next-line no-import-assign
+    pluginRegistry.getDefaultRegistry = jest.fn().mockReturnValue(mockRegistryInstance)
+
     cache.loadProvidersWithCache.mockResolvedValue({
       npmProviders    : mockProviders,
       remoteProviders : [],
     })
     registry.loadInstallationStatus.mockResolvedValue(mockProviders)
     registry.createBackup.mockResolvedValue(undefined)
-    registry.removeClaudeSkillSymlink.mockResolvedValue(undefined)
     registry.readGenericRegistry.mockResolvedValue([
       { library : 'test-lib', integration : 'GenericInstalled' },
       { library : 'test-lib', integration : 'BothInstalled' },
@@ -97,18 +106,14 @@ describe('remove command', () => {
     it('should error for non-existent library', async () => {
       await cmdRemove('nonexistent/Integration', {})
 
-      expect(consoleErrorSpy).toHaveBeenCalledWith(
-        "Error: Library 'nonexistent' not found"
-      )
+      expect(consoleErrorSpy).toHaveBeenCalledWith("Error: Library 'nonexistent' not found")
       expect(processExitSpy).toHaveBeenCalledWith(1)
     })
 
     it('should error for non-existent integration', async () => {
       await cmdRemove('test-lib/NonExistent', {})
 
-      expect(consoleErrorSpy).toHaveBeenCalledWith(
-        "Error: Integration 'NonExistent' not found in library 'test-lib'"
-      )
+      expect(consoleErrorSpy).toHaveBeenCalledWith("Error: Integration 'NonExistent' not found in library 'test-lib'")
       expect(processExitSpy).toHaveBeenCalledWith(1)
     })
   })
@@ -117,17 +122,14 @@ describe('remove command', () => {
     it('should remove Claude Skill type', async () => {
       await cmdRemove('test-lib/SkillInstalled', {})
 
-      expect(registry.removeClaudeSkillSymlink).toHaveBeenCalledWith(
-        '.claude/skills',
-        'SkillInstalled'
-      )
+      expect(mockRegistryInstance.removePlugin).toHaveBeenCalledWith('test-lib', 'SkillInstalled')
       expect(consoleLogSpy).toHaveBeenCalledWith('✔ Claude Skill removed')
     })
 
     it('should remove Claude Skill with --skill flag', async () => {
       await cmdRemove('test-lib/BothInstalled', { skill : true })
 
-      expect(registry.removeClaudeSkillSymlink).toHaveBeenCalled()
+      expect(mockRegistryInstance.removePlugin).toHaveBeenCalled()
       expect(registry.writeGenericRegistry).not.toHaveBeenCalled()
       expect(consoleLogSpy).toHaveBeenCalledWith('✔ Claude Skill removed')
     })
@@ -146,23 +148,17 @@ describe('remove command', () => {
 
       expect(registry.writeGenericRegistry).toHaveBeenCalledWith(
         'AGENTS.md',
-        expect.arrayContaining([
-          { library : 'test-lib', integration : 'BothInstalled' },
-        ])
+        expect.arrayContaining([{ library : 'test-lib', integration : 'BothInstalled' }])
       )
-      expect(consoleLogSpy).toHaveBeenCalledWith(
-        '✔ Generic integration removed'
-      )
+      expect(consoleLogSpy).toHaveBeenCalledWith('✔ Generic integration removed')
     })
 
     it('should remove generic with --generic flag', async () => {
       await cmdRemove('test-lib/BothInstalled', { generic : true })
 
       expect(registry.writeGenericRegistry).toHaveBeenCalled()
-      expect(registry.removeClaudeSkillSymlink).not.toHaveBeenCalled()
-      expect(consoleLogSpy).toHaveBeenCalledWith(
-        '✔ Generic integration removed'
-      )
+      expect(mockRegistryInstance.removePlugin).not.toHaveBeenCalled()
+      expect(consoleLogSpy).toHaveBeenCalledWith('✔ Generic integration removed')
     })
 
     it('should not remove generic for skill-only installed integration', async () => {
@@ -177,18 +173,16 @@ describe('remove command', () => {
     it('should remove all types when no flags specified', async () => {
       await cmdRemove('test-lib/BothInstalled', {})
 
-      expect(registry.removeClaudeSkillSymlink).toHaveBeenCalled()
+      expect(mockRegistryInstance.removePlugin).toHaveBeenCalled()
       expect(registry.writeGenericRegistry).toHaveBeenCalled()
       expect(consoleLogSpy).toHaveBeenCalledWith('✔ Claude Skill removed')
-      expect(consoleLogSpy).toHaveBeenCalledWith(
-        '✔ Generic integration removed'
-      )
+      expect(consoleLogSpy).toHaveBeenCalledWith('✔ Generic integration removed')
     })
 
     it('should remove all types when both flags specified', async () => {
       await cmdRemove('test-lib/BothInstalled', { skill : true, generic : true })
 
-      expect(registry.removeClaudeSkillSymlink).toHaveBeenCalled()
+      expect(mockRegistryInstance.removePlugin).toHaveBeenCalled()
       expect(registry.writeGenericRegistry).toHaveBeenCalled()
     })
   })
@@ -234,22 +228,16 @@ describe('remove command', () => {
 
       await cmdRemove('test-lib/Integration', {})
 
-      expect(consoleErrorSpy).toHaveBeenCalledWith(
-        'Error removing integration: Cache error'
-      )
+      expect(consoleErrorSpy).toHaveBeenCalledWith('Error removing integration: Cache error')
       expect(processExitSpy).toHaveBeenCalledWith(1)
     })
 
-    it('should handle symlink removal errors', async () => {
-      registry.removeClaudeSkillSymlink.mockRejectedValue(
-        new Error('Symlink error')
-      )
+    it('should handle plugin removal errors', async () => {
+      mockRegistryInstance.removePlugin.mockRejectedValue(new Error('Plugin error'))
 
       await cmdRemove('test-lib/SkillInstalled', {})
 
-      expect(consoleErrorSpy).toHaveBeenCalledWith(
-        'Error removing integration: Symlink error'
-      )
+      expect(consoleErrorSpy).toHaveBeenCalledWith('Error removing integration: Plugin error')
       expect(processExitSpy).toHaveBeenCalledWith(1)
     })
   })
@@ -258,9 +246,7 @@ describe('remove command', () => {
     it('should show removal progress message', async () => {
       await cmdRemove('test-lib/SkillInstalled', {})
 
-      expect(consoleLogSpy).toHaveBeenCalledWith(
-        'Removing test-lib/SkillInstalled ...'
-      )
+      expect(consoleLogSpy).toHaveBeenCalledWith('Removing test-lib/SkillInstalled ...')
       expect(consoleLogSpy).toHaveBeenCalledWith('✔ Removal complete')
     })
   })

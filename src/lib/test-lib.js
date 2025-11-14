@@ -21,12 +21,7 @@ export async function createTestLibrary(tempDir, libraryName, integrations) {
 
   // Create integrations
   for (const integration of integrations) {
-    const integrationPath = path.join(
-      libraryPath,
-      'ai-ready',
-      'integrations',
-      integration.dirName
-    )
+    const integrationPath = path.join(libraryPath, 'ai-ready', 'integrations', integration.dirName)
     // eslint-disable-next-line no-await-in-loop
     await fs.mkdir(integrationPath, { recursive : true })
 

@@ -1,6 +1,6 @@
 /**
  * Git repository management for remote skills.
- * @import { RemoteRepo } from './types.js'
+ * @import { RemoteRepo } from '../types.js'
  */
 
 import fs from 'fs/promises'
@@ -249,8 +249,7 @@ const checkClonePreconditions = async () => {
   if (!(await isGitAvailable())) {
     return {
       success : false,
-      error :
-        'Git is not installed or not available in PATH. Please install Git and try again.',
+      error   : 'Git is not installed or not available in PATH. Please install Git and try again.',
     }
   }
 

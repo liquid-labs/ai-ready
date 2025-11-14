@@ -1,13 +1,13 @@
 /**
  * Configuration management for remote repositories using XDG Base Directory specification.
- * @import { RemoteRepoConfig, RemoteRepo } from './types.js'
+ * @import { RemoteRepoConfig, RemoteRepo } from '../types.js'
  */
 
 import fs from 'fs/promises'
 import path from 'path'
 import crypto from 'crypto'
 import xdg from '@folder/xdg'
-import { DEFAULT_REMOTE_CONFIG } from './types.js'
+import { DEFAULT_REMOTE_CONFIG } from '../types'
 
 const xdgDirs = xdg()
 const CONFIG_DIR = xdgDirs.config
@@ -98,11 +98,7 @@ export function normalizeGitUrl(url) {
  * @returns {string} Repository ID (12-character SHA-256 hash prefix)
  */
 export function generateRepoId(normalizedUrl) {
-  return crypto
-    .createHash('sha256')
-    .update(normalizedUrl)
-    .digest('hex')
-    .substring(0, 12)
+  return crypto.createHash('sha256').update(normalizedUrl).digest('hex').substring(0, 12)
 }
 
 /**

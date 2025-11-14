@@ -1,4 +1,4 @@
-import { parseFrontmatter, parseFrontmatterFromString } from './frontmatter.js'
+import { parseFrontmatter, parseFrontmatterFromString } from './frontmatter'
 import fs from 'fs/promises'
 import path from 'path'
 import os from 'os'
@@ -137,11 +137,7 @@ name: OnlyName
 
     it('should throw error for permission issues', async () => {
       const filePath = path.join(tempDir, 'test.md')
-      await fs.writeFile(
-        filePath,
-        '---\nname: Test\nsummary: Test\n---',
-        'utf8'
-      )
+      await fs.writeFile(filePath, '---\nname: Test\nsummary: Test\n---', 'utf8')
 
       // Make file unreadable (Unix-like systems)
       if (process.platform !== 'win32') {

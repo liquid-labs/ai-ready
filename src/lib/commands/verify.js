@@ -1,6 +1,6 @@
 import fs from 'fs/promises'
 import path from 'path'
-import { INTEGRATION_TYPES } from '../core/types.js'
+import { INTEGRATION_TYPES } from '../types'
 
 /* eslint-disable no-console */
 
@@ -25,9 +25,7 @@ export async function cmdVerify(options) {
     const integrationDirs = entries.filter((entry) => entry.isDirectory())
 
     if (integrationDirs.length === 0) {
-      console.error(
-        '✗ No integration directories found in ai-ready/integrations/'
-      )
+      console.error('✗ No integration directories found in ai-ready/integrations/')
       process.exit(1) // eslint-disable-line no-process-exit
     }
 
@@ -99,9 +97,7 @@ async function verifyIntegration(integrationsPath, integrationName) {
       errors.push('AI_INTEGRATION.md: "summary" cannot be empty')
     }
     else if (!data.summary || typeof data.summary !== 'string') {
-      errors.push(
-        'AI_INTEGRATION.md: Missing or invalid "summary" in frontmatter'
-      )
+      errors.push('AI_INTEGRATION.md: Missing or invalid "summary" in frontmatter')
     }
 
     // If both fields are valid, mark as valid and store metadata
@@ -147,9 +143,7 @@ async function verifyIntegration(integrationsPath, integrationName) {
       errors.push('claude-skill/SKILL.md: "name" cannot be empty')
     }
     else if (!data.name || typeof data.name !== 'string') {
-      errors.push(
-        'claude-skill/SKILL.md: Missing or invalid "name" in frontmatter'
-      )
+      errors.push('claude-skill/SKILL.md: Missing or invalid "name" in frontmatter')
     }
 
     // Validate summary field
@@ -157,9 +151,7 @@ async function verifyIntegration(integrationsPath, integrationName) {
       errors.push('claude-skill/SKILL.md: "summary" cannot be empty')
     }
     else if (!data.summary || typeof data.summary !== 'string') {
-      errors.push(
-        'claude-skill/SKILL.md: Missing or invalid "summary" in frontmatter'
-      )
+      errors.push('claude-skill/SKILL.md: Missing or invalid "summary" in frontmatter')
     }
 
     // If both fields are valid, mark as valid and store metadata
@@ -199,17 +191,13 @@ async function verifyIntegration(integrationsPath, integrationName) {
   catch (error) {
     // File doesn't exist - this is okay, just means no skill integration
     if (error.code !== 'ENOENT') {
-      errors.push(
-        `claude-skill/SKILL.md: Error reading file - ${error.message}`
-      )
+      errors.push(`claude-skill/SKILL.md: Error reading file - ${error.message}`)
     }
   }
 
   // Must have at least one type
   if (types.length === 0) {
-    errors.push(
-      'No valid integration files found (AI_INTEGRATION.md or claude-skill/SKILL.md)'
-    )
+    errors.push('No valid integration files found (AI_INTEGRATION.md or claude-skill/SKILL.md)')
   }
 
   // Check naming consistency
@@ -285,9 +273,7 @@ const checkAiIntegrationDirectory = async (integrationsPath) => {
       console.log()
       console.log('Expected structure:')
       console.log('  ai-ready/integrations/<IntegrationName>/AI_INTEGRATION.md')
-      console.log(
-        '  ai-ready/integrations/<IntegrationName>/claude-skill/SKILL.md'
-      )
+      console.log('  ai-ready/integrations/<IntegrationName>/claude-skill/SKILL.md')
       process.exit(1) // eslint-disable-line no-process-exit
     }
     throw error

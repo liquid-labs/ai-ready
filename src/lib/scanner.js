@@ -1,10 +1,10 @@
 import fs from 'fs/promises'
 import path from 'path'
 import simpleGit from 'simple-git'
-import { parseFrontmatter } from '../parsers/frontmatter.js'
-import { INTEGRATION_TYPES, SOURCE_TYPE } from './types.js'
-import { loadConfig } from './config.js'
-import { isRepoCloned, getRepoPath } from './remote-repos.js'
+import { parseFrontmatter } from './parsers/frontmatter'
+import { INTEGRATION_TYPES, SOURCE_TYPE } from './types'
+import { loadConfig } from './storage/config'
+import { isRepoCloned, getRepoPath } from './storage/remote-repos'
 
 /**
  * @import { Integration, IntegrationProvider, RemoteRepoProvider } from './types.js'
@@ -243,9 +243,7 @@ async function scanIntegrations(integrationsPath) {
     // integrations directory doesn't exist or can't be read
   }
 
-  const integrations = (await Promise.all(scans)).filter(
-    (integration) => !!integration
-  )
+  const integrations = (await Promise.all(scans)).filter((integration) => !!integration)
 
   return integrations
 }

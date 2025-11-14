@@ -1,11 +1,11 @@
-import { cmdView } from './view.js'
-import * as cache from '../core/cache.js'
-import * as registry from '../core/registry.js'
-import { INTEGRATION_TYPES } from '../core/types.js'
+import { cmdView } from './view'
+import * as cache from '../storage/cache'
+import * as registry from '../storage/registry'
+import { INTEGRATION_TYPES } from '../types'
 
-jest.mock('../core/scanner.js')
-jest.mock('../core/cache.js')
-jest.mock('../core/registry.js')
+jest.mock('../scanner.js')
+jest.mock('../storage/cache.js')
+jest.mock('../storage/registry.js')
 
 describe('view command', () => {
   let consoleLogSpy
@@ -97,9 +97,7 @@ describe('view command', () => {
     it('should error for non-existent library', async () => {
       await cmdView('nonexistent-lib')
 
-      expect(consoleErrorSpy).toHaveBeenCalledWith(
-        "Error: Library 'nonexistent-lib' not found"
-      )
+      expect(consoleErrorSpy).toHaveBeenCalledWith("Error: Library 'nonexistent-lib' not found")
       expect(processExitSpy).toHaveBeenCalledWith(1)
     })
   })
@@ -127,18 +125,14 @@ describe('view command', () => {
     it('should error for non-existent integration', async () => {
       await cmdView('test-lib/NonExistent')
 
-      expect(consoleErrorSpy).toHaveBeenCalledWith(
-        "Error: Integration 'NonExistent' not found in library 'test-lib'"
-      )
+      expect(consoleErrorSpy).toHaveBeenCalledWith("Error: Integration 'NonExistent' not found in library 'test-lib'")
       expect(processExitSpy).toHaveBeenCalledWith(1)
     })
 
     it('should error when library does not exist', async () => {
       await cmdView('nonexistent/Integration')
 
-      expect(consoleErrorSpy).toHaveBeenCalledWith(
-        "Error: Library 'nonexistent' not found"
-      )
+      expect(consoleErrorSpy).toHaveBeenCalledWith("Error: Library 'nonexistent' not found")
       expect(processExitSpy).toHaveBeenCalledWith(1)
     })
 
@@ -150,12 +144,9 @@ describe('view command', () => {
           path         : '/path',
           integrations : [
             {
-              name    : 'Dual',
-              summary : 'Dual type',
-              types   : [
-                INTEGRATION_TYPES.GENERIC,
-                INTEGRATION_TYPES.CLAUDE_SKILL,
-              ],
+              name           : 'Dual',
+              summary        : 'Dual type',
+              types          : [INTEGRATION_TYPES.GENERIC, INTEGRATION_TYPES.CLAUDE_SKILL],
               installedTypes : [INTEGRATION_TYPES.GENERIC],
             },
           ],
@@ -171,9 +162,7 @@ describe('view command', () => {
       await cmdView('dual-lib/Dual')
 
       const output = consoleLogSpy.mock.calls.map((call) => call[0]).join('\n')
-      expect(output).toContain(
-        'Types        : [genericIntegration, claudeSkill]'
-      )
+      expect(output).toContain('Types        : [genericIntegration, claudeSkill]')
       expect(output).toContain('Installed    : [genericIntegration]')
     })
   })
@@ -182,9 +171,7 @@ describe('view command', () => {
     it('should error when no argument provided', async () => {
       await cmdView(undefined)
 
-      expect(consoleErrorSpy).toHaveBeenCalledWith(
-        'Error: Please specify a library or library/integration'
-      )
+      expect(consoleErrorSpy).toHaveBeenCalledWith('Error: Please specify a library or library/integration')
       expect(processExitSpy).toHaveBeenCalledWith(1)
     })
 
@@ -193,24 +180,16 @@ describe('view command', () => {
 
       await cmdView('test-lib')
 
-      expect(consoleErrorSpy).toHaveBeenCalledWith(
-        'Error viewing details:',
-        'Cache error'
-      )
+      expect(consoleErrorSpy).toHaveBeenCalledWith('Error viewing details:', 'Cache error')
       expect(processExitSpy).toHaveBeenCalledWith(1)
     })
 
     it('should handle registry errors', async () => {
-      registry.loadInstallationStatus.mockRejectedValue(
-        new Error('Registry error')
-      )
+      registry.loadInstallationStatus.mockRejectedValue(new Error('Registry error'))
 
       await cmdView('test-lib')
 
-      expect(consoleErrorSpy).toHaveBeenCalledWith(
-        'Error viewing details:',
-        'Registry error'
-      )
+      expect(consoleErrorSpy).toHaveBeenCalledWith('Error viewing details:', 'Registry error')
       expect(processExitSpy).toHaveBeenCalledWith(1)
     })
   })

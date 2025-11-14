@@ -1,22 +1,11 @@
-import {
-  DEFAULT_CONFIG,
-  INTEGRATION_TYPES,
-  isValidIntegration,
-  isValidProvider,
-  isValidCache
-} from './types.js'
+import { DEFAULT_CONFIG, INTEGRATION_TYPES, isValidIntegration, isValidProvider, isValidCache } from './types'
 
 describe('types', () => {
   describe('DEFAULT_CONFIG', () => {
     it('should have correct default values', () => {
       expect(DEFAULT_CONFIG.scanPaths).toEqual(['node_modules'])
-      expect(DEFAULT_CONFIG.registryFiles.claudeSkillsDir).toBe(
-        '.claude/skills'
-      )
-      expect(DEFAULT_CONFIG.registryFiles.generic).toEqual([
-        'AGENTS.md',
-        'CLAUDE.md',
-      ])
+      expect(DEFAULT_CONFIG.registryFiles.claudeSkillsDir).toBe('.claude/skills')
+      expect(DEFAULT_CONFIG.registryFiles.generic).toEqual(['AGENTS.md', 'CLAUDE.md'])
       expect(DEFAULT_CONFIG.cacheFile).toBe('.aircache.json')
     })
   })

@@ -107,7 +107,7 @@ air list --installed
 ```
 
 The installed integrations are registered in your project:
-- **Claude Skills**: Symlinked into `.claude/skills/` directory
+- **Claude Skills**: Registered in `$HOME/.claude/plugins/installed_plugins.json` (requires Claude Code restart)
 - **Generic Integrations**: Listed in `AGENTS.md` or `CLAUDE.md` markdown tables
 
 This makes them discoverable by AI assistants.
@@ -250,7 +250,7 @@ air install jest-ai/TestGenerator --generic
 1. The tool validates the integration exists
 2. Creates a backup of existing registry files (`AGENTS.md.bak`)
 3. Installs the integration:
-   - **Claude Skills** → Creates symlink in `.claude/skills/` directory
+   - **Claude Skills** → Registers in Claude plugin system (`$HOME/.claude/plugins/`), requires restart
    - **Generic Integrations** → Adds entry to `AGENTS.md` or `CLAUDE.md` (Markdown table)
 4. Confirms successful installation
 
@@ -261,6 +261,8 @@ Installing jest-ai/TestGenerator ...
 ✔ Claude Skill installed
 ✔ Generic integration installed
 ✔ Installation complete
+
+⚠️  Please restart Claude Code for the skill changes to take effect.
 ```
 
 ---
@@ -491,7 +493,7 @@ Always review the contents of a repository before adding it.
 1. **Configuration**: Remote repositories are stored in your XDG config directory (`~/.config/ai-ready/config.json` on Linux/macOS)
 2. **Storage**: Cloned repositories are stored in your XDG data directory (`~/.local/share/ai-ready/` on Linux/macOS)
 3. **Discovery**: Skills from remote repositories are discovered alongside npm package integrations
-4. **Installation**: Skills are symlinked to `.claude/skills/` just like npm-based skills
+4. **Installation**: Skills are registered in Claude's plugin system (`$HOME/.claude/plugins/`), same as npm-based skills
 5. **Caching**: Remote repository commit SHAs are tracked in the cache for efficient invalidation
 
 ---
@@ -523,15 +525,17 @@ The AIR Protocol supports two types of integrations:
 - Skill-specific parameters and invocation patterns
 - Integration with Claude's skill system
 
-**Registry:** Installed Claude Skills are symlinked into `.claude/skills/` directory
+**Registry:** Installed Claude Skills are registered in Claude's plugin system at `$HOME/.claude/plugins/`
 
-**Example installation:**
+**Example registration:**
 
-```bash
-.claude/skills/test-generator → node_modules/jest-ai/ai-ready/integrations/test-generator/claude-skill
-```
+Claude Skills are registered in two JSON files:
+- `known_marketplaces.json`: Tracks the library as a marketplace
+- `installed_plugins.json`: Lists the skill with format `<skill-name-kebab>@<library-name>-marketplace`
 
 The skill name is converted to kebab-case (e.g., `TestGenerator` → `test-generator`).
+
+**Note:** You must restart Claude Code after installing or removing skills for changes to take effect.
 
 #### 2. Generic Integrations
 
@@ -555,12 +559,13 @@ The skill name is converted to kebab-case (e.g., `TestGenerator` → `test-gener
 
 ### Registry Files
 
-Registry files track which integrations are installed in your project:
+Registry files track which integrations are installed:
 
-- **`.claude/skills/`**: Directory containing symlinks to installed Claude Skills
-- **`AGENTS.md`** or **`CLAUDE.md`**: Markdown file listing installed generic integrations
+- **`$HOME/.claude/plugins/installed_plugins.json`**: Claude Skills registered in the plugin system (global)
+- **`$HOME/.claude/plugins/known_marketplaces.json`**: Marketplace information for libraries (global)
+- **`AGENTS.md`** or **`CLAUDE.md`**: Markdown file listing installed generic integrations (project-level)
 
-The `.claude/skills/` directory and markdown files are typically committed to version control, allowing teams to share AI integration configurations.
+The markdown files are typically committed to version control, allowing teams to share generic integration configurations. Claude Skills are registered globally and persist across projects.
 
 ### Caching System
 
@@ -673,26 +678,51 @@ The `air` CLI uses the following default configuration:
 | Setting | Default Value | Description |
 |---------|---------------|-------------|
 | **Scan Paths** | `node_modules` | Directories to scan for AIR-compatible packages |
-| **Claude Registry** | `.claude` | File for Claude Skill registrations |
-| **Generic Registry** | `AGENTS.md`, `CLAUDE.md` | Files for generic integration registrations |
+| **Claude Skills Registry** | `$HOME/.claude/plugins/` | Global plugin system files (JSON) |
+| **Generic Registry** | `AGENTS.md`, `CLAUDE.md` | Files for generic integration registrations (project-level) |
 | **Cache File** | `.aircache.json` | Cache file for scan results |
 
-All paths are relative to your project root (current working directory).
+Generic registry paths are relative to your project root. Claude Skills are registered globally in the home directory.
 
 ### Registry File Format
 
 <details>
-<summary><strong>.claude/skills/ Format (Symlinks)</strong></summary>
+<summary><strong>Claude Plugin System Format (JSON)</strong></summary>
 
-Claude Skills are installed by creating symlinks in the `.claude/skills/` directory:
+Claude Skills are registered in the global plugin system at `$HOME/.claude/plugins/`:
 
-```bash
-.claude/skills/
-├── integration-name → ../../node_modules/package-name/ai-ready/integrations/integration-name/claude-skill
-└── another-integration → ../../node_modules/another-package/ai-ready/integrations/another-integration/claude-skill
+**installed_plugins.json:**
+```json
+{
+  "version": 1,
+  "plugins": {
+    "test-generator@jest-ai-marketplace": {
+      "version": "1.0.0",
+      "installedAt": "2025-01-15T10:30:00.000Z",
+      "lastUpdated": "2025-01-15T10:30:00.000Z",
+      "installPath": "/path/to/node_modules/jest-ai/ai-ready/integrations/test-generator/claude-skill",
+      "gitCommitSha": "abc123...",
+      "isLocal": true
+    }
+  }
+}
 ```
 
-Integration names are converted to kebab-case for the symlink filename.
+**known_marketplaces.json:**
+```json
+{
+  "jest-ai-marketplace": {
+    "source": {
+      "source": "directory",
+      "path": "/path/to/node_modules/jest-ai"
+    },
+    "installLocation": "/path/to/node_modules/jest-ai",
+    "lastUpdated": "2025-01-15T10:30:00.000Z"
+  }
+}
+```
+
+Integration names are converted to kebab-case for the plugin key.
 
 </details>
 
@@ -773,11 +803,11 @@ air list
 
 ### Registry File Corruption
 
-**Problem:** `AGENTS.md` file appears corrupted or symlinks in `.claude/skills/` are broken
+**Problem:** `AGENTS.md` file appears corrupted or Claude Skills aren't loading
 
 **Solutions:**
 
-1. Check for backup files (automatically created during installations):
+1. For generic integrations, check for backup files (automatically created during installations):
    ```bash
    ls -la AGENTS.md.bak
    ```
@@ -787,13 +817,21 @@ air list
    cp AGENTS.md.bak AGENTS.md
    ```
 
-3. For broken symlinks, remove and reinstall the integration:
+3. For Claude Skills not loading, ensure you restarted Claude Code after installation
+
+4. For Claude Skills, check the plugin registry files:
+   ```bash
+   cat $HOME/.claude/plugins/installed_plugins.json
+   cat $HOME/.claude/plugins/known_marketplaces.json
+   ```
+
+5. Remove and reinstall the integration:
    ```bash
    air remove library/integration
    air install library/integration
    ```
 
-4. Manually fix the file format (see [Registry File Format](#registry-file-format))
+6. Manually fix the file format (see [Registry File Format](#registry-file-format))
 
 ### No Integrations Found
 

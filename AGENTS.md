@@ -25,7 +25,7 @@ make all           # Build + generate documentation
 ### Running Single Tests
 ```bash
 # Tests run against transpiled code in test-staging/
-cd test-staging && npx jest lib/core/scanner.test.js
+cd test-staging && npx jest lib/scanner.test.js
 ```
 
 ### Important Build Details
@@ -43,19 +43,19 @@ cd test-staging && npx jest lib/core/scanner.test.js
 Scanner → Cache → Registry → Commands
 ```
 
-1. **Scanner** (`src/lib/core/scanner.js`)
+1. **Scanner** (`src/lib/scanner.js`)
    - Discovers integrations in `node_modules/*/ai-ready/integrations/`
    - Parses frontmatter from `AI_INTEGRATION.md` (generic) and `claude-skill/SKILL.md` (skills)
    - Returns `IntegrationProvider[]` with available types
 
-2. **Cache** (`src/lib/core/cache.js`)
+2. **Cache** (`src/lib/storage/cache.js`)
    - Stores scan results in `.aircache.json`
    - Validates cache against `package.json` and `package-lock.json` mtimes
    - Invalidates on dependency changes
 
-3. **Registry** (`src/lib/core/registry.js`)
+3. **Registry** (`src/lib/storage/registry.js` + `src/lib/storage/claude-plugin-registry.js`)
    - Tracks installed integrations in two formats:
-     - `.claude/skills/` (symlinks) - Claude Skills
+     - `$HOME/.claude/plugins/installed_plugins.json` - Claude Skills (via plugin system)
      - `AGENTS.md` (Markdown table) - Generic integrations
    - Overlays installation status onto provider data
 
@@ -68,8 +68,9 @@ Scanner → Cache → Registry → Commands
 
 - **Claude Skills** (`claudeSkill`)
   - File: `ai-ready/integrations/<Name>/claude-skill/SKILL.md`
-  - Registry: `.claude/skills/` (directory of symlinks)
-  - Installation: Symlink `.claude/skills/<skill-name> → <library-path>/ai-ready/integrations/<Name>/claude-skill`
+  - Registry: `$HOME/.claude/plugins/installed_plugins.json` and `$HOME/.claude/plugins/known_marketplaces.json`
+  - Installation: Registers skill in Claude's plugin system (marketplace + installed plugin entries)
+  - **Important:** Users must restart Claude Code after installing/removing skills for changes to take effect
   - Flag: `--skill`
 
 - **Generic Integrations** (`genericIntegration`)
@@ -82,7 +83,7 @@ Scanner → Cache → Registry → Commands
 
 ### Key Data Types
 
-From `src/lib/core/types.js`:
+From `src/lib/types.js`:
 
 ```javascript
 Integration {
@@ -109,25 +110,34 @@ CacheData {
 
 ### Module Organization
 
+**Directory Structure:**
+- `src/lib/` - Core modules (scanner, types, test helpers)
+- `src/lib/commands/` - CLI command implementations
+- `src/lib/storage/` - **Persistent state & file I/O operations** (cache, registry, config, repos)
+- `src/lib/parsers/` - Data format parsing utilities
+- `src/lib/utils/` - General utilities (git operations)
+
 **Layered Dependencies:**
 ```
 CLI (air.mjs)
   ↓
 Commands (commands/*.js)
   ↓
-Core (core/*.js)
+Core (scanner.js, types.js) + Storage (storage/*.js)
   ↓
-Parsers (parsers/*.js)
+Parsers (parsers/*.js) + Utilities (utils/*.js)
 ```
 
+**Key Principles:**
 - **No circular dependencies**
 - **Named exports only** (no default exports)
 - **types.js is dependency-free** (pure data/constants)
+- **Storage layer** - All file I/O operations consolidated in `src/lib/storage/`
 
 ## Testing Patterns
 
 ### Test Helper
-Use `createTestLibrary()` from `src/lib/core/test-lib.js` to create fixture libraries:
+Use `createTestLibrary()` from `src/lib/test-lib.js` to create fixture libraries:
 
 ```javascript
 await createTestLibrary(tempDir, 'my-lib', [
@@ -155,7 +165,7 @@ it.each([
 
 ### JSDoc Type System
 - All modules use JSDoc (no TypeScript)
-- Import types: `@import { Integration } from './types.js'`
+- Import types: `@import { Integration } from './types'`
 - Inline types: `@param {string[]} scanPaths`
 - Return types: `@returns {Promise<IntegrationProvider[]>}`
 
@@ -212,14 +222,66 @@ try {
 
 ### Registry Behavior
 - **Claude Skills:**
-  - Installation: Creates symlink in `.claude/skills/<skill-name>`
-  - Removal: Deletes symlink
-  - Detection: Checks for symlink existence
+  - Installation:
+    1. Creates/updates marketplace entry in `$HOME/.claude/plugins/known_marketplaces.json`
+    2. Adds plugin entry to `$HOME/.claude/plugins/installed_plugins.json`
+    3. Uses library name as marketplace name (e.g., `my-lib-marketplace`)
+    4. Plugin key format: `<skill-name-kebab-case>@<marketplace-name>`
+  - Removal: Removes plugin entry from `installed_plugins.json`
+  - Detection: Checks for plugin entry in `installed_plugins.json`
+  - **Note:** Claude Code must be restarted for skill changes to take effect
 - **Generic Integrations:**
   - Installation: Writes to **first** file in `DEFAULT_CONFIG.registryFiles.generic` array
   - Removal: Removes entry from table
   - Detection: Parses markdown tables from all configured files
   - **Multiple generic files:** Reads from all, merges results
+
+### Plugin Registry Architecture
+
+**Key Classes:**
+
+1. **`ClaudePluginConfig`** (`src/lib/storage/claude-config.js`)
+   - Pure configuration class holding plugin directory paths
+   - Factory methods: `createDefault()` for production, `createForTest(testDir)` for tests
+   - Separates configuration from operations (SRP)
+
+2. **`ClaudePluginRegistry`** (`src/lib/storage/claude-plugin-registry.js`)
+   - Manages Claude Skills registration in the plugin system
+   - Factory methods: `createDefault()` for production, `createForTest(testDir)` for tests
+   - Operations: `installPlugin()`, `removePlugin()`, `isPluginInstalled()`
+
+**Usage Patterns:**
+
+```javascript
+// Production: Use singleton via getDefaultRegistry()
+import { getDefaultRegistry } from './storage/claude-plugin-registry'
+
+const registry = getDefaultRegistry()
+await registry.installPlugin('my-lib', 'MySkill', '/path/to/lib', '1.0.0')
+
+// Testing: Use factory method with test directory
+import { ClaudePluginRegistry } from './storage/claude-plugin-registry'
+
+const testRegistry = ClaudePluginRegistry.createForTest(tempDir)
+await testRegistry.installPlugin('test-lib', 'TestSkill', '/path', '1.0.0')
+
+// Commands call registry directly (no wrapper functions)
+const registry = getDefaultRegistry()
+const providersWithStatus = await loadInstallationStatus(
+  providers,
+  claudeSkillsDir,
+  genericFiles,
+  process.cwd(),
+  registry  // Pass registry instance directly
+)
+```
+
+**Design Principles:**
+- **Dependency Injection:** Registry instance passed explicitly to functions
+- **Factory Pattern:** `createDefault()` and `createForTest()` for instance creation
+- **Singleton Pattern:** `getDefaultRegistry()` for production convenience
+- **Test Isolation:** Test instances use temporary directories, never touch global config
+- **No Wrapper Functions:** Commands call registry methods directly
 
 ### Validation Layers
 1. **Type validation** (`types.js`) - Structure checks
@@ -243,11 +305,20 @@ Cache is invalidated when:
 - `src/lib/commands/verify.js` - Verify integration metadata
 
 ### Core Modules
-- `src/lib/core/scanner.js` - Discovery logic
-- `src/lib/core/cache.js` - Performance optimization
-- `src/lib/core/registry.js` - Installation state management
-- `src/lib/core/types.js` - Type definitions and constants
-- `src/lib/core/test-lib.js` - Test fixture helper
+- `src/lib/scanner.js` - Discovery logic
+- `src/lib/types.js` - Type definitions and constants
+- `src/lib/test-lib.js` - Test fixture helper
+
+### Storage (Persistent State & File I/O)
+- `src/lib/storage/cache.js` - Performance optimization cache
+- `src/lib/storage/registry.js` - Installation state management
+- `src/lib/storage/claude-plugin-registry.js` - Claude plugin system integration
+- `src/lib/storage/claude-config.js` - Plugin configuration class
+- `src/lib/storage/config.js` - Remote repository configuration storage
+- `src/lib/storage/remote-repos.js` - Git repository management
+
+### Utilities
+- `src/lib/utils/git.js` - Git repository utilities
 
 ### Parsers
 - `src/lib/parsers/frontmatter.js` - YAML frontmatter parser

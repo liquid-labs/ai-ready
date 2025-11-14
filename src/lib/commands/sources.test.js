@@ -1,19 +1,13 @@
-import {
-  addSource,
-  removeSource,
-  listSources,
-  updateSources,
-  repairSource
-} from './sources.js'
-import * as config from '../core/config.js'
-import * as remoteRepos from '../core/remote-repos.js'
-import * as cache from '../core/cache.js'
-import { STANDARD_REPOS } from '../core/types.js'
+import { addSource, removeSource, listSources, updateSources, repairSource } from './sources'
+import * as config from '../storage/config'
+import * as remoteRepos from '../storage/remote-repos'
+import * as cache from '../storage/cache'
+import { STANDARD_REPOS } from '../types'
 
 // Mock modules
-jest.mock('../core/config.js')
-jest.mock('../core/remote-repos.js')
-jest.mock('../core/cache.js')
+jest.mock('../storage/config.js')
+jest.mock('../storage/remote-repos.js')
+jest.mock('../storage/cache.js')
 jest.mock('readline', () => ({
   createInterface : jest.fn(() => ({
     question : jest.fn((q, cb) => cb('yes')),
@@ -38,12 +32,9 @@ describe('sources commands', () => {
       repos          : [],
     })
     config.saveConfig.mockResolvedValue()
-    config.normalizeGitUrl.mockImplementation((url) =>
-      url ? url.replace(/\.git$/, '') : url)
-    config.generateRepoId.mockImplementation((url) =>
-      url ? `id-${url.substring(0, 8)}` : 'id-null')
-    config.deriveRepoName.mockImplementation((url) =>
-      url ? url.split('/').pop() : 'unknown')
+    config.normalizeGitUrl.mockImplementation((url) => (url ? url.replace(/\.git$/, '') : url))
+    config.generateRepoId.mockImplementation((url) => (url ? `id-${url.substring(0, 8)}` : 'id-null'))
+    config.deriveRepoName.mockImplementation((url) => (url ? url.split('/').pop() : 'unknown'))
     config.findRepo.mockReturnValue(null)
 
     remoteRepos.isRepoCloned.mockResolvedValue(false)
@@ -74,9 +65,7 @@ describe('sources commands', () => {
     it('should error when both --standard and url are provided', async () => {
       await addSource('https://github.com/user/repo', { standard : true })
 
-      expect(consoleErrorSpy).toHaveBeenCalledWith(
-        'Error: Cannot specify both --standard flag and a URL argument'
-      )
+      expect(consoleErrorSpy).toHaveBeenCalledWith('Error: Cannot specify both --standard flag and a URL argument')
       expect(processExitSpy).toHaveBeenCalledWith(1)
     })
 
@@ -86,13 +75,9 @@ describe('sources commands', () => {
         throw new Error('process.exit called')
       })
 
-      await expect(addSource(null, { standard : false })).rejects.toThrow(
-        'process.exit called'
-      )
+      await expect(addSource(null, { standard : false })).rejects.toThrow('process.exit called')
 
-      expect(consoleErrorSpy).toHaveBeenCalledWith(
-        'Error: URL argument required (or use --standard flag)'
-      )
+      expect(consoleErrorSpy).toHaveBeenCalledWith('Error: URL argument required (or use --standard flag)')
       expect(processExitSpy).toHaveBeenCalledWith(1)
     })
 
@@ -147,9 +132,7 @@ describe('sources commands', () => {
 
       await removeSource(null, { standard : true })
 
-      expect(consoleLogSpy).toHaveBeenCalledWith(
-        'No standard repositories are currently configured.'
-      )
+      expect(consoleLogSpy).toHaveBeenCalledWith('No standard repositories are currently configured.')
     })
 
     it('should error when both --standard and identifier are provided', async () => {
@@ -167,13 +150,9 @@ describe('sources commands', () => {
         throw new Error('process.exit called')
       })
 
-      await expect(removeSource(null, { standard : false })).rejects.toThrow(
-        'process.exit called'
-      )
+      await expect(removeSource(null, { standard : false })).rejects.toThrow('process.exit called')
 
-      expect(consoleErrorSpy).toHaveBeenCalledWith(
-        'Error: Identifier argument required (or use --standard flag)'
-      )
+      expect(consoleErrorSpy).toHaveBeenCalledWith('Error: Identifier argument required (or use --standard flag)')
       expect(processExitSpy).toHaveBeenCalledWith(1)
     })
 
@@ -222,20 +201,14 @@ describe('sources commands', () => {
 
       await listSources()
 
-      expect(consoleLogSpy).toHaveBeenCalledWith(
-        expect.stringContaining('Configured repositories')
-      )
-      expect(consoleLogSpy).toHaveBeenCalledWith(
-        expect.stringContaining('repo')
-      )
+      expect(consoleLogSpy).toHaveBeenCalledWith(expect.stringContaining('Configured repositories'))
+      expect(consoleLogSpy).toHaveBeenCalledWith(expect.stringContaining('repo'))
     })
 
     it('should display message when no repos are configured', async () => {
       await listSources()
 
-      expect(consoleLogSpy).toHaveBeenCalledWith(
-        'No remote repositories configured.'
-      )
+      expect(consoleLogSpy).toHaveBeenCalledWith('No remote repositories configured.')
     })
   })
 
@@ -323,13 +296,9 @@ describe('sources commands', () => {
         throw new Error('process.exit called')
       })
 
-      await expect(repairSource('nonexistent')).rejects.toThrow(
-        'process.exit called'
-      )
+      await expect(repairSource('nonexistent')).rejects.toThrow('process.exit called')
 
-      expect(consoleErrorSpy).toHaveBeenCalledWith(
-        'Repository not found: nonexistent'
-      )
+      expect(consoleErrorSpy).toHaveBeenCalledWith('Repository not found: nonexistent')
       expect(processExitSpy).toHaveBeenCalledWith(1)
     })
   })
