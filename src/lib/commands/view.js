@@ -2,6 +2,7 @@ import { findProviderAndIntegration } from './data-lib'
 import { scanAll } from '../scanner'
 import { loadProvidersWithCache } from '../storage/cache'
 import { loadInstallationStatus } from '../storage/registry'
+import { getDefaultRegistry } from '../storage/claude-plugin-registry'
 import { DEFAULT_CONFIG } from '../types'
 
 /**
@@ -27,10 +28,13 @@ export async function cmdView(libraryIntegration) {
     const providers = [...npmProviders, ...remoteProviders]
 
     // Load installation status
+    const pluginRegistry = getDefaultRegistry()
     const providersWithStatus = await loadInstallationStatus(
       providers,
       DEFAULT_CONFIG.registryFiles.claudeSkillsDir,
-      DEFAULT_CONFIG.registryFiles.generic
+      DEFAULT_CONFIG.registryFiles.generic,
+      process.cwd(),
+      pluginRegistry
     )
 
     // Parse input

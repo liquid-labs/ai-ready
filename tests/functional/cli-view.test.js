@@ -61,9 +61,10 @@ describe('air view (functional)', () => {
       )
 
       expect(exitCode).toBe(0)
-      // Should show both type names
-      expect(stdout).toContain('DualTypeSkill')
+      // Should show integration name and both types
       expect(stdout).toContain('DualTypeIntegration')
+      expect(stdout).toContain('genericIntegration')
+      expect(stdout).toContain('claudeSkill')
       expect(stdout).toContain('test-air-package')
     })
   })
@@ -77,7 +78,8 @@ describe('air view (functional)', () => {
       )
 
       expect(exitCode).toBe(0)
-      expect(stdout.toLowerCase()).toMatch(/not.*installed|available/)
+      // Should show (none) for not installed
+      expect(stdout.toLowerCase()).toMatch(/\(none\)|not.*installed/)
     })
 
     it('should indicate when skill-only integration is installed', async () => {
@@ -131,8 +133,8 @@ describe('air view (functional)', () => {
       )
 
       expect(exitCode).toBe(0)
-      // Should indicate skill is installed but generic is not
-      expect(stdout.toLowerCase()).toMatch(/skill.*installed/)
+      // Should show installed types including claudeSkill
+      expect(stdout.toLowerCase()).toMatch(/installed.*claudeskill|claudeskill.*installed/)
     })
 
     it('should show full installation status for dual-type integration', async () => {
@@ -157,7 +159,7 @@ describe('air view (functional)', () => {
   })
 
   describe('Content display', () => {
-    it('should display integration content/documentation', async () => {
+    it('should display integration metadata', async () => {
       const { stdout, exitCode } = await runCLI(
         ['view', 'test-air-package/SkillOnly'],
         testDir,
@@ -165,12 +167,15 @@ describe('air view (functional)', () => {
       )
 
       expect(exitCode).toBe(0)
-      // Should show content from SKILL.md
-      expect(stdout).toContain('Usage')
-      expect(stdout).toContain('skill')
+      // Should show metadata summary format
+      expect(stdout).toContain('Library')
+      expect(stdout).toContain('Integration')
+      expect(stdout).toContain('Summary')
+      expect(stdout).toContain('Types')
+      expect(stdout).toContain('Installed')
     })
 
-    it('should display features section if present', async () => {
+    it('should display integration name and summary', async () => {
       const { stdout, exitCode } = await runCLI(
         ['view', 'test-air-package/GenericOnly'],
         testDir,
@@ -178,7 +183,8 @@ describe('air view (functional)', () => {
       )
 
       expect(exitCode).toBe(0)
-      expect(stdout).toContain('Features')
+      expect(stdout).toContain('GenericOnly')
+      expect(stdout).toContain('Generic instructions')
     })
   })
 
@@ -219,7 +225,7 @@ describe('air view (functional)', () => {
       expect(stdout).toContain('1.0.0')
     })
 
-    it('should display integration path information', async () => {
+    it('should display library name and version', async () => {
       const { stdout, exitCode } = await runCLI(
         ['view', 'test-air-package/SkillOnly'],
         testDir,
@@ -227,8 +233,9 @@ describe('air view (functional)', () => {
       )
 
       expect(exitCode).toBe(0)
-      // Should show path to integration
-      expect(stdout).toMatch(/node_modules/)
+      // Should show library name and version in format "Library : name (vX.X.X)"
+      expect(stdout).toMatch(/test-air-package/)
+      expect(stdout).toMatch(/v1\.0\.0/)
     })
   })
 

@@ -55,7 +55,7 @@ describe('air remove (functional)', () => {
       const installedPlugins = await readJsonFile(
         path.join(pluginDir, 'installed_plugins.json')
       )
-      expect(Object.keys(installedPlugins)).not.toContain('skillonly@test-air-package-marketplace')
+      expect(Object.keys(installedPlugins.plugins)).not.toContain('skill-only@test-air-package-marketplace')
     })
 
     it('should remove an installed generic integration', async () => {
@@ -106,7 +106,7 @@ describe('air remove (functional)', () => {
       const installedPlugins = await readJsonFile(
         path.join(pluginDir, 'installed_plugins.json')
       )
-      expect(Object.keys(installedPlugins)).not.toContain('dualtypeintegration@test-air-package-marketplace')
+      expect(Object.keys(installedPlugins.plugins)).not.toContain('dual-type-integration@test-air-package-marketplace')
 
       // Verify generic removed
       const agentsContent = await readFile(path.join(testDir, 'AGENTS.md'))
@@ -140,7 +140,7 @@ describe('air remove (functional)', () => {
       const installedPlugins = await readJsonFile(
         path.join(pluginDir, 'installed_plugins.json')
       )
-      expect(Object.keys(installedPlugins)).not.toContain('dualtypeintegration@test-air-package-marketplace')
+      expect(Object.keys(installedPlugins.plugins)).not.toContain('dual-type-integration@test-air-package-marketplace')
 
       // Verify generic still installed
       const agentsContent = await readFile(path.join(testDir, 'AGENTS.md'))
@@ -179,7 +179,7 @@ describe('air remove (functional)', () => {
       const installedPlugins = await readJsonFile(
         path.join(pluginDir, 'installed_plugins.json')
       )
-      expect(Object.keys(installedPlugins)).toContain('dualtypeintegration@test-air-package-marketplace')
+      expect(Object.keys(installedPlugins.plugins)).toContain('dual-type-integration@test-air-package-marketplace')
     })
   })
 
@@ -196,17 +196,17 @@ describe('air remove (functional)', () => {
     })
 
     it('should handle removing non-installed integration', async () => {
-      const { stderr, exitCode } = await runCLI(
+      const { stdout, exitCode } = await runCLI(
         ['remove', 'test-air-package/SkillOnly'],
         testDir,
         { env: { ...process.env, HOME: testDir } }
       )
 
-      expect(exitCode).not.toBe(0)
-      expect(stderr.toLowerCase()).toMatch(/not.*installed/)
+      expect(exitCode).toBe(0) // Idempotent - succeeds silently
+      expect(stdout.toLowerCase()).toMatch(/no installed types to remove/)
     })
 
-    it('should fail when trying to remove skill-only type with --generic flag', async () => {
+    it('should succeed silently when trying to remove skill-only type with --generic flag', async () => {
       // Install skill
       await runCLI(
         ['install', 'test-air-package/SkillOnly'],
@@ -215,17 +215,17 @@ describe('air remove (functional)', () => {
       )
 
       // Try to remove with --generic flag
-      const { stderr, exitCode } = await runCLI(
+      const { stdout, exitCode } = await runCLI(
         ['remove', 'test-air-package/SkillOnly', '--generic'],
         testDir,
         { env: { ...process.env, HOME: testDir } }
       )
 
-      expect(exitCode).not.toBe(0)
-      expect(stderr).toContain('does not provide')
+      expect(exitCode).toBe(0) // Idempotent - succeeds silently
+      expect(stdout.toLowerCase()).toMatch(/no installed types to remove/)
     })
 
-    it('should fail when trying to remove generic-only type with --skill flag', async () => {
+    it('should succeed silently when trying to remove generic-only type with --skill flag', async () => {
       // Install generic
       await runCLI(
         ['install', 'test-air-package/GenericOnly'],
@@ -234,14 +234,14 @@ describe('air remove (functional)', () => {
       )
 
       // Try to remove with --skill flag
-      const { stderr, exitCode } = await runCLI(
+      const { stdout, exitCode } = await runCLI(
         ['remove', 'test-air-package/GenericOnly', '--skill'],
         testDir,
         { env: { ...process.env, HOME: testDir } }
       )
 
-      expect(exitCode).not.toBe(0)
-      expect(stderr).toContain('does not provide')
+      expect(exitCode).toBe(0) // Idempotent - succeeds silently
+      expect(stdout.toLowerCase()).toMatch(/no installed types to remove/)
     })
   })
 
@@ -261,15 +261,15 @@ describe('air remove (functional)', () => {
         { env: { ...process.env, HOME: testDir } }
       )
 
-      // Try to remove skill again - should fail
-      const { stderr, exitCode } = await runCLI(
+      // Try to remove skill again - should succeed silently
+      const { stdout, exitCode } = await runCLI(
         ['remove', 'test-air-package/DualTypeIntegration', '--skill'],
         testDir,
         { env: { ...process.env, HOME: testDir } }
       )
 
-      expect(exitCode).not.toBe(0)
-      expect(stderr.toLowerCase()).toMatch(/not.*installed/)
+      expect(exitCode).toBe(0) // Idempotent
+      expect(stdout.toLowerCase()).toMatch(/no installed types to remove/)
     })
 
     it('should handle removing only generic when both types are installed', async () => {
@@ -287,15 +287,15 @@ describe('air remove (functional)', () => {
         { env: { ...process.env, HOME: testDir } }
       )
 
-      // Try to remove generic again - should fail
-      const { stderr, exitCode } = await runCLI(
+      // Try to remove generic again - should succeed silently
+      const { stdout, exitCode } = await runCLI(
         ['remove', 'test-air-package/DualTypeIntegration', '--generic'],
         testDir,
         { env: { ...process.env, HOME: testDir } }
       )
 
-      expect(exitCode).not.toBe(0)
-      expect(stderr.toLowerCase()).toMatch(/not.*installed/)
+      expect(exitCode).toBe(0) // Idempotent
+      expect(stdout.toLowerCase()).toMatch(/no installed types to remove/)
     })
   })
 
@@ -323,7 +323,7 @@ describe('air remove (functional)', () => {
 
       // Backup should contain the skill that was removed
       const backup = JSON.parse(backupContent)
-      expect(Object.keys(backup)).toContain('skillonly@test-air-package-marketplace')
+      expect(Object.keys(backup.plugins)).toContain('skill-only@test-air-package-marketplace')
     })
 
     it('should create backup of AGENTS.md before removal', async () => {

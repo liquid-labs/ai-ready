@@ -1,6 +1,7 @@
 import { scanAll } from '../scanner'
 import { loadProvidersWithCache } from '../storage/cache'
 import { loadInstallationStatus } from '../storage/registry'
+import { getDefaultRegistry } from '../storage/claude-plugin-registry'
 import { DEFAULT_CONFIG } from '../types'
 
 /* eslint-disable no-console, no-process-exit */
@@ -22,10 +23,13 @@ export async function cmdList(options) {
     const allProviders = [...npmProviders, ...remoteProviders]
 
     // Load installation status
+    const pluginRegistry = getDefaultRegistry()
     const providersWithStatus = await loadInstallationStatus(
       allProviders,
       DEFAULT_CONFIG.registryFiles.claudeSkillsDir,
-      DEFAULT_CONFIG.registryFiles.generic
+      DEFAULT_CONFIG.registryFiles.generic,
+      process.cwd(),
+      pluginRegistry
     )
 
     // Filter providers

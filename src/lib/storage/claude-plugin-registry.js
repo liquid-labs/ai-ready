@@ -168,6 +168,23 @@ export class ClaudePluginRegistry {
   }
 
   /**
+   * Creates a backup of installed_plugins.json
+   * @returns {Promise<void>}
+   */
+  async createBackup() {
+    const backupPath = `${this.config.installedPluginsPath}.bak`
+    try {
+      await fs.copyFile(this.config.installedPluginsPath, backupPath)
+    }
+    catch (error) {
+      if (error.code !== 'ENOENT') {
+        throw error
+      }
+      // File doesn't exist, no backup needed
+    }
+  }
+
+  /**
    * Adds or updates a marketplace in known_marketplaces.json
    * @param {string} marketplaceName - Name/ID of the marketplace
    * @param {string} libraryPath - Absolute path to the library
@@ -225,6 +242,7 @@ export class ClaudePluginRegistry {
       isLocal     : true,
     }
 
+    await this.createBackup()
     await this.writeInstalledPlugins(pluginsConfig)
   }
 
@@ -241,6 +259,7 @@ export class ClaudePluginRegistry {
     const pluginsConfig = await this.readInstalledPlugins()
 
     if (pluginKey in pluginsConfig.plugins) {
+      await this.createBackup()
       delete pluginsConfig.plugins[pluginKey]
       await this.writeInstalledPlugins(pluginsConfig)
     }

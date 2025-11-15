@@ -207,7 +207,8 @@ export function parseMarkdownTable (content) {
   let inTable = false
 
   for (const line of lines) {
-    if (line.startsWith('| Name |')) {
+    // Table can start with either "| Name |" or "| Library |" (actual format uses "Library | Integration | Summary | Installed")
+    if (line.startsWith('| Name |') || line.startsWith('| Library')) {
       inTable = true
       continue
     }
@@ -216,10 +217,11 @@ export function parseMarkdownTable (content) {
     }
     if (inTable && line.startsWith('|')) {
       const cells = line.split('|').map(cell => cell.trim()).filter(Boolean)
-      if (cells.length >= 3) {
+      if (cells.length >= 4) {
+        // Actual format: Library | Integration | Summary | Installed
         entries.push({
-          name: cells[0],
-          library: cells[1],
+          library: cells[0],
+          name: cells[1],  // Integration column becomes 'name'
           summary: cells[2]
         })
       }

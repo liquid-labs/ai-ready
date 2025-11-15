@@ -21,7 +21,8 @@
       "Bash(git mv:*)",
       "WebSearch",
       "Bash(node --version:*)",
-      "Bash(npx jest:*)"
+      "Bash(npx jest:*)",
+      "Bash(NODE_ENV=test npx babel:*)"
     ],
     "deny": [],
     "ask": []

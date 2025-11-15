@@ -22,7 +22,7 @@ $(FUNCTIONAL_TEST_FILES_BUILT) &: $(FUNCTIONAL_TEST_FILES)
 		tests/functional
 
 .PHONY: functional-test
-functional-test: build $(FUNCTIONAL_TEST_PASS_MARKER)
+functional-test: build $(FUNCTIONAL_TEST_PASS_MARKER) $(FUNCTIONAL_TEST_REPORT)
 
 $(FUNCTIONAL_TEST_PASS_MARKER) $(FUNCTIONAL_TEST_REPORT): dist/ai-ready-exec.js $(FUNCTIONAL_TEST_FILES_BUILT)
 	@echo "Running functional tests..."

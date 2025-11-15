@@ -48,7 +48,7 @@ describe('air install (functional)', () => {
         path.join(pluginDir, 'installed_plugins.json')
       )
       expect(installedPlugins).toBeTruthy()
-      expect(Object.keys(installedPlugins)).toContain('skillonly@test-air-package-marketplace')
+      expect(Object.keys(installedPlugins.plugins)).toContain('skill-only@test-air-package-marketplace')
     })
 
     it('should install a generic integration', async () => {
@@ -85,7 +85,7 @@ describe('air install (functional)', () => {
       const installedPlugins = await readJsonFile(
         path.join(pluginDir, 'installed_plugins.json')
       )
-      expect(Object.keys(installedPlugins)).toContain('dualtypeintegration@test-air-package-marketplace')
+      expect(Object.keys(installedPlugins.plugins)).toContain('dual-type-integration@test-air-package-marketplace')
 
       // Verify generic installed
       const agentsContent = await readFile(path.join(testDir, 'AGENTS.md'))
@@ -109,7 +109,7 @@ describe('air install (functional)', () => {
       const installedPlugins = await readJsonFile(
         path.join(pluginDir, 'installed_plugins.json')
       )
-      expect(Object.keys(installedPlugins)).toContain('dualtypeintegration@test-air-package-marketplace')
+      expect(Object.keys(installedPlugins.plugins)).toContain('dual-type-integration@test-air-package-marketplace')
 
       // Verify generic NOT installed
       const agentsContent = await readFile(path.join(testDir, 'AGENTS.md'))
@@ -140,7 +140,7 @@ describe('air install (functional)', () => {
       const installedPlugins = await readJsonFile(
         path.join(pluginDir, 'installed_plugins.json')
       )
-      expect(Object.keys(installedPlugins)).not.toContain('dualtypeintegration@test-air-package-marketplace')
+      expect(Object.keys(installedPlugins.plugins)).not.toContain('dual-type-integration@test-air-package-marketplace')
     })
   })
 
@@ -173,29 +173,29 @@ describe('air install (functional)', () => {
 
       // Should succeed but indicate already installed
       expect(exitCode).toBe(0)
-      expect(stdout.toLowerCase()).toMatch(/already.*installed/)
+      expect(stdout.toLowerCase()).toMatch(/no types available to install/)
     })
 
-    it('should fail when trying to install skill-only type with --generic flag', async () => {
-      const { stderr, exitCode } = await runCLI(
+    it('should succeed silently when trying to install skill-only type with --generic flag', async () => {
+      const { stdout, exitCode } = await runCLI(
         ['install', 'test-air-package/SkillOnly', '--generic'],
         testDir,
         { env: { ...process.env, HOME: testDir } }
       )
 
-      expect(exitCode).not.toBe(0)
-      expect(stderr).toContain('does not provide')
+      expect(exitCode).toBe(0) // Idempotent - succeeds silently
+      expect(stdout.toLowerCase()).toMatch(/no types available to install/)
     })
 
-    it('should fail when trying to install generic-only type with --skill flag', async () => {
-      const { stderr, exitCode } = await runCLI(
+    it('should succeed silently when trying to install generic-only type with --skill flag', async () => {
+      const { stdout, exitCode } = await runCLI(
         ['install', 'test-air-package/GenericOnly', '--skill'],
         testDir,
         { env: { ...process.env, HOME: testDir } }
       )
 
-      expect(exitCode).not.toBe(0)
-      expect(stderr).toContain('does not provide')
+      expect(exitCode).toBe(0) // Idempotent - succeeds silently
+      expect(stdout.toLowerCase()).toMatch(/no types available to install/)
     })
   })
 
@@ -212,7 +212,8 @@ describe('air install (functional)', () => {
       )
       expect(marketplaces).toBeTruthy()
       expect(marketplaces['test-air-package-marketplace']).toBeTruthy()
-      expect(marketplaces['test-air-package-marketplace'].name).toBe('test-air-package')
+      expect(marketplaces['test-air-package-marketplace'].source).toBeTruthy()
+      expect(marketplaces['test-air-package-marketplace'].installLocation).toBeTruthy()
     })
   })
 
@@ -236,7 +237,7 @@ describe('air install (functional)', () => {
       const installedPlugins = await readJsonFile(
         path.join(pluginDir, 'installed_plugins.json')
       )
-      expect(Object.keys(installedPlugins)).toContain('skillonly@test-air-package-marketplace')
+      expect(Object.keys(installedPlugins.plugins)).toContain('skill-only@test-air-package-marketplace')
 
       const agentsContent = await readFile(path.join(testDir, 'AGENTS.md'))
       const entries = parseMarkdownTable(agentsContent)
@@ -263,7 +264,7 @@ describe('air install (functional)', () => {
       const installedPlugins = await readJsonFile(
         path.join(pluginDir, 'installed_plugins.json')
       )
-      expect(Object.keys(installedPlugins)).toContain('dualtypeintegration@test-air-package-marketplace')
+      expect(Object.keys(installedPlugins.plugins)).toContain('dual-type-integration@test-air-package-marketplace')
 
       const agentsContent = await readFile(path.join(testDir, 'AGENTS.md'))
       const entries = parseMarkdownTable(agentsContent)

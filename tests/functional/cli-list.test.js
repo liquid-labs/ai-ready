@@ -110,8 +110,8 @@ describe('air list (functional)', () => {
       )
 
       expect(exitCode).toBe(0)
-      // Should indicate no installed integrations
-      expect(stdout.toLowerCase()).toMatch(/no.*installed|none.*found/)
+      // Should indicate no integrations found
+      expect(stdout.toLowerCase()).toMatch(/no integrations found|no.*installed/)
     })
   })
 

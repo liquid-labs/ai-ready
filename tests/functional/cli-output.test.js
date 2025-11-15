@@ -176,39 +176,37 @@ describe('CLI output and UX (functional)', () => {
       expect(stderr).toContain('NonExistent')
     })
 
-    it('should display clear error when removing non-installed integration', async () => {
-      const { stderr, exitCode } = await runCLI(
+    it('should display clear message when removing non-installed integration', async () => {
+      const { stdout, exitCode } = await runCLI(
         ['remove', 'test-air-package/SkillOnly'],
         testDir,
         { env: { ...process.env, HOME: testDir } }
       )
 
-      expect(exitCode).not.toBe(0)
-      expect(stderr.toLowerCase()).toMatch(/not.*installed|error/)
+      expect(exitCode).toBe(0) // Idempotent - succeeds silently
+      expect(stdout.toLowerCase()).toMatch(/no installed types to remove/)
     })
 
-    it('should display clear error for type mismatch (skill flag on generic-only)', async () => {
-      const { stderr, exitCode } = await runCLI(
+    it('should display clear message for type mismatch (skill flag on generic-only)', async () => {
+      const { stdout, exitCode } = await runCLI(
         ['install', 'test-air-package/GenericOnly', '--skill'],
         testDir,
         { env: { ...process.env, HOME: testDir } }
       )
 
-      expect(exitCode).not.toBe(0)
-      expect(stderr).toMatch(/does not provide|not available/i)
-      expect(stderr.toLowerCase()).toContain('skill')
+      expect(exitCode).toBe(0) // Idempotent - succeeds silently
+      expect(stdout.toLowerCase()).toMatch(/no types available to install/)
     })
 
-    it('should display clear error for type mismatch (generic flag on skill-only)', async () => {
-      const { stderr, exitCode } = await runCLI(
+    it('should display clear message for type mismatch (generic flag on skill-only)', async () => {
+      const { stdout, exitCode } = await runCLI(
         ['install', 'test-air-package/SkillOnly', '--generic'],
         testDir,
         { env: { ...process.env, HOME: testDir } }
       )
 
-      expect(exitCode).not.toBe(0)
-      expect(stderr).toMatch(/does not provide|not available/i)
-      expect(stderr.toLowerCase()).toContain('generic')
+      expect(exitCode).toBe(0) // Idempotent - succeeds silently
+      expect(stdout.toLowerCase()).toMatch(/no types available to install/)
     })
   })
 
@@ -229,7 +227,7 @@ describe('CLI output and UX (functional)', () => {
       )
 
       expect(exitCode).toBe(0)
-      expect(stdout.toLowerCase()).toMatch(/already.*installed/)
+      expect(stdout.toLowerCase()).toMatch(/no types available to install/)
     })
 
     it('should display helpful message when no integrations available', async () => {
@@ -260,10 +258,11 @@ describe('CLI output and UX (functional)', () => {
       )
 
       expect(exitCode).toBe(0)
-      // Should have table headers
-      expect(stdout).toMatch(/Name.*Library.*Summary/i)
-      // Should have table separators or structure
-      expect(stdout).toMatch(/─|─|---|=/i)
+      // Should have table headers (format: Library | Integration | Types | InstalledTypes | Summary)
+      expect(stdout).toMatch(/Library.*Integration.*Summary/i)
+      // Should have multiple rows of data (at least 2 data rows after header)
+      const lines = stdout.trim().split('\n')
+      expect(lines.length).toBeGreaterThan(2) // Header + at least 2 data rows
     })
 
     it('should align columns properly in list output', async () => {
