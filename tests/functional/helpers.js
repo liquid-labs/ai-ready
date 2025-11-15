@@ -51,10 +51,7 @@ export async function runCLI (args, cwd, options = {}) {
     return { stdout, stderr, exitCode: 0 }
   } catch (error) {
     // execFile throws on non-zero exit codes
-    // Log errors for debugging
-    if (error.stderr) {
-      console.error('CLI stderr:', error.stderr)
-    }
+    // Return error details for test assertions
     return {
       stdout: error.stdout || '',
       stderr: error.stderr || '',

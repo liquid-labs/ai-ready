@@ -30,7 +30,7 @@ $(FUNCTIONAL_TEST_PASS_MARKER) $(FUNCTIONAL_TEST_REPORT): dist/ai-ready-exec.js 
 	@echo -n 'Functional test git rev: ' > $(FUNCTIONAL_TEST_REPORT)
 	@git rev-parse HEAD >> $(FUNCTIONAL_TEST_REPORT)
 	@( set -e; set -o pipefail; \
-	  ( cd $(TEST_STAGING) && $(SDLC_JEST) \
+	  ( cd $(TEST_STAGING) && NODE_OPTIONS=--no-warnings $(SDLC_JEST) \
 	    --config=$(SDLC_JEST_CONFIG) \
 	    --testMatch='**/tests/functional/**/*.test.js' \
 	    --runInBand 2>&1 ) \
@@ -67,7 +67,7 @@ $(INTEGRATION_TEST_PASS_MARKER) $(INTEGRATION_TEST_REPORT): dist/ai-ready-exec.j
 	@echo -n 'Integration test git rev: ' > $(INTEGRATION_TEST_REPORT)
 	@git rev-parse HEAD >> $(INTEGRATION_TEST_REPORT)
 	@( set -e; set -o pipefail; \
-	  ( cd $(TEST_STAGING) && $(SDLC_JEST) \
+	  ( cd $(TEST_STAGING) && NODE_OPTIONS=--no-warnings $(SDLC_JEST) \
 	    --config=$(SDLC_JEST_CONFIG) \
 	    --testMatch='**/tests/integration/**/*.test.js' \
 	    --runInBand \
