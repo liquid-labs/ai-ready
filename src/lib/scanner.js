@@ -1,6 +1,7 @@
 import fs from 'fs/promises'
 import path from 'path'
 import simpleGit from 'simple-git'
+import { find as findPlus } from 'find-plus'
 import { parseFrontmatter } from './parsers/frontmatter'
 import { INTEGRATION_TYPES, SOURCE_TYPE } from './types'
 import { loadConfig } from './storage/config'
@@ -134,83 +135,53 @@ async function scanRepoIntegrations(repoPath, repo) {
  * @returns {Promise<IntegrationProvider[]>} Array of discovered providers
  */
 export async function scanForProviders(scanPaths, baseDir = process.cwd()) {
-  const scanPathPromises = scanPaths.map(async (scanPath) => {
-    const fullScanPath = path.resolve(baseDir, scanPath)
+  // Scan all paths in parallel
+  const scanResults = await Promise.all(
+    scanPaths.map(async (scanPath) => {
+      const fullScanPath = path.resolve(baseDir, scanPath)
 
-    try {
-      const entries = await fs.readdir(fullScanPath, { withFileTypes : true })
+      try {
+        // Use find-plus to locate all 'ai-ready/integrations' directories
+        const results = await findPlus({
+          root         : fullScanPath,
+          onlyDirs     : true,
+          paths        : ['**/ai-ready/integrations'],
+          excludePaths : ['**/node_modules/**'], // Avoid nested node_modules
+          depth        : 4, // node_modules/[scope/]package/ai-ready/integrations
+        })
 
-      const libraryPromises = entries.map(async (entry) => {
-        if (!entry.isDirectory()) return null
+        // Process each found integration directory
+        // Note: find-plus returns an array of string paths, not objects
+        const providers = await Promise.all(
+          // the 'await' is on the 'Promise.all(...)' above
+          // eslint-disable-next-line require-await
+          results.map(async (integrationsPath) => {
+            // Extract library path (parent of 'ai-ready/integrations')
+            const libraryPath = path.dirname(path.dirname(integrationsPath))
 
-        // Handle scoped packages (e.g., @scope/package)
-        if (entry.name.startsWith('@')) {
-          const scopePath = path.join(fullScanPath, entry.name)
-          try {
-            const scopedEntries = await fs.readdir(scopePath, { withFileTypes : true })
+            // Determine library name from path
+            const relativePath = path.relative(fullScanPath, libraryPath)
+            const libraryName = relativePath.replace(/\\/g, '/') // Normalize Windows paths
 
-            return Promise.all(
-              scopedEntries.map(async (scopedEntry) => {
-                if (!scopedEntry.isDirectory()) return null
+            return scanLibrary(libraryName, libraryPath)
+          })
+        )
 
-                const libraryPath = path.join(scopePath, scopedEntry.name)
-                const aiReadyPath = path.join(libraryPath, 'ai-ready', 'integrations')
-
-                // Check if ai-ready/integrations exists
-                try {
-                  const stat = await fs.stat(aiReadyPath)
-                  if (!stat.isDirectory()) return null
-                }
-                catch {
-                  return null // ai-ready directory doesn't exist
-                }
-
-                // This scoped library has ai-ready integrations
-                const scopedName = `${entry.name}/${scopedEntry.name}`
-
-                return scanLibrary(scopedName, libraryPath)
-              })
-            )
-          }
-          catch {
-            return null // Scope directory doesn't exist or can't be read
-          }
-        }
-
-        // Handle regular (unscoped) packages
-        const libraryPath = path.join(fullScanPath, entry.name)
-        const aiReadyPath = path.join(libraryPath, 'ai-ready', 'integrations')
-
-        // Check if ai-ready/integrations exists
-        try {
-          const stat = await fs.stat(aiReadyPath)
-          if (!stat.isDirectory()) return null
-        }
-        catch {
-          return null // ai-ready directory doesn't exist
-        }
-
-        // This library has ai-ready integrations
-        return scanLibrary(entry.name, libraryPath)
-      })
-
-      return Promise.all(libraryPromises)
-    }
-    catch (error) {
-      // Scan path doesn't exist or can't be read
-      if (error.code !== 'ENOENT') {
-        throw error
+        return providers.filter((provider) => !!provider)
       }
+      catch (error) {
+        // Scan path doesn't exist or can't be read
+        if (error.code !== 'ENOENT' && !error.message?.includes('Did not find root directory')) {
+          throw error
+        }
 
-      return []
-    }
-  })
+        return []
+      }
+    })
+  )
 
-  const results = await Promise.all(scanPathPromises)
-  // Flatten twice to handle both regular and scoped packages (scoped packages return nested arrays)
-  const providers = results.flat(2).filter((provider) => !!provider)
-
-  return providers
+  // Flatten results from all scan paths
+  return scanResults.flat()
 }
 
 /**
