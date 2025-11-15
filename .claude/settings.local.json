@@ -24,7 +24,8 @@
       "Bash(npx jest:*)",
       "Bash(NODE_ENV=test npx babel:*)",
       "Bash(NODE_OPTIONS=--no-warnings npx jest:*)",
-      "Bash(npm run functional-test:*)"
+      "Bash(npm run functional-test:*)",
+      "WebFetch(domain:github.com)"
     ],
     "deny": [],
     "ask": []

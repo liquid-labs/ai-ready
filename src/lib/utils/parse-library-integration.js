@@ -1,7 +1,7 @@
 /**
  * Parses a library/integration string, handling scoped packages
  * @param {string} input - Input string in format "library/integration" or "@scope/library/integration"
- * @returns {{libraryName: string, integrationName: string|null}}
+ * @returns {{libraryName: string, integrationName: string|null}} Object with 'libraryName' and 'integrationName' properties
  */
 export function parseLibraryIntegration(input) {
   if (!input) {

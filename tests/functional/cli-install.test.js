@@ -289,7 +289,7 @@ describe('air install (functional)', () => {
       const installedPlugins = await readJsonFile(
         path.join(pluginDir, 'installed_plugins.json')
       )
-      expect(Object.keys(installedPlugins.plugins)).toContain('skill-only@ai-ready-scoped-package-marketplace')
+      expect(Object.keys(installedPlugins.plugins)).toContain('skill-only@@ai-ready/scoped-package-marketplace')
     })
 
     it('should install generic integration from scoped package', async () => {

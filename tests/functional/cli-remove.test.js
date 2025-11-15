@@ -375,7 +375,7 @@ describe('air remove (functional)', () => {
       const installedPlugins = await readJsonFile(
         path.join(pluginDir, 'installed_plugins.json')
       )
-      expect(Object.keys(installedPlugins.plugins)).not.toContain('skill-only@ai-ready-scoped-package-marketplace')
+      expect(Object.keys(installedPlugins.plugins)).not.toContain('skill-only@@ai-ready/scoped-package-marketplace')
     })
 
     it('should remove generic integration from scoped package', async () => {

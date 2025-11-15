@@ -1,4 +1,3 @@
-import { describe, it, expect } from '@jest/globals'
 import { parseLibraryIntegration } from './parse-library-integration'
 
 describe('parseLibraryIntegration', () => {
