@@ -4,6 +4,7 @@ import { scanAll } from '../scanner'
 import { loadProvidersWithCache } from '../storage/cache'
 import { loadInstallationStatus, createBackup, readGenericRegistry, writeGenericRegistry } from '../storage/registry'
 import { getDefaultRegistry } from '../storage/claude-plugin-registry'
+import { parseLibraryIntegration } from '../utils/parse-library-integration'
 import { DEFAULT_CONFIG, INTEGRATION_TYPES } from '../types'
 
 /**
@@ -20,13 +21,17 @@ import { DEFAULT_CONFIG, INTEGRATION_TYPES } from '../types'
  * @returns {Promise<void>}
  */
 export async function cmdInstall(libraryIntegration, options) {
-  if (!libraryIntegration || !libraryIntegration.includes('/')) {
+  if (!libraryIntegration) {
     logErrAndExit('Error: Please specify library/integration format (e.g., my-lib/MyIntegration)')
   }
 
   try {
     // Parse input
-    const [libraryName, integrationName] = libraryIntegration.split('/')
+    const { libraryName, integrationName } = parseLibraryIntegration(libraryIntegration)
+
+    if (!integrationName) {
+      logErrAndExit('Error: Please specify library/integration format (e.g., my-lib/MyIntegration)')
+    }
 
     // Load providers
     const { npmProviders, remoteProviders } = await loadProvidersWithCache(DEFAULT_CONFIG.cacheFile, () => scanAll())

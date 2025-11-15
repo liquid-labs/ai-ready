@@ -351,4 +351,55 @@ describe('air remove (functional)', () => {
       expect(genericEntry).toBeTruthy()
     })
   })
+
+  describe('Scoped package support', () => {
+    it('should remove skill from scoped package', async () => {
+      // Install first
+      await runCLI(
+        ['install', '@ai-ready/scoped-package/SkillOnly', '--skill'],
+        testDir,
+        { env: { ...process.env, HOME: testDir } }
+      )
+
+      // Remove
+      const { stdout, exitCode } = await runCLI(
+        ['remove', '@ai-ready/scoped-package/SkillOnly', '--skill'],
+        testDir,
+        { env: { ...process.env, HOME: testDir } }
+      )
+
+      expect(exitCode).toBe(0)
+      expect(stdout).toContain('Removing @ai-ready/scoped-package/SkillOnly')
+
+      // Verify skill was removed
+      const installedPlugins = await readJsonFile(
+        path.join(pluginDir, 'installed_plugins.json')
+      )
+      expect(Object.keys(installedPlugins.plugins)).not.toContain('skill-only@ai-ready-scoped-package-marketplace')
+    })
+
+    it('should remove generic integration from scoped package', async () => {
+      // Install first
+      await runCLI(
+        ['install', '@ai-ready/scoped-package/GenericOnly', '--generic'],
+        testDir,
+        { env: { ...process.env, HOME: testDir } }
+      )
+
+      // Remove
+      const { stdout, exitCode } = await runCLI(
+        ['remove', '@ai-ready/scoped-package/GenericOnly', '--generic'],
+        testDir,
+        { env: { ...process.env, HOME: testDir } }
+      )
+
+      expect(exitCode).toBe(0)
+
+      // Verify entry not in AGENTS.md
+      const agentsContent = await readFile(path.join(testDir, 'AGENTS.md'))
+      const entries = parseMarkdownTable(agentsContent)
+      const entry = entries.find(e => e.library === '@ai-ready/scoped-package' && e.name === 'GenericOnly')
+      expect(entry).toBeFalsy()
+    })
+  })
 })

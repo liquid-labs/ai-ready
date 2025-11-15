@@ -272,4 +272,41 @@ describe('air install (functional)', () => {
       expect(dualTypeEntry).toBeTruthy()
     })
   })
+
+  describe('Scoped package support', () => {
+    it('should install skill from scoped package', async () => {
+      const { stdout, exitCode } = await runCLI(
+        ['install', '@ai-ready/scoped-package/SkillOnly', '--skill'],
+        testDir,
+        { env: { ...process.env, HOME: testDir } }
+      )
+
+      expect(exitCode).toBe(0)
+      expect(stdout).toContain('Installing @ai-ready/scoped-package/SkillOnly')
+      expect(stdout).toContain('Installation complete')
+
+      // Verify skill was registered
+      const installedPlugins = await readJsonFile(
+        path.join(pluginDir, 'installed_plugins.json')
+      )
+      expect(Object.keys(installedPlugins.plugins)).toContain('skill-only@ai-ready-scoped-package-marketplace')
+    })
+
+    it('should install generic integration from scoped package', async () => {
+      const { stdout, exitCode } = await runCLI(
+        ['install', '@ai-ready/scoped-package/GenericOnly', '--generic'],
+        testDir,
+        { env: { ...process.env, HOME: testDir } }
+      )
+
+      expect(exitCode).toBe(0)
+      expect(stdout).toContain('Installing @ai-ready/scoped-package/GenericOnly')
+
+      // Verify entry in AGENTS.md
+      const agentsContent = await readFile(path.join(testDir, 'AGENTS.md'))
+      const entries = parseMarkdownTable(agentsContent)
+      const entry = entries.find(e => e.library === '@ai-ready/scoped-package' && e.name === 'GenericOnly')
+      expect(entry).toBeTruthy()
+    })
+  })
 })

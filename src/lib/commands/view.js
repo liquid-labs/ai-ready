@@ -3,6 +3,7 @@ import { scanAll } from '../scanner'
 import { loadProvidersWithCache } from '../storage/cache'
 import { loadInstallationStatus } from '../storage/registry'
 import { getDefaultRegistry } from '../storage/claude-plugin-registry'
+import { parseLibraryIntegration } from '../utils/parse-library-integration'
 import { DEFAULT_CONFIG } from '../types'
 
 /**
@@ -38,9 +39,7 @@ export async function cmdView(libraryIntegration) {
     )
 
     // Parse input
-    const parts = libraryIntegration.split('/')
-    const libraryName = parts[0]
-    const integrationName = parts[1] || null
+    const { libraryName, integrationName } = parseLibraryIntegration(libraryIntegration)
 
     // Find library and optionally integration
     const { provider, integration } = findProviderAndIntegration(providersWithStatus, libraryName, integrationName)

@@ -143,6 +143,41 @@ export async function scanForProviders(scanPaths, baseDir = process.cwd()) {
       const libraryPromises = entries.map(async (entry) => {
         if (!entry.isDirectory()) return null
 
+        // Handle scoped packages (e.g., @scope/package)
+        if (entry.name.startsWith('@')) {
+          const scopePath = path.join(fullScanPath, entry.name)
+          try {
+            const scopedEntries = await fs.readdir(scopePath, { withFileTypes : true })
+
+            return Promise.all(
+              scopedEntries.map(async (scopedEntry) => {
+                if (!scopedEntry.isDirectory()) return null
+
+                const libraryPath = path.join(scopePath, scopedEntry.name)
+                const aiReadyPath = path.join(libraryPath, 'ai-ready', 'integrations')
+
+                // Check if ai-ready/integrations exists
+                try {
+                  const stat = await fs.stat(aiReadyPath)
+                  if (!stat.isDirectory()) return null
+                }
+                catch {
+                  return null // ai-ready directory doesn't exist
+                }
+
+                // This scoped library has ai-ready integrations
+                const scopedName = `${entry.name}/${scopedEntry.name}`
+
+                return scanLibrary(scopedName, libraryPath)
+              })
+            )
+          }
+          catch {
+            return null // Scope directory doesn't exist or can't be read
+          }
+        }
+
+        // Handle regular (unscoped) packages
         const libraryPath = path.join(fullScanPath, entry.name)
         const aiReadyPath = path.join(libraryPath, 'ai-ready', 'integrations')
 
@@ -172,7 +207,8 @@ export async function scanForProviders(scanPaths, baseDir = process.cwd()) {
   })
 
   const results = await Promise.all(scanPathPromises)
-  const providers = results.flat().filter((provider) => !!provider)
+  // Flatten twice to handle both regular and scoped packages (scoped packages return nested arrays)
+  const providers = results.flat(2).filter((provider) => !!provider)
 
   return providers
 }

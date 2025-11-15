@@ -75,12 +75,24 @@ export async function setupTestEnv () {
   // Copy fixture package to node_modules/test-air-package
   await copyDir(FIXTURE_PACKAGE_PATH, path.join(nodeModulesDir, 'test-air-package'))
 
+  // Create scoped package @ai-ready/scoped-package with same structure
+  const scopedDir = path.join(nodeModulesDir, '@ai-ready')
+  await fs.mkdir(scopedDir, { recursive: true })
+  await copyDir(FIXTURE_PACKAGE_PATH, path.join(scopedDir, 'scoped-package'))
+
+  // Update package.json for the scoped package
+  const scopedPackageJsonPath = path.join(scopedDir, 'scoped-package', 'package.json')
+  const scopedPkgJson = JSON.parse(await fs.readFile(scopedPackageJsonPath, 'utf8'))
+  scopedPkgJson.name = '@ai-ready/scoped-package'
+  await fs.writeFile(scopedPackageJsonPath, JSON.stringify(scopedPkgJson, null, 2))
+
   // Create package.json in test directory
   const packageJson = {
     name: 'test-project',
     version: '1.0.0',
     dependencies: {
-      'test-air-package': '1.0.0'
+      'test-air-package': '1.0.0',
+      '@ai-ready/scoped-package': '1.0.0'
     }
   }
   await fs.writeFile(
@@ -99,10 +111,15 @@ export async function setupTestEnv () {
         name: 'test-project',
         version: '1.0.0',
         dependencies: {
-          'test-air-package': '1.0.0'
+          'test-air-package': '1.0.0',
+          '@ai-ready/scoped-package': '1.0.0'
         }
       },
       'node_modules/test-air-package': {
+        version: '1.0.0',
+        resolved: 'file:../tests/fixtures/test-air-package'
+      },
+      'node_modules/@ai-ready/scoped-package': {
         version: '1.0.0',
         resolved: 'file:../tests/fixtures/test-air-package'
       }

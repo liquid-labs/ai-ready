@@ -4,6 +4,7 @@ import { scanAll } from '../scanner'
 import { loadProvidersWithCache } from '../storage/cache'
 import { loadInstallationStatus, createBackup, readGenericRegistry, writeGenericRegistry } from '../storage/registry'
 import { getDefaultRegistry } from '../storage/claude-plugin-registry'
+import { parseLibraryIntegration } from '../utils/parse-library-integration'
 import { DEFAULT_CONFIG, INTEGRATION_TYPES } from '../types'
 
 /* eslint-disable no-console, no-process-exit */
@@ -17,14 +18,19 @@ import { DEFAULT_CONFIG, INTEGRATION_TYPES } from '../types'
  * @returns {Promise<void>}
  */
 export async function cmdRemove(libraryIntegration, options) {
-  if (!libraryIntegration || !libraryIntegration.includes('/')) {
+  if (!libraryIntegration) {
     console.error('Error: Please specify library/integration format (e.g., my-lib/MyIntegration)')
     process.exit(1)
   }
 
   try {
     // Parse input
-    const [libraryName, integrationName] = libraryIntegration.split('/')
+    const { libraryName, integrationName } = parseLibraryIntegration(libraryIntegration)
+
+    if (!integrationName) {
+      console.error('Error: Please specify library/integration format (e.g., my-lib/MyIntegration)')
+      process.exit(1)
+    }
 
     // Load providers
     const { npmProviders, remoteProviders } = await loadProvidersWithCache(DEFAULT_CONFIG.cacheFile, () => scanAll())

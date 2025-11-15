@@ -277,4 +277,43 @@ describe('air view (functional)', () => {
       expect(stdout.toLowerCase()).toMatch(/generic/)
     })
   })
+
+  describe('Scoped package support', () => {
+    it('should handle scoped package names in view command', async () => {
+      const { stdout, exitCode } = await runCLI(
+        ['view', '@ai-ready/scoped-package/SkillOnly'],
+        testDir,
+        { env: { ...process.env, HOME: testDir } }
+      )
+
+      expect(exitCode).toBe(0)
+      // Verify it displays the scoped package name correctly
+      expect(stdout).toContain('@ai-ready/scoped-package')
+      expect(stdout).toContain('SkillOnly')
+    })
+
+    it('should handle scoped package with generic integration', async () => {
+      const { stdout, exitCode } = await runCLI(
+        ['view', '@ai-ready/scoped-package/GenericOnly'],
+        testDir,
+        { env: { ...process.env, HOME: testDir } }
+      )
+
+      expect(exitCode).toBe(0)
+      expect(stdout).toContain('@ai-ready/scoped-package')
+      expect(stdout).toContain('GenericOnly')
+    })
+
+    it('should handle scoped package with dual-type integration', async () => {
+      const { stdout, exitCode } = await runCLI(
+        ['view', '@ai-ready/scoped-package/DualTypeIntegration'],
+        testDir,
+        { env: { ...process.env, HOME: testDir } }
+      )
+
+      expect(exitCode).toBe(0)
+      expect(stdout).toContain('@ai-ready/scoped-package')
+      expect(stdout).toContain('DualTypeIntegration')
+    })
+  })
 })

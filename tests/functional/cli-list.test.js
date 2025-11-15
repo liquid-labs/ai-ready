@@ -274,4 +274,32 @@ describe('air list (functional)', () => {
       expect(cacheExists).toBe(true)
     })
   })
+
+  describe('Scoped package support', () => {
+    it('should list integrations from scoped packages', async () => {
+      const { stdout, exitCode } = await runCLI(
+        ['list'],
+        testDir,
+        { env: { ...process.env, HOME: testDir } }
+      )
+
+      expect(exitCode).toBe(0)
+      // Should show scoped package name
+      expect(stdout).toContain('@ai-ready/scoped-package')
+    })
+
+    it('should filter by scoped library name', async () => {
+      const { stdout, exitCode } = await runCLI(
+        ['list', '--library', '@ai-ready/scoped-package'],
+        testDir,
+        { env: { ...process.env, HOME: testDir } }
+      )
+
+      expect(exitCode).toBe(0)
+      // Should only show scoped package integrations
+      expect(stdout).toContain('@ai-ready/scoped-package')
+      // Should not show unscoped package
+      expect(stdout).not.toContain('test-air-package')
+    })
+  })
 })
