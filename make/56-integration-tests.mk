@@ -29,11 +29,13 @@ $(FUNCTIONAL_TEST_PASS_MARKER) $(FUNCTIONAL_TEST_REPORT): dist/ai-ready-exec.js 
 	@mkdir -p $(QA)
 	@echo -n 'Functional test git rev: ' > $(FUNCTIONAL_TEST_REPORT)
 	@git rev-parse HEAD >> $(FUNCTIONAL_TEST_REPORT)
+	# the function test involve running the CLI commands in a subprocess, so coverage is not applicable
 	@( set -e; set -o pipefail; \
 	  ( cd $(TEST_STAGING) && NODE_OPTIONS=--no-warnings $(SDLC_JEST) \
 	    --config=$(SDLC_JEST_CONFIG) \
 	    --testMatch='**/tests/functional/**/*.test.js' \
-	    --runInBand 2>&1 ) \
+	    --runInBand \
+		--no-coverage 2>&1 ) \
 	  | tee -a $(FUNCTIONAL_TEST_REPORT); \
 	  touch $(FUNCTIONAL_TEST_PASS_MARKER) )
 	@echo "✔ Functional tests passed"
