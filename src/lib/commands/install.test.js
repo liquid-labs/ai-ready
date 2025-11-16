@@ -23,24 +23,28 @@ describe('install command', () => {
       integrations : [
         {
           name           : 'SkillOnly',
+          dirName        : 'SkillOnly',
           summary        : 'Skill only integration',
           types          : [INTEGRATION_TYPES.CLAUDE_SKILL],
           installedTypes : [],
         },
         {
           name           : 'GenericOnly',
+          dirName        : 'GenericOnly',
           summary        : 'Generic only integration',
           types          : [INTEGRATION_TYPES.GENERIC],
           installedTypes : [],
         },
         {
           name           : 'DualType',
+          dirName        : 'DualType',
           summary        : 'Dual type integration',
           types          : [INTEGRATION_TYPES.GENERIC, INTEGRATION_TYPES.CLAUDE_SKILL],
           installedTypes : [],
         },
         {
           name           : 'AlreadyInstalled',
+          dirName        : 'AlreadyInstalled',
           summary        : 'Already installed',
           types          : [INTEGRATION_TYPES.GENERIC],
           installedTypes : [INTEGRATION_TYPES.GENERIC],
@@ -119,7 +123,7 @@ describe('install command', () => {
     it('should install Claude Skill type', async () => {
       await cmdInstall('test-lib/SkillOnly', {})
 
-      expect(mockRegistryInstance.installPlugin).toHaveBeenCalledWith('test-lib', 'SkillOnly', '/path', '1.0.0')
+      expect(mockRegistryInstance.installPlugin).toHaveBeenCalledWith('test-lib', 'SkillOnly', 'SkillOnly', '/path', '1.0.0')
       expect(consoleLogSpy).toHaveBeenCalledWith('✔ Claude Skill installed')
     })
 

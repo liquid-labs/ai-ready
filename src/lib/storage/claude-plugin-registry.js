@@ -208,22 +208,20 @@ export class ClaudePluginRegistry {
   /**
    * Installs a Claude Skill plugin
    * @param {string} libraryName - Library name
-   * @param {string} integrationName - Integration name
+   * @param {string} integrationName - Integration name (display name)
+   * @param {string} integrationDirName - Integration directory name (actual filesystem name)
    * @param {string} libraryPath - Absolute path to library root
    * @param {string} version - Library version
    * @returns {Promise<void>}
    */
-  async installPlugin(libraryName, integrationName, libraryPath, version) {
-    // Convert integration name to kebab-case for directory name
-    const integrationDirName = this.toKebabCase(integrationName)
-
+  async installPlugin(libraryName, integrationName, integrationDirName, libraryPath, version) {
     // Create marketplace name from library name
     const marketplaceName = `${libraryName}-marketplace`
 
     // Add/update marketplace
     await this.addOrUpdateMarketplace(marketplaceName, libraryPath)
 
-    // Get skill path
+    // Get skill path using the actual directory name from filesystem
     const skillPath = path.join(libraryPath, 'ai-ready', 'integrations', integrationDirName, 'claude-skill')
 
     // Get git commit SHA

@@ -116,7 +116,7 @@ function determineTypesToInstall(integration, options) {
  */
 async function installType(libraryName, integrationName, integration, type, libraryPath, provider) {
   if (type === INTEGRATION_TYPES.CLAUDE_SKILL) {
-    await installClaudeSkillIntegration(libraryName, integrationName, libraryPath, provider.version)
+    await installClaudeSkillIntegration(libraryName, integrationName, integration.dirName, libraryPath, provider.version)
     console.log('✔ Claude Skill installed')
   }
   else if (type === INTEGRATION_TYPES.GENERIC) {
@@ -128,14 +128,15 @@ async function installType(libraryName, integrationName, integration, type, libr
 /**
  * Installs a Claude Skill via plugin registry
  * @param {string} libraryName - Library name
- * @param {string} integrationName - Integration name
+ * @param {string} integrationName - Integration name (display name)
+ * @param {string} integrationDirName - Integration directory name (actual filesystem name)
  * @param {string} libraryPath - Path to library root
  * @param {string} version - Library version
  * @returns {Promise<void>}
  */
-async function installClaudeSkillIntegration(libraryName, integrationName, libraryPath, version) {
+async function installClaudeSkillIntegration(libraryName, integrationName, integrationDirName, libraryPath, version) {
   const registry = getDefaultRegistry()
-  await registry.installPlugin(libraryName, integrationName, libraryPath, version)
+  await registry.installPlugin(libraryName, integrationName, integrationDirName, libraryPath, version)
 }
 
 /**

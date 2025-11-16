@@ -298,6 +298,7 @@ async function scanIntegration(integrationName, integrationPath) {
 
   return {
     name,
+    dirName        : integrationName, // Preserve actual directory name for path construction
     summary,
     types,
     installedTypes : [], // Will be populated by registry reader

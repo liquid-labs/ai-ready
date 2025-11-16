@@ -85,9 +85,9 @@ describe('Integration: Cache invalidation', () => {
       expect(cache.scannedAt).toBeTruthy()
       expect(cache.packageJsonMTime).toBeTruthy()
       expect(cache.packageLockMTime).toBeTruthy()
-      expect(cache.providers).toBeTruthy()
-      expect(cache.providers).toHaveLength(1)
-      expect(cache.providers[0].libraryName).toBe('test-air-package')
+      expect(cache.npmProviders).toBeTruthy()
+      expect(cache.npmProviders).toHaveLength(1)
+      expect(cache.npmProviders[0].libraryName).toBe('test-air-package')
     })
 
     it('should use cached results on subsequent scans', async () => {
@@ -278,7 +278,7 @@ describe('Integration: Cache invalidation', () => {
 
       // Verify cache is valid
       const cache = await readJsonFile(cachePath)
-      expect(cache.providers).toHaveLength(1)
+      expect(cache.npmProviders).toHaveLength(1)
     })
 
     it('should rebuild cache if .aircache.json is corrupted', async () => {
@@ -296,7 +296,7 @@ describe('Integration: Cache invalidation', () => {
       // Verify cache is valid
       const cache = await readJsonFile(cachePath)
       expect(cache).toBeTruthy()
-      expect(cache.providers).toBeTruthy()
+      expect(cache.npmProviders).toBeTruthy()
     })
   })
 
