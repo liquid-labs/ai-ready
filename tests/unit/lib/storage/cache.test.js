@@ -1,7 +1,8 @@
-import { readCache, writeCache, isCacheValid, createCacheData, loadProvidersWithCache } from '../../../../src/lib/storage/cache'
 import fs from 'fs/promises'
 import path from 'path'
 import os from 'os'
+
+import { readCache, writeCache, isCacheValid, createCacheData, loadProvidersWithCache } from '../../../lib/storage/cache'
 
 const writeTestPackageJson = async (tempDir) => {
   const pkgPath = path.join(tempDir, 'package.json')

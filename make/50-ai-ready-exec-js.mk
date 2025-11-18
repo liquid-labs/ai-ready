@@ -10,7 +10,7 @@ SDLC_AI_READY_EXEC_JS:=$(DIST)/ai-ready-exec.js
 SDLC_AI_READY_EXEC_JS_ENTRY=$(SRC)/cli/index.mjs
 BUILD_TARGETS+=$(SDLC_AI_READY_EXEC_JS)
 
-$(SDLC_AI_READY_EXEC_JS): package.json $(SDLC_ALL_NON_TEST_JS_FILES_SRC)
+$(SDLC_AI_READY_EXEC_JS): package.json $(SDLC_MAIN_JS_FILES_SRC)
 	JS_BUILD_TARGET=$(SDLC_AI_READY_EXEC_JS_ENTRY) \
 	  JS_OUT=$@ \
 	  JS_OUT_PREAMBLE='#!/usr/bin/env -S node --enable-source-maps' \

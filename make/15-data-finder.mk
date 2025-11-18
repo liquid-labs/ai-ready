@@ -5,5 +5,5 @@
 SDLC_DATA_SELECTOR=\( -path "*/test/data/*"  -o -path "*/test/data-*/*" -o -path "*/test-data/*" \)
 
 # all test data (cli and lib)
-SDLC_TEST_DATA_SRC:=$(shell find $(SRC) -type f $(SDLC_DATA_SELECTOR))
-SDLC_TEST_DATA_BUILT:=$(patsubst $(SRC)/%, $(TEST_STAGING)/%, $(SDLC_TEST_DATA_SRC))
+SDLC_TEST_DATA_SRC:=$(shell find $(SRC) $(TESTS) -type f $(SDLC_DATA_SELECTOR))
+SDLC_TEST_DATA_BUILT:=$(patsubst $(TESTS)/%, $(TEST_STAGING)/%, $(patsubst $(SRC)/%, $(TEST_STAGING)/%, $(SDLC_TEST_DATA_SRC)))

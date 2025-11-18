@@ -6,5 +6,6 @@ SRC:=src
 DIST:=dist
 DOC:=doc
 DOC_SRC:=src/doc
+TESTS:=tests
 TEST_STAGING:=test-staging
 QA:=qa

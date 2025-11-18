@@ -2,10 +2,10 @@ import fs from 'fs/promises'
 import path from 'path'
 import os from 'os'
 
-import { readGenericRegistry, writeGenericRegistry, loadInstallationStatus, createBackup } from '../../../../src/lib/storage/registry'
-import { ClaudePluginRegistry } from '../../../../src/lib/storage/claude-plugin-registry'
-import { mkTable, makeProvider } from '../../../../src/lib/test-lib'
-import { INTEGRATION_TYPES } from '../../../../src/lib/types'
+import { readGenericRegistry, writeGenericRegistry, loadInstallationStatus, createBackup } from '../../../lib/storage/registry'
+import { ClaudePluginRegistry } from '../../../lib/storage/claude-plugin-registry'
+import { mkTable, makeProvider } from '../test-lib'
+import { INTEGRATION_TYPES } from '../../../lib/types'
 
 describe('registry', () => {
   let tempDir

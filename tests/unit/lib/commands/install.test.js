@@ -1,13 +1,13 @@
-import { cmdInstall } from '../../../../src/lib/commands/install'
-import * as cache from '../../../../src/lib/storage/cache'
-import * as registry from '../../../../src/lib/storage/registry'
-import * as pluginRegistry from '../../../../src/lib/storage/claude-plugin-registry'
-import { INTEGRATION_TYPES } from '../../../../src/lib/types'
+import { cmdInstall } from '../../../lib/commands/install'
+import * as cache from '../../../lib/storage/cache'
+import * as registry from '../../../lib/storage/registry'
+import * as pluginRegistry from '../../../lib/storage/claude-plugin-registry'
+import { INTEGRATION_TYPES } from '../../../lib/types'
 
-jest.mock('../../../../src/lib/scanner')
-jest.mock('../../../../src/lib/storage/cache')
-jest.mock('../../../../src/lib/storage/registry')
-jest.mock('../../../../src/lib/storage/claude-plugin-registry')
+jest.mock('../../../lib/scanner')
+jest.mock('../../../lib/storage/cache')
+jest.mock('../../../lib/storage/registry')
+jest.mock('../../../lib/storage/claude-plugin-registry')
 
 describe('install command', () => {
   let consoleLogSpy

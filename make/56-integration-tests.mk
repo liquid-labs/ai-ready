@@ -47,8 +47,11 @@ $(FUNCTIONAL_TEST_PASS_MARKER) $(FUNCTIONAL_TEST_REPORT): dist/ai-ready-exec.js 
 INTEGRATION_TEST_REPORT:=$(QA)/integration-test.txt
 INTEGRATION_TEST_PASS_MARKER:=$(QA)/.integration-test.passed
 INTEGRATION_TEST_STAGING:=$(TEST_STAGING)/tests/integration
-INTEGRATION_TEST_FILES:=$(wildcard tests/integration/*.test.js)
+INTEGRATION_TEST_FILES:=$(wildcard tests/integration/*.js)
 INTEGRATION_TEST_FILES_BUILT:=$(patsubst tests/integration/%, $(INTEGRATION_TEST_STAGING)/%, $(INTEGRATION_TEST_FILES))
+
+foo:
+	@echo "INTEGRATION_TEST_FILES_BUILT: $(INTEGRATION_TEST_FILES_BUILT)" # DEBUG
 
 # Transpile integration tests to test-staging
 $(INTEGRATION_TEST_FILES_BUILT) &: $(INTEGRATION_TEST_FILES)
@@ -56,9 +59,9 @@ $(INTEGRATION_TEST_FILES_BUILT) &: $(INTEGRATION_TEST_FILES)
 	@mkdir -p $(INTEGRATION_TEST_STAGING)
 	@NODE_ENV=test $(SDLC_BABEL) \
 		--config-file=$(SDLC_BABEL_CONFIG) \
-		--out-dir=./$(INTEGRATION_TEST_STAGING) \
+		--out-dir=./$(TEST_STAGING) \
 		--source-maps=inline \
-		tests/integration/*.test.js
+		$(INTEGRATION_TEST_FILES)
 
 .PHONY: integration-test
 integration-test: build $(INTEGRATION_TEST_PASS_MARKER)

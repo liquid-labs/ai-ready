@@ -9,6 +9,7 @@
 SDLC_TEST_REPORT:=$(QA)/unit-test.txt
 SDLC_TEST_PASS_MARKER:=$(QA)/.unit-test.passed
 SDLC_COVERAGE_REPORTS:=$(QA)/coverage
+
 TEST_TARGETS+=$(SDLC_TEST_REPORT) $(SDLC_TEST_PASS_MARKER) $(SDLC_COVERAGE_REPORTS)
 PRECIOUS_TARGETS+=$(SDLC_TEST_REPORT)
 
@@ -19,27 +20,54 @@ $(SDLC_TEST_DATA_BUILT): $(TEST_STAGING)/%: $(SRC)/%
 	@mkdir -p $(dir $@)
 	@cp $< $@
 
-# Jest is not picking up the external maps, so we inline them for the test. (As of?)
-# We tried to ignore the data directories in the babel config, but as of 7.23.4, it didn't seem to work. This problem 
-# has been reported, though it claims to be fixed
-$(SDLC_TEST_FILES_BUILT) &: $(SDLC_ALL_JS_FILES_SRC)
-	rm -rf $(TEST_STAGING)
-	mkdir -p $(TEST_STAGING)
-	NODE_ENV=test $(SDLC_BABEL) \
+define build_component
+	@echo "Building component: $(1)"
+	$(CC) -c $(1).c -o $(1).o
+	@echo "Component $(1) built successfully."
+endef
+
+define build_test_files
+	@mkdir -p $(TEST_STAGING)
+	@echo "Transpiling main code..."
+	@NODE_ENV=test $(SDLC_BABEL) \
 		--config-file=$(SDLC_BABEL_CONFIG) \
 		--out-dir=./$(TEST_STAGING) \
 		--source-maps=inline \
-    --ignore='**/test/data/**' --ignore='**/test-data/**' \
+		--ignore='**/test/data/**' --ignore='**/test-data/**' \
 		$(SRC)
+	@echo "Transpiling $(1) tests..."
+	@NODE_ENV=test $(SDLC_BABEL) \
+		--config-file=$(SDLC_BABEL_CONFIG) \
+		--out-dir=./$(TEST_STAGING)/$(1) \
+		--source-maps=inline \
+		--ignore='**/test/data/**' --ignore='**/test-data/**' \
+		$(TESTS)/$(1)
+endef
 
-$(SDLC_TEST_PASS_MARKER) $(SDLC_TEST_REPORT) $(TEST_STAGING)/coverage &: package.json $(SDLC_TEST_FILES_BUILT) $(SDLC_TEST_DATA_BUILT)
+.PHONY: clean-stale-test-files
+clean-stale-test-files:
+	@for FILE in $$(find $(TEST_STAGING) -type f -name '*.js' -not $(SDLC_DATA_SELECTOR)); do \
+		if ! echo "$(SDLC_ALL_JS_FILES_BUILT)" | grep -q "$$FILE" >/dev/null; then \
+			echo "Removing stale test file: $$FILE"; \
+			rm "$$FILE"; \
+		fi; \
+	done
+
+# Jest is not picking up the external maps, so we inline them for the test. (As of?)
+# We tried to ignore the data directories in the babel config, but as of 7.23.4, it didn't seem to work. This problem 
+# has been reported, though it claims to be fixed
+$(SDLC_MAIN_AND_UNIT_BUILT) &: $(SDLC_MAIN_AND_UNIT_SRC)
+	$(call build_test_files,unit)
+
+$(SDLC_TEST_PASS_MARKER) $(SDLC_TEST_REPORT) $(TEST_STAGING)/coverage &: package.json $(SDLC_MAIN_AND_UNIT_BUILT) $(SDLC_TEST_DATA_BUILT) clean-stale-test-files
 	rm -rf $@
 	mkdir -p $(dir $@)
 	echo -n 'Test git rev: ' > $(SDLC_TEST_REPORT)
 	git rev-parse HEAD >> $(SDLC_TEST_REPORT)
 	( set -e; set -o pipefail; \
-	  ( cd $(TEST_STAGING) && $(SDLC_JEST) \
+	  ( cd $(TEST_STAGING)/unit && $(SDLC_JEST) \
 	    --config=$(SDLC_JEST_CONFIG) \
+	    --testPathPatterns=test-staging/unit/ \
 	    --runInBand \
 	    $(TEST) 2>&1 ) \
 	  | tee -a $(SDLC_TEST_REPORT); \
