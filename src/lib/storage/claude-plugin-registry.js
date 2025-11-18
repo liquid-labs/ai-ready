@@ -168,6 +168,23 @@ export class ClaudePluginRegistry {
   }
 
   /**
+   * Creates a backup of installed_plugins.json
+   * @returns {Promise<void>}
+   */
+  async createBackup() {
+    const backupPath = `${this.config.installedPluginsPath}.bak`
+    try {
+      await fs.copyFile(this.config.installedPluginsPath, backupPath)
+    }
+    catch (error) {
+      if (error.code !== 'ENOENT') {
+        throw error
+      }
+      // File doesn't exist, no backup needed
+    }
+  }
+
+  /**
    * Adds or updates a marketplace in known_marketplaces.json
    * @param {string} marketplaceName - Name/ID of the marketplace
    * @param {string} libraryPath - Absolute path to the library
@@ -191,22 +208,20 @@ export class ClaudePluginRegistry {
   /**
    * Installs a Claude Skill plugin
    * @param {string} libraryName - Library name
-   * @param {string} integrationName - Integration name
+   * @param {string} integrationName - Integration name (display name)
+   * @param {string} integrationDirName - Integration directory name (actual filesystem name)
    * @param {string} libraryPath - Absolute path to library root
    * @param {string} version - Library version
    * @returns {Promise<void>}
    */
-  async installPlugin(libraryName, integrationName, libraryPath, version) {
-    // Convert integration name to kebab-case for directory name
-    const integrationDirName = this.toKebabCase(integrationName)
-
+  async installPlugin(libraryName, integrationName, integrationDirName, libraryPath, version) {
     // Create marketplace name from library name
     const marketplaceName = `${libraryName}-marketplace`
 
     // Add/update marketplace
     await this.addOrUpdateMarketplace(marketplaceName, libraryPath)
 
-    // Get skill path
+    // Get skill path using the actual directory name from filesystem
     const skillPath = path.join(libraryPath, 'ai-ready', 'integrations', integrationDirName, 'claude-skill')
 
     // Get git commit SHA
@@ -225,6 +240,7 @@ export class ClaudePluginRegistry {
       isLocal     : true,
     }
 
+    await this.createBackup()
     await this.writeInstalledPlugins(pluginsConfig)
   }
 
@@ -241,6 +257,7 @@ export class ClaudePluginRegistry {
     const pluginsConfig = await this.readInstalledPlugins()
 
     if (pluginKey in pluginsConfig.plugins) {
+      await this.createBackup()
       delete pluginsConfig.plugins[pluginKey]
       await this.writeInstalledPlugins(pluginsConfig)
     }

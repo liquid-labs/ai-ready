@@ -1,0 +1,8 @@
+{
+  "name": "test-air-package",
+  "version": "1.0.0",
+  "description": "Test fixture package for ai-ready integration testing",
+  "keywords": ["ai-ready", "testing", "fixture"],
+  "author": "ai-ready team",
+  "license": "MIT"
+}

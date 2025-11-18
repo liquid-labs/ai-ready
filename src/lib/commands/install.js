@@ -4,6 +4,7 @@ import { scanAll } from '../scanner'
 import { loadProvidersWithCache } from '../storage/cache'
 import { loadInstallationStatus, createBackup, readGenericRegistry, writeGenericRegistry } from '../storage/registry'
 import { getDefaultRegistry } from '../storage/claude-plugin-registry'
+import { parseLibraryIntegration } from '../utils/parse-library-integration'
 import { DEFAULT_CONFIG, INTEGRATION_TYPES } from '../types'
 
 /**
@@ -20,13 +21,17 @@ import { DEFAULT_CONFIG, INTEGRATION_TYPES } from '../types'
  * @returns {Promise<void>}
  */
 export async function cmdInstall(libraryIntegration, options) {
-  if (!libraryIntegration || !libraryIntegration.includes('/')) {
+  if (!libraryIntegration) {
     logErrAndExit('Error: Please specify library/integration format (e.g., my-lib/MyIntegration)')
   }
 
   try {
     // Parse input
-    const [libraryName, integrationName] = libraryIntegration.split('/')
+    const { libraryName, integrationName } = parseLibraryIntegration(libraryIntegration)
+
+    if (!integrationName) {
+      logErrAndExit('Error: Please specify library/integration format (e.g., my-lib/MyIntegration)')
+    }
 
     // Load providers
     const { npmProviders, remoteProviders } = await loadProvidersWithCache(DEFAULT_CONFIG.cacheFile, () => scanAll())
@@ -111,7 +116,7 @@ function determineTypesToInstall(integration, options) {
  */
 async function installType(libraryName, integrationName, integration, type, libraryPath, provider) {
   if (type === INTEGRATION_TYPES.CLAUDE_SKILL) {
-    await installClaudeSkillIntegration(libraryName, integrationName, libraryPath, provider.version)
+    await installClaudeSkillIntegration(libraryName, integrationName, integration.dirName, libraryPath, provider.version)
     console.log('✔ Claude Skill installed')
   }
   else if (type === INTEGRATION_TYPES.GENERIC) {
@@ -123,14 +128,15 @@ async function installType(libraryName, integrationName, integration, type, libr
 /**
  * Installs a Claude Skill via plugin registry
  * @param {string} libraryName - Library name
- * @param {string} integrationName - Integration name
+ * @param {string} integrationName - Integration name (display name)
+ * @param {string} integrationDirName - Integration directory name (actual filesystem name)
  * @param {string} libraryPath - Path to library root
  * @param {string} version - Library version
  * @returns {Promise<void>}
  */
-async function installClaudeSkillIntegration(libraryName, integrationName, libraryPath, version) {
+async function installClaudeSkillIntegration(libraryName, integrationName, integrationDirName, libraryPath, version) {
   const registry = getDefaultRegistry()
-  await registry.installPlugin(libraryName, integrationName, libraryPath, version)
+  await registry.installPlugin(libraryName, integrationName, integrationDirName, libraryPath, version)
 }
 
 /**

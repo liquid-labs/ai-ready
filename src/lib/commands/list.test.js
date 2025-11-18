@@ -1,12 +1,14 @@
 import { cmdList } from './list'
 import * as cache from '../storage/cache'
 import * as registry from '../storage/registry'
+import * as claudePluginRegistry from '../storage/claude-plugin-registry'
 import { INTEGRATION_TYPES } from '../types'
 
 // Mock modules
 jest.mock('../scanner')
 jest.mock('../storage/cache')
 jest.mock('../storage/registry')
+jest.mock('../storage/claude-plugin-registry')
 
 describe('list command', () => {
   let consoleLogSpy
@@ -26,6 +28,9 @@ describe('list command', () => {
     registry.loadInstallationStatus.mockImplementation(
       async (providers) => providers // eslint-disable-line require-await
     )
+    claudePluginRegistry.getDefaultRegistry.mockReturnValue({
+      config : { pluginsDir : '/Users/zane/.claude/plugins' },
+    })
   })
 
   afterEach(() => {
@@ -260,10 +265,13 @@ describe('list command', () => {
 
     await cmdList({})
 
-    expect(registry.loadInstallationStatus).toHaveBeenCalledWith(providers, '.claude/skills', [
-      'AGENTS.md',
-      'CLAUDE.md',
-    ])
+    expect(registry.loadInstallationStatus).toHaveBeenCalledWith(
+      providers,
+      '.claude/skills',
+      ['AGENTS.md', 'CLAUDE.md'],
+      expect.any(String), // process.cwd()
+      expect.objectContaining({ config : expect.any(Object) }) // pluginRegistry
+    )
   })
 
   it('should handle empty installedTypes', async () => {

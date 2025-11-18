@@ -26,7 +26,8 @@
 
 /**
  * @typedef {object} Integration
- * @property {string} name - Integration name
+ * @property {string} name - Integration name (from metadata or directory)
+ * @property {string} [dirName] - Actual directory name on filesystem (for constructing paths)
  * @property {string} summary - One-line summary of the integration
  * @property {string[]} types - Available integration types (e.g., ['genericIntegration', 'claudeSkill'])
  * @property {IntegrationSource} [source] - Source information (npm or remote)

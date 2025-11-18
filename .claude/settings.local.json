@@ -18,7 +18,16 @@
       "Bash(TEST=view.test make test:*)",
       "Bash(TEST=types.test make test:*)",
       "Bash(git rev-parse:*)",
-      "Bash(git mv:*)"
+      "Bash(git mv:*)",
+      "WebSearch",
+      "Bash(node --version:*)",
+      "Bash(npx jest:*)",
+      "Bash(NODE_ENV=test npx babel:*)",
+      "Bash(NODE_OPTIONS=--no-warnings npx jest:*)",
+      "Bash(npm run functional-test:*)",
+      "WebFetch(domain:github.com)",
+      "Bash(npm run build:*)",
+      "Bash(TEST=integration-install-remove.test make:*)"
     ],
     "deny": [],
     "ask": []
