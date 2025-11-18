@@ -38,7 +38,7 @@ define build_test_files
 	@echo "Transpiling $(1) tests..."
 	@NODE_ENV=test $(SDLC_BABEL) \
 		--config-file=$(SDLC_BABEL_CONFIG) \
-		--out-dir=./$(TEST_STAGING)/$(1) \
+		--out-dir=./$(TEST_STAGING)/$(TESTS)/$(1) \
 		--source-maps=inline \
 		--ignore='**/test/data/**' --ignore='**/test-data/**' \
 		$(TESTS)/$(1)
@@ -65,9 +65,9 @@ $(SDLC_TEST_PASS_MARKER) $(SDLC_TEST_REPORT) $(TEST_STAGING)/coverage &: package
 	echo -n 'Test git rev: ' > $(SDLC_TEST_REPORT)
 	git rev-parse HEAD >> $(SDLC_TEST_REPORT)
 	( set -e; set -o pipefail; \
-	  ( cd $(TEST_STAGING)/unit && $(SDLC_JEST) \
+	  ( cd $(TEST_STAGING)/tests/unit && $(SDLC_JEST) \
 	    --config=$(SDLC_JEST_CONFIG) \
-	    --testPathPatterns=test-staging/unit/ \
+	    --testPathPatterns=test-staging/tests/unit/ \
 	    --runInBand \
 	    $(TEST) 2>&1 ) \
 	  | tee -a $(SDLC_TEST_REPORT); \

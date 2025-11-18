@@ -1,13 +1,13 @@
-import { cmdRemove } from '../../../lib/commands/remove'
-import * as cache from '../../../lib/storage/cache'
-import * as registry from '../../../lib/storage/registry'
-import * as pluginRegistry from '../../../lib/storage/claude-plugin-registry'
-import { INTEGRATION_TYPES } from '../../../lib/types'
+import { cmdRemove } from '../../../../lib/commands/remove'
+import * as cache from '../../../../lib/storage/cache'
+import * as registry from '../../../../lib/storage/registry'
+import * as pluginRegistry from '../../../../lib/storage/claude-plugin-registry'
+import { INTEGRATION_TYPES } from '../../../../lib/types'
 
-jest.mock('../../../lib/scanner')
-jest.mock('../../../lib/storage/cache')
-jest.mock('../../../lib/storage/registry')
-jest.mock('../../../lib/storage/claude-plugin-registry')
+jest.mock('../../../../lib/scanner')
+jest.mock('../../../../lib/storage/cache')
+jest.mock('../../../../lib/storage/registry')
+jest.mock('../../../../lib/storage/claude-plugin-registry')
 
 describe('remove command', () => {
   let consoleLogSpy

@@ -1,11 +1,11 @@
-import { cmdView } from '../../../lib/commands/view'
-import * as cache from '../../../lib/storage/cache'
-import * as registry from '../../../lib/storage/registry'
-import { INTEGRATION_TYPES } from '../../../lib/types'
+import { cmdView } from '../../../../lib/commands/view'
+import * as cache from '../../../../lib/storage/cache'
+import * as registry from '../../../../lib/storage/registry'
+import { INTEGRATION_TYPES } from '../../../../lib/types'
 
-jest.mock('../../../lib/scanner')
-jest.mock('../../../lib/storage/cache')
-jest.mock('../../../lib/storage/registry')
+jest.mock('../../../../lib/scanner')
+jest.mock('../../../../lib/storage/cache')
+jest.mock('../../../../lib/storage/registry')
 
 describe('view command', () => {
   let consoleLogSpy

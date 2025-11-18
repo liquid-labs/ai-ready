@@ -13,7 +13,7 @@ SDLC_UNIT_TEST_SELECTOR=\( -name "*.test.*js" -o -path "*/test/*" \)
 SDLC_UNIT_TEST_FILES_SRC:=$(shell find $(SRC) $(SDLC_UNIT_TEST_SELECTOR) -not $(SDLC_DATA_SELECTOR) -type f) \
 	$(shell find $(TESTS)/unit $(SDLC_JS_SELECTOR) -not $(SDLC_DATA_SELECTOR) -type f)
 SDLC_MAIN_AND_UNIT_SRC:=$(SDLC_MAIN_JS_FILES_SRC) $(SDLC_UNIT_TEST_FILES_SRC)
-SDLC_MAIN_AND_UNIT_BUILT:=$(patsubst %, $(TEST_STAGING)/%, $(shell echo $(SDLC_MAIN_AND_UNIT_SRC) | sed -E 's%(^| )[^/]+/%\1%g' | sed -E 's%[.][mc]js( |$$)%.js\1%g'))
+SDLC_MAIN_AND_UNIT_BUILT:=$(patsubst %, $(TEST_STAGING)/%, $(shell echo $(SDLC_MAIN_AND_UNIT_SRC) | sed -E 's%(^| )src/%\1%g' | sed -E 's%[.][mc]js( |$$)%.js\1%g'))
 
 bar: # DEBUG
 	@echo "SDLC_MAIN_JS_FILES_SRC: $(SDLC_MAIN_JS_FILES_SRC)"
@@ -25,13 +25,13 @@ SDLC_FUNCTIONAL_TEST_SELECTOR=\( -name "*.functional.test.*js" -o -path "*/test/
 SDLC_FUNCTIONAL_TEST_FILES_SRC:=$(shell find $(SRC) $(SDLC_FUNCTIONAL_TEST_SELECTOR) -not $(SDLC_DATA_SELECTOR) -type f) \
 	$(shell find $(TESTS)/functional $(SDLC_JS_SELECTOR) -not $(SDLC_DATA_SELECTOR) -type f)
 SDLC_MAIN_AND_FUNCTIONAL_TEST_SRC:=$(SDLC_MAIN_JS_FILES_SRC) $(SDLC_FUNCTIONAL_TEST_FILES_SRC)
-SDLC_MAIN_AND_FUNCTIONAL_TEST_BUILT:=$(patsubst %, $(TEST_STAGING)/%, $(shell echo $(SDLC_MAIN_AND_FUNCTIONAL_TEST_SRC) | sed -E 's%(^| )[^/]+/%\1%g' | sed -E 's%[.][mc]js( |$$)%.js\1%g'))
+SDLC_MAIN_AND_FUNCTIONAL_TEST_BUILT:=$(patsubst %, $(TEST_STAGING)/%, $(shell echo $(SDLC_MAIN_AND_FUNCTIONAL_TEST_SRC) | sed -E 's%(^| )src/%\1%g' | sed -E 's%[.][mc]js( |$$)%.js\1%g'))
 
 SDLC_INTEGRATION_TEST_SELECTOR=\( -name "*.integration.test.*js" -o -path "*/test/*" \)
 SDLC_INTEGRATION_TEST_FILES_SRC:=$(shell find $(SRC) $(SDLC_INTEGRATION_TEST_SELECTOR) -not $(SDLC_DATA_SELECTOR) -type f) \
 	$(shell find $(TESTS)/integration $(SDLC_JS_SELECTOR) -not $(SDLC_DATA_SELECTOR) -type f)
 SDLC_MAIN_AND_INTEGRATION_TEST_SRC:=$(SDLC_MAIN_JS_FILES_SRC) $(SDLC_INTEGRATION_TEST_FILES_SRC)
-SDLC_MAIN_AND_INTEGRATION_TEST_BUILT:=$(patsubst %, $(TEST_STAGING)/%, $(shell echo $(SDLC_MAIN_AND_INTEGRATION_TEST_SRC) | sed -E 's%(^| )[^/]+/%\1%g' | sed -E 's%[.][mc]js( |$$)%.js\1%g'))
+SDLC_MAIN_AND_INTEGRATION_TEST_BUILT:=$(patsubst %, $(TEST_STAGING)/%, $(shell echo $(SDLC_MAIN_AND_INTEGRATION_TEST_SRC) | sed -E 's%(^| )src/%\1%g' | sed -E 's%[.][mc]js( |$$)%.js\1%g'))
 
 SDLC_ALL_JS_FILES_SRC:=$(SDLC_MAIN_JS_FILES_SRC) $(SDLC_UNIT_TEST_FILES_SRC) $(SDLC_FUNCTIONAL_TEST_FILES_SRC) $(SDLC_INTEGRATION_TEST_FILES_SRC)
-SDLC_ALL_JS_FILES_BUILT:=$(patsubst %, $(TEST_STAGING)/%, $(shell echo $(SDLC_ALL_JS_FILES_SRC) | sed -E 's%(^| )[^/]+/%\1%g' | sed -E 's%[.][mc]js( |$$)%.js\1%g'))
+SDLC_ALL_JS_FILES_BUILT:=$(patsubst %, $(TEST_STAGING)/%, $(shell echo $(SDLC_ALL_JS_FILES_SRC) | sed -E 's%(^| )src/%\1%g' | sed -E 's%[.][mc]js( |$$)%.js\1%g'))
