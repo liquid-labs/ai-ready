@@ -1,4 +1,4 @@
-import { cmdView } from './view'
+import { cmdView } from '../../../../src/lib/commands/view'
 import * as cache from '../storage/cache'
 import * as registry from '../storage/registry'
 import { INTEGRATION_TYPES } from '../types'

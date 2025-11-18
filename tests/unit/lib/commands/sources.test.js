@@ -1,4 +1,4 @@
-import { addSource, removeSource, listSources, updateSources, repairSource } from './sources'
+import { addSource, removeSource, listSources, updateSources, repairSource } from '../../../../src/lib/commands/sources'
 import * as config from '../storage/config'
 import * as remoteRepos from '../storage/remote-repos'
 import * as cache from '../storage/cache'

@@ -1,4 +1,4 @@
-import { cmdRemove } from './remove'
+import { cmdRemove } from '../../../../src/lib/commands/remove'
 import * as cache from '../storage/cache'
 import * as registry from '../storage/registry'
 import * as pluginRegistry from '../storage/claude-plugin-registry'

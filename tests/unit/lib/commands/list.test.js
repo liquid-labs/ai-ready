@@ -1,4 +1,4 @@
-import { cmdList } from './list'
+import { cmdList } from '../../../../src/lib/commands/list'
 import * as cache from '../storage/cache'
 import * as registry from '../storage/registry'
 import * as claudePluginRegistry from '../storage/claude-plugin-registry'

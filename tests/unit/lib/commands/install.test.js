@@ -1,13 +1,13 @@
-import { cmdInstall } from './install'
-import * as cache from '../storage/cache'
-import * as registry from '../storage/registry'
-import * as pluginRegistry from '../storage/claude-plugin-registry'
-import { INTEGRATION_TYPES } from '../types'
+import { cmdInstall } from '../../../../src/lib/commands/install'
+import * as cache from '../../../../src/lib/storage/cache'
+import * as registry from '../../../../src/lib/storage/registry'
+import * as pluginRegistry from '../../../../src/lib/storage/claude-plugin-registry'
+import { INTEGRATION_TYPES } from '../../../../src/lib/types'
 
-jest.mock('../scanner')
-jest.mock('../storage/cache')
-jest.mock('../storage/registry')
-jest.mock('../storage/claude-plugin-registry')
+jest.mock('../../../../src/lib/scanner')
+jest.mock('../../../../src/lib/storage/cache')
+jest.mock('../../../../src/lib/storage/registry')
+jest.mock('../../../../src/lib/storage/claude-plugin-registry')
 
 describe('install command', () => {
   let consoleLogSpy

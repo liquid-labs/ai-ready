@@ -1,42 +1,33 @@
 /**
- * Docker-based integration tests for cache invalidation workflows
+ * Integration tests for cache invalidation workflows
  * Tests cache behavior with real file system modifications
  */
 
 import { describe, it, expect, beforeAll, afterAll, beforeEach } from '@jest/globals'
-import { execFile } from 'child_process'
-import { promisify } from 'util'
 import fs from 'fs/promises'
 import path from 'path'
 import os from 'os'
-
-const execFileAsync = promisify(execFile)
-
-/**
- * Resolve project root (handles running from test-staging or project root)
- */
-function getProjectRoot () {
-  const cwd = process.cwd()
-  // If running from test-staging, go up one level
-  if (cwd.endsWith('test-staging')) {
-    return path.resolve(cwd, '..')
-  }
-  return cwd
-}
-
-const PROJECT_ROOT = getProjectRoot()
-
-// Path to CLI
-const CLI_PATH = process.env.CLI_PATH || path.resolve(PROJECT_ROOT, 'dist/ai-ready-exec.js')
-const FIXTURE_PATH = process.env.FIXTURE_PATH || path.resolve(PROJECT_ROOT, 'tests/fixtures/test-air-package')
+import {
+  setupTestProject,
+  runCLI,
+  readJsonFile,
+  fileExists,
+  sleep
+} from './test-helpers'
 
 describe('Integration: Cache invalidation', () => {
   let testDir
   let originalHome
 
   beforeAll(async () => {
+    // Create isolated test environment
     testDir = await fs.mkdtemp(path.join(os.tmpdir(), 'air-cache-test-'))
     originalHome = process.env.HOME
+
+    // Set HOME to test directory to isolate cache files
+    // NOTE: This requires tests to run sequentially (--runInBand in Jest config)
+    // to prevent parallel test conflicts. The modified HOME is passed to child
+    // processes via runCLI() helper which explicitly includes process.env.
     process.env.HOME = testDir
   })
 
@@ -61,7 +52,7 @@ describe('Integration: Cache invalidation', () => {
         await fs.unlink(fullPath)
       }
     }
-    await setupTestProject(testDir)
+    await setupTestProject(testDir, { projectName: 'cache-test-project' })
   })
 
   describe('Cache creation and usage', () => {
@@ -334,89 +325,3 @@ describe('Integration: Cache invalidation', () => {
     })
   })
 })
-
-// Helper functions
-async function setupTestProject (testDir) {
-  const packageJson = {
-    name: 'cache-test-project',
-    version: '1.0.0',
-    dependencies: {
-      'test-air-package': '1.0.0'
-    }
-  }
-  await fs.writeFile(
-    path.join(testDir, 'package.json'),
-    JSON.stringify(packageJson, null, 2)
-  )
-
-  const nodeModulesDir = path.join(testDir, 'node_modules')
-  await fs.mkdir(nodeModulesDir, { recursive: true })
-  await copyDir(FIXTURE_PATH, path.join(nodeModulesDir, 'test-air-package'))
-
-  const packageLock = {
-    name: 'cache-test-project',
-    version: '1.0.0',
-    lockfileVersion: 3,
-    requires: true,
-    packages: {
-      '': {
-        dependencies: {
-          'test-air-package': '1.0.0'
-        }
-      },
-      'node_modules/test-air-package': {
-        version: '1.0.0'
-      }
-    }
-  }
-  await fs.writeFile(
-    path.join(testDir, 'package-lock.json'),
-    JSON.stringify(packageLock, null, 2)
-  )
-}
-
-async function copyDir (src, dest) {
-  await fs.mkdir(dest, { recursive: true })
-  const entries = await fs.readdir(src, { withFileTypes: true })
-
-  for (const entry of entries) {
-    const srcPath = path.join(src, entry.name)
-    const destPath = path.join(dest, entry.name)
-
-    if (entry.isDirectory()) {
-      await copyDir(srcPath, destPath)
-    } else {
-      await fs.copyFile(srcPath, destPath)
-    }
-  }
-}
-
-async function runCLI (args, cwd) {
-  const { stdout, stderr } = await execFileAsync('node', [CLI_PATH, ...args], { cwd })
-  return { stdout, stderr }
-}
-
-async function readJsonFile (filePath) {
-  try {
-    const content = await fs.readFile(filePath, 'utf8')
-    return JSON.parse(content)
-  } catch (error) {
-    if (error.code === 'ENOENT') {
-      return null
-    }
-    throw error
-  }
-}
-
-async function fileExists (filePath) {
-  try {
-    await fs.access(filePath)
-    return true
-  } catch {
-    return false
-  }
-}
-
-function sleep (ms) {
-  return new Promise(resolve => setTimeout(resolve, ms))
-}
