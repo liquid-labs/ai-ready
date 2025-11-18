@@ -121,13 +121,14 @@ describe('Integration: Cache invalidation', () => {
       const cache1 = await readJsonFile(cachePath)
       const scannedAt1 = cache1.scannedAt
 
-      // Wait to ensure mtime changes
-      await sleep(1100) // Need >1 second for mtime to differ
-
       // Modify package.json
       const packageJson = await readJsonFile(packageJsonPath)
       packageJson.version = '2.0.0'
       await fs.writeFile(packageJsonPath, JSON.stringify(packageJson, null, 2))
+
+      // Explicitly set mtime to ensure it differs from cached value
+      const newTime = new Date(Date.now() + 2000)
+      await fs.utimes(packageJsonPath, newTime, newTime)
 
       // Second scan - should invalidate cache
       await runCLI(['list'], testDir)
@@ -148,11 +149,14 @@ describe('Integration: Cache invalidation', () => {
       const cache1 = await readJsonFile(cachePath)
       const mtime1 = cache1.packageJsonMTime
 
-      // Wait and modify
-      await sleep(1100)
+      // Modify package.json
       const packageJson = await readJsonFile(packageJsonPath)
       packageJson.description = 'Modified'
       await fs.writeFile(packageJsonPath, JSON.stringify(packageJson, null, 2))
+
+      // Explicitly set mtime to ensure it differs from cached value
+      const newTime = new Date(Date.now() + 2000)
+      await fs.utimes(packageJsonPath, newTime, newTime)
 
       // Second scan
       await runCLI(['list'], testDir)
@@ -174,11 +178,14 @@ describe('Integration: Cache invalidation', () => {
       const cache1 = await readJsonFile(cachePath)
       const scannedAt1 = cache1.scannedAt
 
-      // Wait and modify
-      await sleep(1100)
+      // Modify package-lock.json
       const packageLock = await readJsonFile(packageLockPath)
       packageLock.lockfileVersion = 2
       await fs.writeFile(packageLockPath, JSON.stringify(packageLock, null, 2))
+
+      // Explicitly set mtime to ensure it differs from cached value
+      const newTime = new Date(Date.now() + 2000)
+      await fs.utimes(packageLockPath, newTime, newTime)
 
       // Second scan
       await runCLI(['list'], testDir)
@@ -198,11 +205,14 @@ describe('Integration: Cache invalidation', () => {
       const cache1 = await readJsonFile(cachePath)
       const mtime1 = cache1.packageLockMTime
 
-      // Wait and modify
-      await sleep(1100)
+      // Modify package-lock.json
       const packageLock = await readJsonFile(packageLockPath)
       packageLock.lockfileVersion = 2
       await fs.writeFile(packageLockPath, JSON.stringify(packageLock, null, 2))
+
+      // Explicitly set mtime to ensure it differs from cached value
+      const newTime = new Date(Date.now() + 2000)
+      await fs.utimes(packageLockPath, newTime, newTime)
 
       // Second scan
       await runCLI(['list'], testDir)
@@ -223,11 +233,14 @@ describe('Integration: Cache invalidation', () => {
       await runCLI(['list'], testDir)
       const cache1 = await readJsonFile(cachePath)
 
-      // Wait and add dependency
-      await sleep(1100)
+      // Add dependency
       const packageJson = await readJsonFile(packageJsonPath)
       packageJson.dependencies['new-package'] = '1.0.0'
       await fs.writeFile(packageJsonPath, JSON.stringify(packageJson, null, 2))
+
+      // Explicitly set mtime to ensure it differs from cached value
+      const newTime = new Date(Date.now() + 2000)
+      await fs.utimes(packageJsonPath, newTime, newTime)
 
       // Second scan
       await runCLI(['list'], testDir)
@@ -245,11 +258,14 @@ describe('Integration: Cache invalidation', () => {
       await runCLI(['list'], testDir)
       const cache1 = await readJsonFile(cachePath)
 
-      // Wait and remove dependency
-      await sleep(1100)
+      // Remove dependency
       const packageJson = await readJsonFile(packageJsonPath)
       delete packageJson.dependencies['test-air-package']
       await fs.writeFile(packageJsonPath, JSON.stringify(packageJson, null, 2))
+
+      // Explicitly set mtime to ensure it differs from cached value
+      const newTime = new Date(Date.now() + 2000)
+      await fs.utimes(packageJsonPath, newTime, newTime)
 
       // Second scan
       await runCLI(['list'], testDir)
