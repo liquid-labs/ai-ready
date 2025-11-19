@@ -1,7 +1,7 @@
 /**
  * Functional tests for 'air install' command
  */
-import path from 'path'
+import path from 'node:path'
 
 import { afterEach, beforeEach, describe, expect, it } from '@jest/globals'
 
