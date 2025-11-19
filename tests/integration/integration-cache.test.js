@@ -6,8 +6,6 @@ import fs from 'fs/promises'
 import os from 'os'
 import path from 'path'
 
-import { afterAll, beforeAll, beforeEach, describe, expect, it } from '@jest/globals'
-
 import { fileExists, readJsonFile, runCLI, setupTestProject, sleep } from './test-helpers'
 
 describe('Integration: Cache invalidation', () => {

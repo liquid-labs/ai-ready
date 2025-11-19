@@ -1,9 +1,7 @@
 /**
  * Functional tests for 'air list' command
  */
-import { afterEach, beforeEach, describe, expect, it } from '@jest/globals'
-
-import { runCLI, setupClaudePluginDir, setupTestEnv } from './helpers.js'
+import { runCLI, setupClaudePluginDir, setupTestEnv } from './helpers'
 
 describe('air list (functional)', () => {
   let testDir

@@ -12,6 +12,7 @@ const execFileAsync = promisify(execFile)
 
 /**
  * Resolve project root (handles running from test-staging or project root)
+ * @returns {string} The project root directory path
  */
 function getProjectRoot() {
   const cwd = process.cwd()
@@ -40,7 +41,7 @@ const FIXTURE_PACKAGE_PATH = path.resolve(PROJECT_ROOT, 'tests/fixtures/test-air
  * @param {string[]} args - Command arguments
  * @param {string} cwd - Working directory
  * @param {object} [options] - Additional options
- * @returns {Promise<{stdout: string, stderr: string, exitCode: number}>}
+ * @returns {Promise<{stdout: string, stderr: string, exitCode: number}>} CLI execution result
  */
 export async function runCLI(args, cwd, options = {}) {
   try {
@@ -64,7 +65,7 @@ export async function runCLI(args, cwd, options = {}) {
 
 /**
  * Setup a test environment with temp directory and fixture package
- * @returns {Promise<{testDir: string, nodeModulesDir: string, cleanup: Function}>}
+ * @returns {Promise<{testDir: string, nodeModulesDir: string, cleanup: Function}>} Test environment configuration
  */
 export async function setupTestEnv() {
   // Create temp directory
@@ -164,7 +165,7 @@ async function copyDir(src, dest) {
 /**
  * Read a JSON file
  * @param {string} filePath - Path to JSON file
- * @returns {Promise<object | null>}
+ * @returns {Promise<object | null>} Parsed JSON object or null if file not found
  */
 export async function readJsonFile(filePath) {
   try {
@@ -183,7 +184,7 @@ export async function readJsonFile(filePath) {
 /**
  * Read a text file
  * @param {string} filePath - Path to file
- * @returns {Promise<string|null>}
+ * @returns {Promise<string|null>} File contents or null if file not found
  */
 export async function readFile(filePath) {
   try {
@@ -200,7 +201,7 @@ export async function readFile(filePath) {
 /**
  * Check if file exists
  * @param {string} filePath - Path to file
- * @returns {Promise<boolean>}
+ * @returns {Promise<boolean>} True if file exists, false otherwise
  */
 export async function fileExists(filePath) {
   try {
@@ -216,7 +217,7 @@ export async function fileExists(filePath) {
 /**
  * Parse markdown table to extract integration entries
  * @param {string} content - Markdown content
- * @returns {Array<{name: string, library: string, summary: string}>}
+ * @returns {Array<{name: string, library: string, summary: string}>} Array of parsed integration entries
  */
 export function parseMarkdownTable(content) {
   const entries = []
@@ -257,7 +258,7 @@ export function parseMarkdownTable(content) {
 /**
  * Create a mock Claude plugin directory structure for testing
  * @param {string} baseDir - Base directory for plugin files
- * @returns {Promise<{pluginsDir: string, installedPluginsPath: string, marketplacesPath: string}>}
+ * @returns {Promise<{pluginsDir: string, installedPluginsPath: string, marketplacesPath: string}>} Plugin directory paths
  */
 export async function setupClaudePluginDir(baseDir) {
   const pluginsDir = path.join(baseDir, '.claude', 'plugins')

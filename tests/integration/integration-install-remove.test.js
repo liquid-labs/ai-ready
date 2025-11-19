@@ -6,8 +6,6 @@ import fs from 'fs/promises'
 import os from 'os'
 import path from 'path'
 
-import { afterAll, beforeAll, beforeEach, describe, expect, it } from '@jest/globals'
-
 import { readFile, readJsonFile, runCLI, setupTestProject } from './test-helpers'
 
 describe('Integration: Install and Remove workflows', () => {

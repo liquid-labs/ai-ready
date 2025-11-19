@@ -3,9 +3,7 @@
  */
 import path from 'path'
 
-import { afterEach, beforeEach, describe, expect, it } from '@jest/globals'
-
-import { parseMarkdownTable, readFile, readJsonFile, runCLI, setupClaudePluginDir, setupTestEnv } from './helpers.js'
+import { parseMarkdownTable, readFile, readJsonFile, runCLI, setupClaudePluginDir, setupTestEnv } from './helpers'
 
 describe('air remove (functional)', () => {
   let testDir
@@ -72,7 +70,7 @@ describe('air remove (functional)', () => {
       })
 
       // Then remove
-      const { stdout, exitCode } = await runCLI(['remove', 'test-air-package/DualTypeIntegration'], testDir, {
+      const { exitCode } = await runCLI(['remove', 'test-air-package/DualTypeIntegration'], testDir, {
         env : { ...process.env, HOME : testDir },
       })
 
@@ -299,11 +297,9 @@ describe('air remove (functional)', () => {
       })
 
       // Remove
-      const { stdout, exitCode } = await runCLI(
-        ['remove', '@ai-ready/scoped-package/GenericOnly', '--generic'],
-        testDir,
-        { env : { ...process.env, HOME : testDir } }
-      )
+      const { exitCode } = await runCLI(['remove', '@ai-ready/scoped-package/GenericOnly', '--generic'], testDir, {
+        env : { ...process.env, HOME : testDir },
+      })
 
       expect(exitCode).toBe(0)
 

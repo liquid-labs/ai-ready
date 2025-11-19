@@ -3,9 +3,7 @@
  */
 import path from 'node:path'
 
-import { afterEach, beforeEach, describe, expect, it } from '@jest/globals'
-
-import { parseMarkdownTable, readFile, readJsonFile, runCLI, setupClaudePluginDir, setupTestEnv } from './helpers.js'
+import { parseMarkdownTable, readFile, readJsonFile, runCLI, setupClaudePluginDir, setupTestEnv } from './helpers'
 
 describe('air install (functional)', () => {
   let testDir
@@ -81,11 +79,9 @@ describe('air install (functional)', () => {
 
   describe('Selective installation with flags', () => {
     it('should install only skill with --skill flag', async () => {
-      const { stdout, exitCode } = await runCLI(
-        ['install', 'test-air-package/DualTypeIntegration', '--skill'],
-        testDir,
-        { env : { ...process.env, HOME : testDir } }
-      )
+      const { exitCode } = await runCLI(['install', 'test-air-package/DualTypeIntegration', '--skill'], testDir, {
+        env : { ...process.env, HOME : testDir },
+      })
 
       expect(exitCode).toBe(0)
 
@@ -103,11 +99,9 @@ describe('air install (functional)', () => {
     })
 
     it('should install only generic with --generic flag', async () => {
-      const { stdout, exitCode } = await runCLI(
-        ['install', 'test-air-package/DualTypeIntegration', '--generic'],
-        testDir,
-        { env : { ...process.env, HOME : testDir } }
-      )
+      const { exitCode } = await runCLI(['install', 'test-air-package/DualTypeIntegration', '--generic'], testDir, {
+        env : { ...process.env, HOME : testDir },
+      })
 
       expect(exitCode).toBe(0)
 

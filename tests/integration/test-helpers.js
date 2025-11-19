@@ -105,7 +105,7 @@ export async function copyDir(src, dest) {
  * child processes would inherit the original HOME value, not the modified one.
  * @param {string[]} args - CLI arguments
  * @param {string} cwd - Working directory
- * @returns {Promise<{stdout: string, stderr: string}>}
+ * @returns {Promise<{stdout: string, stderr: string}>} CLI execution output
  */
 export async function runCLI(args, cwd) {
   const { stdout, stderr } = await execFileAsync('node', [CLI_PATH, ...args], {

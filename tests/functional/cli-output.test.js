@@ -2,9 +2,7 @@
  * Functional tests for CLI output and UX verification
  * Tests user-facing messages, warnings, and formatting
  */
-import { afterEach, beforeEach, describe, expect, it } from '@jest/globals'
-
-import { runCLI, setupClaudePluginDir, setupTestEnv } from './helpers.js'
+import { runCLI, setupClaudePluginDir, setupTestEnv } from './helpers'
 
 describe('CLI output and UX (functional)', () => {
   let testDir
