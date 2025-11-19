@@ -8,7 +8,7 @@ SDLC_BABEL_CONFIG:=$(shell npm explore @liquid-labs/sdlc-resource-babel-and-roll
 SDLC_ROLLUP:=npx rollup
 SDLC_ROLLUP_CONFIG:=$(shell npm explore @liquid-labs/sdlc-resource-babel-and-rollup -- pwd)/dist/rollup/rollup.config.mjs
 
-SDLC_JEST:=npx jest
+SDLC_JEST:=NODE_OPTIONS="$$NODE_OPTIONS --no-webstorage" npx jest
 SDLC_JEST_CONFIG:=$(shell npm explore @liquid-labs/sdlc-resource-jest -- pwd)/dist/jest.config.js
 
 SDLC_ESLINT:=npx fandl

@@ -26,22 +26,23 @@ define build_component
 	@echo "Component $(1) built successfully."
 endef
 
+# Function to transpile code for tests. This handles both the main and test code.
+#
+# At one point, Jest was not picking up the external maps, so we inline them for the test.
+#
+# The data directories may contain test-file-looking files, so we ignore them.
+#
+# 1 - source dir - everything from here down will be transpiled
+# 2 - out dir - where to output the transpiled files in the same relative path as the source dir
 define build_test_files
 	@mkdir -p $(TEST_STAGING)
-	@echo "Transpiling main code..."
+	@echo "Transpiling $(1)..."
 	@NODE_ENV=test $(SDLC_BABEL) \
 		--config-file=$(SDLC_BABEL_CONFIG) \
-		--out-dir=./$(TEST_STAGING) \
+		--out-dir=$(2) \
 		--source-maps=inline \
 		--ignore='**/test/data/**' --ignore='**/test-data/**' \
-		$(SRC)
-	@echo "Transpiling $(1) tests..."
-	@NODE_ENV=test $(SDLC_BABEL) \
-		--config-file=$(SDLC_BABEL_CONFIG) \
-		--out-dir=./$(TEST_STAGING)/$(TESTS)/$(1) \
-		--source-maps=inline \
-		--ignore='**/test/data/**' --ignore='**/test-data/**' \
-		$(TESTS)/$(1)
+		$(1)
 endef
 
 .PHONY: clean-stale-test-files
@@ -53,11 +54,11 @@ clean-stale-test-files:
 		fi; \
 	done
 
-# Jest is not picking up the external maps, so we inline them for the test. (As of?)
-# We tried to ignore the data directories in the babel config, but as of 7.23.4, it didn't seem to work. This problem 
-# has been reported, though it claims to be fixed
-$(SDLC_MAIN_AND_UNIT_BUILT) &: $(SDLC_MAIN_AND_UNIT_SRC)
-	$(call build_test_files,unit)
+$(SDLC_MAIN_JS_FILES_BUILT) &: $(SDLC_MAIN_JS_FILES_SRC)
+	$(call build_test_files,$(SRC),$(TEST_STAGING))
+
+$(SDLC_UNIT_TEST_FILES_BUILT) &: $(SDLC_UNIT_TEST_FILES_SRC) $(SDLC_MAIN_JS_FILES_BUILT)
+	$(call build_test_files,$(TESTS)/unit,$(TEST_STAGING)/$(TESTS)/unit)
 
 $(SDLC_TEST_PASS_MARKER) $(SDLC_TEST_REPORT) $(TEST_STAGING)/coverage &: package.json $(SDLC_MAIN_AND_UNIT_BUILT) $(SDLC_TEST_DATA_BUILT) clean-stale-test-files
 	rm -rf $@
@@ -67,7 +68,7 @@ $(SDLC_TEST_PASS_MARKER) $(SDLC_TEST_REPORT) $(TEST_STAGING)/coverage &: package
 	( set -e; set -o pipefail; \
 	  ( cd $(TEST_STAGING) && $(SDLC_JEST) \
 	    --config=$(SDLC_JEST_CONFIG) \
-	    --testPathPatterns=test-staging/tests/unit/ \
+	    --testPathPatterns=$(TEST_STAGING)/$(TESTS)/unit/ \
 	    --runInBand \
 	    $(TEST) 2>&1 ) \
 	  | tee -a $(SDLC_TEST_REPORT); \

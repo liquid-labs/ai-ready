@@ -12,19 +12,13 @@ FUNCTIONAL_TEST_FILES:=$(wildcard tests/functional/*.js)
 FUNCTIONAL_TEST_FILES_BUILT:=$(patsubst tests/functional/%, $(FUNCTIONAL_TEST_STAGING)/%, $(FUNCTIONAL_TEST_FILES))
 
 # Transpile functional tests to test-staging
-$(FUNCTIONAL_TEST_FILES_BUILT) &: $(FUNCTIONAL_TEST_FILES)
-	@echo "Transpiling functional tests..."
-	@mkdir -p $(FUNCTIONAL_TEST_STAGING)
-	@NODE_ENV=test $(SDLC_BABEL) \
-		--config-file=$(SDLC_BABEL_CONFIG) \
-		--out-dir=./$(FUNCTIONAL_TEST_STAGING) \
-		--source-maps=inline \
-		tests/functional
+$(SDLC_FUNCTIONAL_TEST_FILES_BUILT) &: $(SDLC_FUNCTIONAL_TEST_FILES_SRC)
+	$(call build_test_files,$(TESTS)/functional,$(TEST_STAGING)/$(TESTS)/functional)
 
 .PHONY: functional-test
 functional-test: build $(FUNCTIONAL_TEST_PASS_MARKER) $(FUNCTIONAL_TEST_REPORT)
 
-$(FUNCTIONAL_TEST_PASS_MARKER) $(FUNCTIONAL_TEST_REPORT): dist/ai-ready-exec.js $(FUNCTIONAL_TEST_FILES_BUILT)
+$(FUNCTIONAL_TEST_PASS_MARKER) $(FUNCTIONAL_TEST_REPORT): dist/ai-ready-exec.js $(SDLC_MAIN_AND_FUNCTIONAL_TEST_BUILT) clean-stale-test-files
 	@echo "Running functional tests..."
 	@mkdir -p $(QA)
 	@echo -n 'Functional test git rev: ' > $(FUNCTIONAL_TEST_REPORT)
@@ -50,23 +44,15 @@ INTEGRATION_TEST_STAGING:=$(TEST_STAGING)/tests/integration
 INTEGRATION_TEST_FILES:=$(wildcard tests/integration/*.js)
 INTEGRATION_TEST_FILES_BUILT:=$(patsubst tests/integration/%, $(INTEGRATION_TEST_STAGING)/%, $(INTEGRATION_TEST_FILES))
 
-foo:
-	@echo "INTEGRATION_TEST_FILES_BUILT: $(INTEGRATION_TEST_FILES_BUILT)" # DEBUG
-
 # Transpile integration tests to test-staging
-$(INTEGRATION_TEST_FILES_BUILT) &: $(INTEGRATION_TEST_FILES)
-	@echo "Transpiling integration tests..."
-	@mkdir -p $(INTEGRATION_TEST_STAGING)
-	@NODE_ENV=test $(SDLC_BABEL) \
-		--config-file=$(SDLC_BABEL_CONFIG) \
-		--out-dir=./$(TEST_STAGING) \
-		--source-maps=inline \
-		$(INTEGRATION_TEST_FILES)
+# Transpile functional tests to test-staging
+$(SDLC_INTEGRATION_TEST_FILES_BUILT) &: $(SDLC_INTEGRATION_TEST_FILES_SRC)
+	$(call build_test_files,$(TESTS)/integration,$(TEST_STAGING)/$(TESTS)/integration)
 
 .PHONY: integration-test
 integration-test: build $(INTEGRATION_TEST_PASS_MARKER)
 
-$(INTEGRATION_TEST_PASS_MARKER) $(INTEGRATION_TEST_REPORT): dist/ai-ready-exec.js $(INTEGRATION_TEST_FILES_BUILT)
+$(INTEGRATION_TEST_PASS_MARKER) $(INTEGRATION_TEST_REPORT): dist/ai-ready-exec.js $(SDLC_MAIN_AND_INTEGRATION_TEST_BUILT) clean-stale-test-files
 	@echo "Running integration tests..."
 	@mkdir -p $(QA)
 	@echo -n 'Integration test git rev: ' > $(INTEGRATION_TEST_REPORT)
