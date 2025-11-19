@@ -1,7 +1,7 @@
 import { cmdList } from '../../../../lib/commands/list'
 import * as cache from '../../../../lib/storage/cache'
-import * as registry from '../../../../lib/storage/registry'
 import * as claudePluginRegistry from '../../../../lib/storage/claude-plugin-registry'
+import * as registry from '../../../../lib/storage/registry'
 import { INTEGRATION_TYPES } from '../../../../lib/types'
 
 // Mock modules

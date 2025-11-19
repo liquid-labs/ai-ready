@@ -1,11 +1,16 @@
 import fs from 'fs/promises'
-import path from 'path'
 import os from 'os'
+import path from 'path'
 
-import { readGenericRegistry, writeGenericRegistry, loadInstallationStatus, createBackup } from '../../../../lib/storage/registry'
 import { ClaudePluginRegistry } from '../../../../lib/storage/claude-plugin-registry'
-import { mkTable, makeProvider } from '../test-lib'
+import {
+  createBackup,
+  loadInstallationStatus,
+  readGenericRegistry,
+  writeGenericRegistry
+} from '../../../../lib/storage/registry'
 import { INTEGRATION_TYPES } from '../../../../lib/types'
+import { makeProvider, mkTable } from '../test-lib'
 
 describe('registry', () => {
   let tempDir

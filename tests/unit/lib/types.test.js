@@ -1,4 +1,10 @@
-import { DEFAULT_CONFIG, INTEGRATION_TYPES, isValidIntegration, isValidProvider, isValidCache } from '../../../lib/types'
+import {
+  DEFAULT_CONFIG,
+  INTEGRATION_TYPES,
+  isValidCache,
+  isValidIntegration,
+  isValidProvider
+} from '../../../lib/types'
 
 describe('types', () => {
   describe('DEFAULT_CONFIG', () => {

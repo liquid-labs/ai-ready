@@ -2,18 +2,13 @@
  * Integration tests for cache invalidation workflows
  * Tests cache behavior with real file system modifications
  */
-
-import { describe, it, expect, beforeAll, afterAll, beforeEach } from '@jest/globals'
 import fs from 'fs/promises'
-import path from 'path'
 import os from 'os'
-import {
-  setupTestProject,
-  runCLI,
-  readJsonFile,
-  fileExists,
-  sleep
-} from './test-helpers'
+import path from 'path'
+
+import { afterAll, beforeAll, beforeEach, describe, expect, it } from '@jest/globals'
+
+import { fileExists, readJsonFile, runCLI, setupTestProject, sleep } from './test-helpers'
 
 describe('Integration: Cache invalidation', () => {
   let testDir
@@ -34,8 +29,9 @@ describe('Integration: Cache invalidation', () => {
   afterAll(async () => {
     process.env.HOME = originalHome
     try {
-      await fs.rm(testDir, { recursive: true, force: true })
-    } catch (error) {
+      await fs.rm(testDir, { recursive : true, force : true })
+    }
+    catch (error) {
       console.warn('Failed to cleanup:', error.message)
     }
   })
@@ -47,12 +43,13 @@ describe('Integration: Cache invalidation', () => {
       const fullPath = path.join(testDir, entry)
       const stat = await fs.stat(fullPath)
       if (stat.isDirectory()) {
-        await fs.rm(fullPath, { recursive: true, force: true })
-      } else {
+        await fs.rm(fullPath, { recursive : true, force : true })
+      }
+      else {
         await fs.unlink(fullPath)
       }
     }
-    await setupTestProject(testDir, { projectName: 'cache-test-project' })
+    await setupTestProject(testDir, { projectName : 'cache-test-project' })
   })
 
   describe('Cache creation and usage', () => {

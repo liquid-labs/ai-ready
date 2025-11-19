@@ -1,5 +1,6 @@
-import matter from 'gray-matter'
 import fs from 'fs/promises'
+
+import matter from 'gray-matter'
 
 /**
  * Parses frontmatter from a markdown file

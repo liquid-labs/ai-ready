@@ -1,11 +1,13 @@
 import fs from 'fs/promises'
 import path from 'path'
-import simpleGit from 'simple-git'
+
 import { find as findPlus } from 'find-plus'
+import simpleGit from 'simple-git'
+
 import { parseFrontmatter } from './parsers/frontmatter'
-import { INTEGRATION_TYPES, SOURCE_TYPE } from './types'
 import { loadConfig } from './storage/config'
-import { isRepoCloned, getRepoPath } from './storage/remote-repos'
+import { getRepoPath, isRepoCloned } from './storage/remote-repos'
+import { INTEGRATION_TYPES, SOURCE_TYPE } from './types'
 
 /**
  * @import { Integration, IntegrationProvider, RemoteRepoProvider } from './types.js'

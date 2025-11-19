@@ -1,7 +1,8 @@
 import fs from 'fs/promises'
 import path from 'path'
-import { ClaudePluginConfig } from './claude-config'
+
 import { getGitCommitSha } from '../utils/git'
+import { ClaudePluginConfig } from './claude-config'
 
 /**
  * @import { IntegrationProvider } from '../types.js'

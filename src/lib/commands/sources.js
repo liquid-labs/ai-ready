@@ -1,10 +1,9 @@
 /* eslint-disable no-console, no-process-exit */
-
-import { confirm, logErrAndExit } from './ui-lib'
-import { loadConfig, saveConfig, findRepo, deriveRepoName, normalizeGitUrl, generateRepoId } from '../storage/config'
-import { cloneRepo, updateRepo, removeRepo, repairRepo, isRepoCloned, getRepoPath } from '../storage/remote-repos'
 import { invalidateCache } from '../storage/cache'
+import { deriveRepoName, findRepo, generateRepoId, loadConfig, normalizeGitUrl, saveConfig } from '../storage/config'
+import { cloneRepo, getRepoPath, isRepoCloned, removeRepo, repairRepo, updateRepo } from '../storage/remote-repos'
 import { STANDARD_REPOS } from '../types'
+import { confirm, logErrAndExit } from './ui-lib'
 
 /**
  * List configured repositories

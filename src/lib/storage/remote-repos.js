@@ -2,12 +2,12 @@
  * Git repository management for remote skills.
  * @import { RemoteRepo } from '../types.js'
  */
-
 import fs from 'fs/promises'
 import path from 'path'
+
 import xdg from '@folder/xdg'
-import simpleGit from 'simple-git'
 import checkDiskSpace from 'check-disk-space'
+import simpleGit from 'simple-git'
 
 const xdgDirs = xdg()
 const DATA_DIR = xdgDirs.data

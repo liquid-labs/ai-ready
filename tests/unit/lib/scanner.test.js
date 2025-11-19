@@ -1,6 +1,6 @@
 import fs from 'fs/promises'
-import path from 'path'
 import os from 'os'
+import path from 'path'
 
 import { scanForProviders } from '../../../lib/scanner'
 import { INTEGRATION_TYPES } from '../../../lib/types'

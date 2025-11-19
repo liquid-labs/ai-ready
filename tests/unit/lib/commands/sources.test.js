@@ -1,7 +1,7 @@
-import { addSource, removeSource, listSources, updateSources, repairSource } from '../../../../lib/commands/sources'
+import { addSource, listSources, removeSource, repairSource, updateSources } from '../../../../lib/commands/sources'
+import * as cache from '../../../../lib/storage/cache'
 import * as config from '../../../../lib/storage/config'
 import * as remoteRepos from '../../../../lib/storage/remote-repos'
-import * as cache from '../../../../lib/storage/cache'
 import { STANDARD_REPOS } from '../../../../lib/types'
 
 // Mock modules

@@ -1,13 +1,9 @@
 /**
  * Functional tests for 'air view' command
  */
+import { afterEach, beforeEach, describe, expect, it } from '@jest/globals'
 
-import { describe, it, expect, beforeEach, afterEach } from '@jest/globals'
-import {
-  setupTestEnv,
-  setupClaudePluginDir,
-  runCLI
-} from './helpers.js'
+import { runCLI, setupClaudePluginDir, setupTestEnv } from './helpers.js'
 
 describe('air view (functional)', () => {
   let testDir
@@ -28,11 +24,9 @@ describe('air view (functional)', () => {
 
   describe('View integration details', () => {
     it('should display details for a skill-only integration', async () => {
-      const { stdout, exitCode } = await runCLI(
-        ['view', 'test-air-package/SkillOnly'],
-        testDir,
-        { env: { ...process.env, HOME: testDir } }
-      )
+      const { stdout, exitCode } = await runCLI(['view', 'test-air-package/SkillOnly'], testDir, {
+        env : { ...process.env, HOME : testDir },
+      })
 
       expect(exitCode).toBe(0)
       expect(stdout).toContain('SkillOnly')
@@ -41,11 +35,9 @@ describe('air view (functional)', () => {
     })
 
     it('should display details for a generic-only integration', async () => {
-      const { stdout, exitCode } = await runCLI(
-        ['view', 'test-air-package/GenericOnly'],
-        testDir,
-        { env: { ...process.env, HOME: testDir } }
-      )
+      const { stdout, exitCode } = await runCLI(['view', 'test-air-package/GenericOnly'], testDir, {
+        env : { ...process.env, HOME : testDir },
+      })
 
       expect(exitCode).toBe(0)
       expect(stdout).toContain('GenericOnly')
@@ -54,11 +46,9 @@ describe('air view (functional)', () => {
     })
 
     it('should display details for a dual-type integration', async () => {
-      const { stdout, exitCode } = await runCLI(
-        ['view', 'test-air-package/DualTypeIntegration'],
-        testDir,
-        { env: { ...process.env, HOME: testDir } }
-      )
+      const { stdout, exitCode } = await runCLI(['view', 'test-air-package/DualTypeIntegration'], testDir, {
+        env : { ...process.env, HOME : testDir },
+      })
 
       expect(exitCode).toBe(0)
       // Should show integration name and both types
@@ -71,11 +61,9 @@ describe('air view (functional)', () => {
 
   describe('Installation status in view', () => {
     it('should indicate when integration is not installed', async () => {
-      const { stdout, exitCode } = await runCLI(
-        ['view', 'test-air-package/SkillOnly'],
-        testDir,
-        { env: { ...process.env, HOME: testDir } }
-      )
+      const { stdout, exitCode } = await runCLI(['view', 'test-air-package/SkillOnly'], testDir, {
+        env : { ...process.env, HOME : testDir },
+      })
 
       expect(exitCode).toBe(0)
       // Should show (none) for not installed
@@ -84,17 +72,11 @@ describe('air view (functional)', () => {
 
     it('should indicate when skill-only integration is installed', async () => {
       // Install first
-      await runCLI(
-        ['install', 'test-air-package/SkillOnly'],
-        testDir,
-        { env: { ...process.env, HOME: testDir } }
-      )
+      await runCLI(['install', 'test-air-package/SkillOnly'], testDir, { env : { ...process.env, HOME : testDir } })
 
-      const { stdout, exitCode } = await runCLI(
-        ['view', 'test-air-package/SkillOnly'],
-        testDir,
-        { env: { ...process.env, HOME: testDir } }
-      )
+      const { stdout, exitCode } = await runCLI(['view', 'test-air-package/SkillOnly'], testDir, {
+        env : { ...process.env, HOME : testDir },
+      })
 
       expect(exitCode).toBe(0)
       expect(stdout.toLowerCase()).toMatch(/installed/)
@@ -102,17 +84,11 @@ describe('air view (functional)', () => {
 
     it('should indicate when generic-only integration is installed', async () => {
       // Install first
-      await runCLI(
-        ['install', 'test-air-package/GenericOnly'],
-        testDir,
-        { env: { ...process.env, HOME: testDir } }
-      )
+      await runCLI(['install', 'test-air-package/GenericOnly'], testDir, { env : { ...process.env, HOME : testDir } })
 
-      const { stdout, exitCode } = await runCLI(
-        ['view', 'test-air-package/GenericOnly'],
-        testDir,
-        { env: { ...process.env, HOME: testDir } }
-      )
+      const { stdout, exitCode } = await runCLI(['view', 'test-air-package/GenericOnly'], testDir, {
+        env : { ...process.env, HOME : testDir },
+      })
 
       expect(exitCode).toBe(0)
       expect(stdout.toLowerCase()).toMatch(/installed/)
@@ -120,17 +96,13 @@ describe('air view (functional)', () => {
 
     it('should show partial installation status for dual-type integration', async () => {
       // Install only skill
-      await runCLI(
-        ['install', 'test-air-package/DualTypeIntegration', '--skill'],
-        testDir,
-        { env: { ...process.env, HOME: testDir } }
-      )
+      await runCLI(['install', 'test-air-package/DualTypeIntegration', '--skill'], testDir, {
+        env : { ...process.env, HOME : testDir },
+      })
 
-      const { stdout, exitCode } = await runCLI(
-        ['view', 'test-air-package/DualTypeIntegration'],
-        testDir,
-        { env: { ...process.env, HOME: testDir } }
-      )
+      const { stdout, exitCode } = await runCLI(['view', 'test-air-package/DualTypeIntegration'], testDir, {
+        env : { ...process.env, HOME : testDir },
+      })
 
       expect(exitCode).toBe(0)
       // Should show installed types including claudeSkill
@@ -139,17 +111,13 @@ describe('air view (functional)', () => {
 
     it('should show full installation status for dual-type integration', async () => {
       // Install both types
-      await runCLI(
-        ['install', 'test-air-package/DualTypeIntegration'],
-        testDir,
-        { env: { ...process.env, HOME: testDir } }
-      )
+      await runCLI(['install', 'test-air-package/DualTypeIntegration'], testDir, {
+        env : { ...process.env, HOME : testDir },
+      })
 
-      const { stdout, exitCode } = await runCLI(
-        ['view', 'test-air-package/DualTypeIntegration'],
-        testDir,
-        { env: { ...process.env, HOME: testDir } }
-      )
+      const { stdout, exitCode } = await runCLI(['view', 'test-air-package/DualTypeIntegration'], testDir, {
+        env : { ...process.env, HOME : testDir },
+      })
 
       expect(exitCode).toBe(0)
       // Should indicate both types are installed
@@ -160,11 +128,9 @@ describe('air view (functional)', () => {
 
   describe('Content display', () => {
     it('should display integration metadata', async () => {
-      const { stdout, exitCode } = await runCLI(
-        ['view', 'test-air-package/SkillOnly'],
-        testDir,
-        { env: { ...process.env, HOME: testDir } }
-      )
+      const { stdout, exitCode } = await runCLI(['view', 'test-air-package/SkillOnly'], testDir, {
+        env : { ...process.env, HOME : testDir },
+      })
 
       expect(exitCode).toBe(0)
       // Should show metadata summary format
@@ -176,11 +142,9 @@ describe('air view (functional)', () => {
     })
 
     it('should display integration name and summary', async () => {
-      const { stdout, exitCode } = await runCLI(
-        ['view', 'test-air-package/GenericOnly'],
-        testDir,
-        { env: { ...process.env, HOME: testDir } }
-      )
+      const { stdout, exitCode } = await runCLI(['view', 'test-air-package/GenericOnly'], testDir, {
+        env : { ...process.env, HOME : testDir },
+      })
 
       expect(exitCode).toBe(0)
       expect(stdout).toContain('GenericOnly')
@@ -190,22 +154,18 @@ describe('air view (functional)', () => {
 
   describe('Error handling', () => {
     it('should fail gracefully for non-existent integration', async () => {
-      const { stderr, exitCode } = await runCLI(
-        ['view', 'test-air-package/NonExistent'],
-        testDir,
-        { env: { ...process.env, HOME: testDir } }
-      )
+      const { stderr, exitCode } = await runCLI(['view', 'test-air-package/NonExistent'], testDir, {
+        env : { ...process.env, HOME : testDir },
+      })
 
       expect(exitCode).not.toBe(0)
       expect(stderr).toContain('not found')
     })
 
     it('should fail gracefully for invalid integration path', async () => {
-      const { stderr, exitCode } = await runCLI(
-        ['view', 'invalid-format'],
-        testDir,
-        { env: { ...process.env, HOME: testDir } }
-      )
+      const { stderr, exitCode } = await runCLI(['view', 'invalid-format'], testDir, {
+        env : { ...process.env, HOME : testDir },
+      })
 
       expect(exitCode).not.toBe(0)
       expect(stderr.toLowerCase()).toMatch(/invalid|not found/)
@@ -214,11 +174,9 @@ describe('air view (functional)', () => {
 
   describe('Library information', () => {
     it('should display library name and version', async () => {
-      const { stdout, exitCode } = await runCLI(
-        ['view', 'test-air-package/SkillOnly'],
-        testDir,
-        { env: { ...process.env, HOME: testDir } }
-      )
+      const { stdout, exitCode } = await runCLI(['view', 'test-air-package/SkillOnly'], testDir, {
+        env : { ...process.env, HOME : testDir },
+      })
 
       expect(exitCode).toBe(0)
       expect(stdout).toContain('test-air-package')
@@ -226,11 +184,9 @@ describe('air view (functional)', () => {
     })
 
     it('should display library name and version', async () => {
-      const { stdout, exitCode } = await runCLI(
-        ['view', 'test-air-package/SkillOnly'],
-        testDir,
-        { env: { ...process.env, HOME: testDir } }
-      )
+      const { stdout, exitCode } = await runCLI(['view', 'test-air-package/SkillOnly'], testDir, {
+        env : { ...process.env, HOME : testDir },
+      })
 
       expect(exitCode).toBe(0)
       // Should show library name and version in format "Library : name (vX.X.X)"
@@ -241,11 +197,9 @@ describe('air view (functional)', () => {
 
   describe('Type-specific views', () => {
     it('should show skill-specific information for Claude Skills', async () => {
-      const { stdout, exitCode } = await runCLI(
-        ['view', 'test-air-package/SkillOnly'],
-        testDir,
-        { env: { ...process.env, HOME: testDir } }
-      )
+      const { stdout, exitCode } = await runCLI(['view', 'test-air-package/SkillOnly'], testDir, {
+        env : { ...process.env, HOME : testDir },
+      })
 
       expect(exitCode).toBe(0)
       // Should indicate it's a Claude Skill
@@ -253,11 +207,9 @@ describe('air view (functional)', () => {
     })
 
     it('should show generic-specific information for generic integrations', async () => {
-      const { stdout, exitCode } = await runCLI(
-        ['view', 'test-air-package/GenericOnly'],
-        testDir,
-        { env: { ...process.env, HOME: testDir } }
-      )
+      const { stdout, exitCode } = await runCLI(['view', 'test-air-package/GenericOnly'], testDir, {
+        env : { ...process.env, HOME : testDir },
+      })
 
       expect(exitCode).toBe(0)
       // Should indicate it's a generic integration
@@ -265,11 +217,9 @@ describe('air view (functional)', () => {
     })
 
     it('should show both type information for dual-type integrations', async () => {
-      const { stdout, exitCode } = await runCLI(
-        ['view', 'test-air-package/DualTypeIntegration'],
-        testDir,
-        { env: { ...process.env, HOME: testDir } }
-      )
+      const { stdout, exitCode } = await runCLI(['view', 'test-air-package/DualTypeIntegration'], testDir, {
+        env : { ...process.env, HOME : testDir },
+      })
 
       expect(exitCode).toBe(0)
       // Should show information about both types
@@ -280,11 +230,9 @@ describe('air view (functional)', () => {
 
   describe('Scoped package support', () => {
     it('should handle scoped package names in view command', async () => {
-      const { stdout, exitCode } = await runCLI(
-        ['view', '@ai-ready/scoped-package/SkillOnly'],
-        testDir,
-        { env: { ...process.env, HOME: testDir } }
-      )
+      const { stdout, exitCode } = await runCLI(['view', '@ai-ready/scoped-package/SkillOnly'], testDir, {
+        env : { ...process.env, HOME : testDir },
+      })
 
       expect(exitCode).toBe(0)
       // Verify it displays the scoped package name correctly
@@ -293,11 +241,9 @@ describe('air view (functional)', () => {
     })
 
     it('should handle scoped package with generic integration', async () => {
-      const { stdout, exitCode } = await runCLI(
-        ['view', '@ai-ready/scoped-package/GenericOnly'],
-        testDir,
-        { env: { ...process.env, HOME: testDir } }
-      )
+      const { stdout, exitCode } = await runCLI(['view', '@ai-ready/scoped-package/GenericOnly'], testDir, {
+        env : { ...process.env, HOME : testDir },
+      })
 
       expect(exitCode).toBe(0)
       expect(stdout).toContain('@ai-ready/scoped-package')
@@ -305,11 +251,9 @@ describe('air view (functional)', () => {
     })
 
     it('should handle scoped package with dual-type integration', async () => {
-      const { stdout, exitCode } = await runCLI(
-        ['view', '@ai-ready/scoped-package/DualTypeIntegration'],
-        testDir,
-        { env: { ...process.env, HOME: testDir } }
-      )
+      const { stdout, exitCode } = await runCLI(['view', '@ai-ready/scoped-package/DualTypeIntegration'], testDir, {
+        env : { ...process.env, HOME : testDir },
+      })
 
       expect(exitCode).toBe(0)
       expect(stdout).toContain('@ai-ready/scoped-package')

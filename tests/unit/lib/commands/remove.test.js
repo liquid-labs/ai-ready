@@ -1,7 +1,7 @@
 import { cmdRemove } from '../../../../lib/commands/remove'
 import * as cache from '../../../../lib/storage/cache'
-import * as registry from '../../../../lib/storage/registry'
 import * as pluginRegistry from '../../../../lib/storage/claude-plugin-registry'
+import * as registry from '../../../../lib/storage/registry'
 import { INTEGRATION_TYPES } from '../../../../lib/types'
 
 jest.mock('../../../../lib/scanner')
