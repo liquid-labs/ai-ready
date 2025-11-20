@@ -1,9 +1,0 @@
-Integration test git rev: 6360fc2e07c6c5a41cf5abc121c511fc3b504757
-PASS tests/integration/integration-cache.test.js
-PASS tests/integration/integration-install-remove.test.js
-
-Test Suites: 2 passed, 2 total
-Tests:       23 passed, 23 total
-Snapshots:   0 total
-Time:        2.909 s, estimated 3 s
-Ran all test suites.
