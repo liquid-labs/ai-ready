@@ -1,0 +1,56 @@
+Test git rev: 4d9023c32193f3fc238df5e0981788cb2470024c
+PASS tests/unit/lib/storage/cache.test.js
+PASS tests/unit/lib/scanner.test.js
+PASS tests/unit/lib/storage/registry.test.js
+PASS tests/unit/lib/commands/sources.test.js
+PASS tests/unit/lib/commands/verify.test.js
+PASS tests/unit/lib/commands/remove.test.js
+PASS tests/unit/lib/commands/install.test.js
+PASS tests/unit/lib/commands/view.test.js
+PASS tests/unit/lib/commands/list.test.js
+PASS tests/unit/lib/parsers/frontmatter.test.js
+PASS tests/unit/lib/types.test.js
+PASS tests/unit/lib/utils/parse-library-integration.test.js
+-------------------------------|---------|----------|---------|---------|---------------------------------------------------------------
+File                           | % Stmts | % Branch | % Funcs | % Lines | Uncovered Line #s                                             
+-------------------------------|---------|----------|---------|---------|---------------------------------------------------------------
+All files                      |   67.51 |     57.3 |   64.15 |   69.41 |                                                               
+ src/cli                       |       0 |        0 |       0 |       0 |                                                               
+  air.mjs                      |       0 |        0 |       0 |       0 | 1-101                                                         
+ src/lib                       |   60.29 |    42.94 |   63.26 |   60.93 |                                                               
+  scanner.js                   |   58.46 |    35.76 |   60.86 |   57.98 | 23-133,168,180,186,231,257,307                                
+  types.js                     |     100 |      100 |     100 |     100 |                                                               
+ src/lib/commands              |   94.84 |    83.53 |   95.74 |   94.62 |                                                               
+  data-lib.js                  |     100 |      100 |     100 |     100 |                                                               
+  install.js                   |   96.84 |     92.3 |   90.47 |   98.46 | 168                                                           
+  list.js                      |   98.48 |    77.19 |   93.33 |     100 | 5-17,39,55                                                    
+  remove.js                    |   98.91 |       98 |      95 |     100 | 110                                                           
+  sources.js                   |   91.72 |    78.24 |   97.91 |   89.89 | 34,88,155-158,186,212,218,238-239,280,318-321,342,349,360-361 
+  ui-lib.js                    |   89.47 |       75 |     100 |    87.5 | 23-24                                                         
+  verify.js                    |   94.76 |    88.31 |     100 |   94.07 | 90,98,129,144,152,185,195,221                                 
+  view.js                      |   98.24 |    67.85 |   88.88 |     100 | 7                                                             
+ src/lib/parsers               |     100 |    88.23 |     100 |     100 |                                                               
+  frontmatter.js               |     100 |    88.23 |     100 |     100 | 10                                                            
+ src/lib/storage               |   63.56 |    48.56 |   67.23 |   65.62 |                                                               
+  cache.js                     |   73.51 |    53.26 |    73.8 |      80 | 36,126,159,168-180,223,235-236,248,255-269,277                
+  claude-config.js             |     100 |      100 |     100 |     100 |                                                               
+  claude-plugin-registry.js    |   93.07 |    81.94 |   95.34 |    92.4 | 71,116,122,155,279,302                                        
+  config.js                    |   41.66 |    23.07 |   33.33 |   38.29 | 36-43,54-127                                                  
+  registry.js                  |      95 |    72.64 |     100 |    92.7 | 32,38,76,105,171,191,198                                      
+  remote-repos.js              |    7.64 |        0 |    2.94 |   11.88 | 23-245,249-272                                                
+ src/lib/utils                 |   89.18 |     87.5 |     100 |   86.95 |                                                               
+  git.js                       |      84 |    78.57 |     100 |   72.72 | 25-27,37                                                      
+  parse-library-integration.js |     100 |      100 |     100 |     100 |                                                               
+ tests/functional              |       0 |        0 |       0 |       0 |                                                               
+  helpers.js                   |       0 |        0 |       0 |       0 | 5-287                                                         
+ tests/integration             |       0 |        0 |       0 |       0 |                                                               
+  test-helpers.js              |       0 |        0 |       0 |       0 | 4-177                                                         
+ tests/unit/lib                |     100 |    69.69 |     100 |     100 |                                                               
+  test-lib.js                  |     100 |    69.69 |     100 |     100 | 2-11                                                          
+-------------------------------|---------|----------|---------|---------|---------------------------------------------------------------
+
+Test Suites: 12 passed, 12 total
+Tests:       192 passed, 192 total
+Snapshots:   0 total
+Time:        0.673 s, estimated 1 s
+Ran all test suites matching test-staging/tests/unit/.

@@ -1,0 +1,12 @@
+Functional test git rev: 6360fc2e07c6c5a41cf5abc121c511fc3b504757
+PASS tests/functional/cli-output.test.js
+PASS tests/functional/cli-remove.test.js
+PASS tests/functional/cli-view.test.js
+PASS tests/functional/cli-list.test.js
+PASS tests/functional/cli-install.test.js
+
+Test Suites: 5 passed, 5 total
+Tests:       87 passed, 87 total
+Snapshots:   0 total
+Time:        8.491 s, estimated 9 s
+Ran all test suites.
