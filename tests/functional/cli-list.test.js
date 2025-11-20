@@ -1,13 +1,7 @@
 /**
  * Functional tests for 'air list' command
  */
-
-import { describe, it, expect, beforeEach, afterEach } from '@jest/globals'
-import {
-  setupTestEnv,
-  setupClaudePluginDir,
-  runCLI
-} from './helpers.js'
+import { runCLI, setupClaudePluginDir, setupTestEnv } from './helpers'
 
 describe('air list (functional)', () => {
   let testDir
@@ -28,11 +22,7 @@ describe('air list (functional)', () => {
 
   describe('Basic listing', () => {
     it('should list all available integrations', async () => {
-      const { stdout, exitCode } = await runCLI(
-        ['list'],
-        testDir,
-        { env: { ...process.env, HOME: testDir } }
-      )
+      const { stdout, exitCode } = await runCLI(['list'], testDir, { env : { ...process.env, HOME : testDir } })
 
       expect(exitCode).toBe(0)
 
@@ -46,37 +36,31 @@ describe('air list (functional)', () => {
     })
 
     it('should show integration types correctly', async () => {
-      const { stdout, exitCode } = await runCLI(
-        ['list'],
-        testDir,
-        { env: { ...process.env, HOME: testDir } }
-      )
+      const { stdout, exitCode } = await runCLI(['list'], testDir, { env : { ...process.env, HOME : testDir } })
 
       expect(exitCode).toBe(0)
 
       // DualType should show both types available
       const lines = stdout.split('\n')
-      const dualTypeLine = lines.find(l => l.includes('DualType'))
+      const dualTypeLine = lines.find((l) => l.includes('DualType'))
       expect(dualTypeLine).toBeTruthy()
       // Should indicate multiple types (exact format may vary)
 
       // SkillOnly should show only skill type
-      const skillOnlyLine = lines.find(l => l.includes('SkillOnly'))
+      const skillOnlyLine = lines.find((l) => l.includes('SkillOnly'))
       expect(skillOnlyLine).toBeTruthy()
 
       // GenericOnly should show only generic type
-      const genericOnlyLine = lines.find(l => l.includes('GenericOnly'))
+      const genericOnlyLine = lines.find((l) => l.includes('GenericOnly'))
       expect(genericOnlyLine).toBeTruthy()
     })
   })
 
   describe('Filtering options', () => {
     it('should filter by library name', async () => {
-      const { stdout, exitCode } = await runCLI(
-        ['list', '--library', 'test-air-package'],
-        testDir,
-        { env: { ...process.env, HOME: testDir } }
-      )
+      const { stdout, exitCode } = await runCLI(['list', '--library', 'test-air-package'], testDir, {
+        env : { ...process.env, HOME : testDir },
+      })
 
       expect(exitCode).toBe(0)
       expect(stdout).toContain('test-air-package')
@@ -84,17 +68,11 @@ describe('air list (functional)', () => {
 
     it('should show only installed integrations with --installed flag', async () => {
       // Install one integration
-      await runCLI(
-        ['install', 'test-air-package/SkillOnly'],
-        testDir,
-        { env: { ...process.env, HOME: testDir } }
-      )
+      await runCLI(['install', 'test-air-package/SkillOnly'], testDir, { env : { ...process.env, HOME : testDir } })
 
-      const { stdout, exitCode } = await runCLI(
-        ['list', '--installed'],
-        testDir,
-        { env: { ...process.env, HOME: testDir } }
-      )
+      const { stdout, exitCode } = await runCLI(['list', '--installed'], testDir, {
+        env : { ...process.env, HOME : testDir },
+      })
 
       expect(exitCode).toBe(0)
       expect(stdout).toContain('SkillOnly')
@@ -103,11 +81,9 @@ describe('air list (functional)', () => {
     })
 
     it('should show empty list when nothing installed with --installed flag', async () => {
-      const { stdout, exitCode } = await runCLI(
-        ['list', '--installed'],
-        testDir,
-        { env: { ...process.env, HOME: testDir } }
-      )
+      const { stdout, exitCode } = await runCLI(['list', '--installed'], testDir, {
+        env : { ...process.env, HOME : testDir },
+      })
 
       expect(exitCode).toBe(0)
       // Should indicate no integrations found
@@ -118,66 +94,48 @@ describe('air list (functional)', () => {
   describe('Installation status indication', () => {
     it('should indicate when an integration is fully installed', async () => {
       // Install both types of dual-type integration
-      await runCLI(
-        ['install', 'test-air-package/DualTypeIntegration'],
-        testDir,
-        { env: { ...process.env, HOME: testDir } }
-      )
+      await runCLI(['install', 'test-air-package/DualTypeIntegration'], testDir, {
+        env : { ...process.env, HOME : testDir },
+      })
 
-      const { stdout, exitCode } = await runCLI(
-        ['list'],
-        testDir,
-        { env: { ...process.env, HOME: testDir } }
-      )
+      const { stdout, exitCode } = await runCLI(['list'], testDir, { env : { ...process.env, HOME : testDir } })
 
       expect(exitCode).toBe(0)
 
       const lines = stdout.split('\n')
-      const dualTypeLine = lines.find(l => l.includes('DualType'))
+      const dualTypeLine = lines.find((l) => l.includes('DualType'))
       expect(dualTypeLine).toBeTruthy()
       // Should indicate both types installed (checkmark, "installed", etc.)
     })
 
     it('should indicate when only skill type is installed', async () => {
       // Install only skill type
-      await runCLI(
-        ['install', 'test-air-package/DualTypeIntegration', '--skill'],
-        testDir,
-        { env: { ...process.env, HOME: testDir } }
-      )
+      await runCLI(['install', 'test-air-package/DualTypeIntegration', '--skill'], testDir, {
+        env : { ...process.env, HOME : testDir },
+      })
 
-      const { stdout, exitCode } = await runCLI(
-        ['list'],
-        testDir,
-        { env: { ...process.env, HOME: testDir } }
-      )
+      const { stdout, exitCode } = await runCLI(['list'], testDir, { env : { ...process.env, HOME : testDir } })
 
       expect(exitCode).toBe(0)
 
       const lines = stdout.split('\n')
-      const dualTypeLine = lines.find(l => l.includes('DualType'))
+      const dualTypeLine = lines.find((l) => l.includes('DualType'))
       expect(dualTypeLine).toBeTruthy()
       // Should indicate partial installation
     })
 
     it('should indicate when only generic type is installed', async () => {
       // Install only generic type
-      await runCLI(
-        ['install', 'test-air-package/DualTypeIntegration', '--generic'],
-        testDir,
-        { env: { ...process.env, HOME: testDir } }
-      )
+      await runCLI(['install', 'test-air-package/DualTypeIntegration', '--generic'], testDir, {
+        env : { ...process.env, HOME : testDir },
+      })
 
-      const { stdout, exitCode } = await runCLI(
-        ['list'],
-        testDir,
-        { env: { ...process.env, HOME: testDir } }
-      )
+      const { stdout, exitCode } = await runCLI(['list'], testDir, { env : { ...process.env, HOME : testDir } })
 
       expect(exitCode).toBe(0)
 
       const lines = stdout.split('\n')
-      const dualTypeLine = lines.find(l => l.includes('DualType'))
+      const dualTypeLine = lines.find((l) => l.includes('DualType'))
       expect(dualTypeLine).toBeTruthy()
       // Should indicate partial installation
     })
@@ -186,22 +144,12 @@ describe('air list (functional)', () => {
   describe('Multiple installations', () => {
     it('should show all installed integrations', async () => {
       // Install multiple integrations
-      await runCLI(
-        ['install', 'test-air-package/SkillOnly'],
-        testDir,
-        { env: { ...process.env, HOME: testDir } }
-      )
-      await runCLI(
-        ['install', 'test-air-package/GenericOnly'],
-        testDir,
-        { env: { ...process.env, HOME: testDir } }
-      )
+      await runCLI(['install', 'test-air-package/SkillOnly'], testDir, { env : { ...process.env, HOME : testDir } })
+      await runCLI(['install', 'test-air-package/GenericOnly'], testDir, { env : { ...process.env, HOME : testDir } })
 
-      const { stdout, exitCode } = await runCLI(
-        ['list', '--installed'],
-        testDir,
-        { env: { ...process.env, HOME: testDir } }
-      )
+      const { stdout, exitCode } = await runCLI(['list', '--installed'], testDir, {
+        env : { ...process.env, HOME : testDir },
+      })
 
       expect(exitCode).toBe(0)
       expect(stdout).toContain('SkillOnly')
@@ -211,11 +159,7 @@ describe('air list (functional)', () => {
 
   describe('Output formatting', () => {
     it('should display results in table format', async () => {
-      const { stdout, exitCode } = await runCLI(
-        ['list'],
-        testDir,
-        { env: { ...process.env, HOME: testDir } }
-      )
+      const { stdout, exitCode } = await runCLI(['list'], testDir, { env : { ...process.env, HOME : testDir } })
 
       expect(exitCode).toBe(0)
       // Should contain table-like output with columns
@@ -228,13 +172,11 @@ describe('air list (functional)', () => {
 
       // Remove node_modules to simulate no packages
       const fs = await import('fs/promises')
-      await fs.rm(`${emptyEnv.testDir}/node_modules`, { recursive: true, force: true })
+      await fs.rm(`${emptyEnv.testDir}/node_modules`, { recursive : true, force : true })
 
-      const { stdout, exitCode } = await runCLI(
-        ['list'],
-        emptyEnv.testDir,
-        { env: { ...process.env, HOME: emptyEnv.testDir } }
-      )
+      const { stdout, exitCode } = await runCLI(['list'], emptyEnv.testDir, {
+        env : { ...process.env, HOME : emptyEnv.testDir },
+      })
 
       expect(exitCode).toBe(0)
       // Should indicate no integrations found
@@ -247,20 +189,16 @@ describe('air list (functional)', () => {
   describe('Cache behavior', () => {
     it('should use cached results on subsequent calls', async () => {
       // First call - creates cache
-      const { stdout: stdout1, exitCode: exitCode1 } = await runCLI(
-        ['list'],
-        testDir,
-        { env: { ...process.env, HOME: testDir } }
-      )
+      const { stdout: stdout1, exitCode: exitCode1 } = await runCLI(['list'], testDir, {
+        env : { ...process.env, HOME : testDir },
+      })
 
       expect(exitCode1).toBe(0)
 
       // Second call - should use cache
-      const { stdout: stdout2, exitCode: exitCode2 } = await runCLI(
-        ['list'],
-        testDir,
-        { env: { ...process.env, HOME: testDir } }
-      )
+      const { stdout: stdout2, exitCode: exitCode2 } = await runCLI(['list'], testDir, {
+        env : { ...process.env, HOME : testDir },
+      })
 
       expect(exitCode2).toBe(0)
       // Results should be identical
@@ -268,7 +206,8 @@ describe('air list (functional)', () => {
 
       // Verify cache file exists
       const fs = await import('fs/promises')
-      const cacheExists = await fs.access(`${testDir}/.aircache.json`)
+      const cacheExists = await fs
+        .access(`${testDir}/.aircache.json`)
         .then(() => true)
         .catch(() => false)
       expect(cacheExists).toBe(true)
@@ -277,11 +216,7 @@ describe('air list (functional)', () => {
 
   describe('Scoped package support', () => {
     it('should list integrations from scoped packages', async () => {
-      const { stdout, exitCode } = await runCLI(
-        ['list'],
-        testDir,
-        { env: { ...process.env, HOME: testDir } }
-      )
+      const { stdout, exitCode } = await runCLI(['list'], testDir, { env : { ...process.env, HOME : testDir } })
 
       expect(exitCode).toBe(0)
       // Should show scoped package name
@@ -289,11 +224,9 @@ describe('air list (functional)', () => {
     })
 
     it('should filter by scoped library name', async () => {
-      const { stdout, exitCode } = await runCLI(
-        ['list', '--library', '@ai-ready/scoped-package'],
-        testDir,
-        { env: { ...process.env, HOME: testDir } }
-      )
+      const { stdout, exitCode } = await runCLI(['list', '--library', '@ai-ready/scoped-package'], testDir, {
+        env : { ...process.env, HOME : testDir },
+      })
 
       expect(exitCode).toBe(0)
       // Should only show scoped package integrations

@@ -1,7 +1,7 @@
 import { scanAll } from '../scanner'
 import { loadProvidersWithCache } from '../storage/cache'
-import { loadInstallationStatus } from '../storage/registry'
 import { getDefaultRegistry } from '../storage/claude-plugin-registry'
+import { loadInstallationStatus } from '../storage/registry'
 import { DEFAULT_CONFIG } from '../types'
 
 /* eslint-disable no-console, no-process-exit */

@@ -1,13 +1,21 @@
-import { cmdInstall } from './install'
-import * as cache from '../storage/cache'
-import * as registry from '../storage/registry'
-import * as pluginRegistry from '../storage/claude-plugin-registry'
-import { INTEGRATION_TYPES } from '../types'
+/* import { cmdInstall } from 'lib/commands/install'
+import * as cache from 'lib/storage/cache'
+import * as registry from 'lib/storage/registry'
+import * as pluginRegistry from 'lib/storage/claude-plugin-registry'
+import { INTEGRATION_TYPES } from 'lib/types'
 
-jest.mock('../scanner')
-jest.mock('../storage/cache')
-jest.mock('../storage/registry')
-jest.mock('../storage/claude-plugin-registry')
+jest.mock('lib/storage/cache.js')
+jest.mock('lib/storage/registry.js')
+jest.mock('lib/storage/claude-plugin-registry.js') */
+import { cmdInstall } from '_lib/commands/install'
+import * as cache from '_lib/storage/cache'
+import * as pluginRegistry from '_lib/storage/claude-plugin-registry'
+import * as registry from '_lib/storage/registry'
+import { INTEGRATION_TYPES } from '_lib/types'
+
+jest.mock('_lib/storage/cache.js')
+jest.mock('_lib/storage/registry.js')
+jest.mock('_lib/storage/claude-plugin-registry.js')
 
 describe('install command', () => {
   let consoleLogSpy
@@ -123,7 +131,13 @@ describe('install command', () => {
     it('should install Claude Skill type', async () => {
       await cmdInstall('test-lib/SkillOnly', {})
 
-      expect(mockRegistryInstance.installPlugin).toHaveBeenCalledWith('test-lib', 'SkillOnly', 'SkillOnly', '/path', '1.0.0')
+      expect(mockRegistryInstance.installPlugin).toHaveBeenCalledWith(
+        'test-lib',
+        'SkillOnly',
+        'SkillOnly',
+        '/path',
+        '1.0.0'
+      )
       expect(consoleLogSpy).toHaveBeenCalledWith('✔ Claude Skill installed')
     })
 

@@ -1,13 +1,13 @@
-import { addSource, removeSource, listSources, updateSources, repairSource } from './sources'
-import * as config from '../storage/config'
-import * as remoteRepos from '../storage/remote-repos'
-import * as cache from '../storage/cache'
-import { STANDARD_REPOS } from '../types'
+import { addSource, listSources, removeSource, repairSource, updateSources } from '_lib/commands/sources'
+import * as cache from '_lib/storage/cache'
+import * as config from '_lib/storage/config'
+import * as remoteRepos from '_lib/storage/remote-repos'
+import { STANDARD_REPOS } from '_lib/types'
 
 // Mock modules
-jest.mock('../storage/config.js')
-jest.mock('../storage/remote-repos.js')
-jest.mock('../storage/cache.js')
+jest.mock('_lib/storage/config')
+jest.mock('_lib/storage/remote-repos')
+jest.mock('_lib/storage/cache')
 jest.mock('readline', () => ({
   createInterface : jest.fn(() => ({
     question : jest.fn((q, cb) => cb('yes')),

@@ -1,4 +1,4 @@
-import { parseLibraryIntegration } from './parse-library-integration'
+import { parseLibraryIntegration } from '_lib/utils/parse-library-integration'
 
 describe('parseLibraryIntegration', () => {
   describe('Unscoped packages', () => {

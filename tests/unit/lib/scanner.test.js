@@ -1,9 +1,10 @@
-import { scanForProviders } from './scanner'
-import { INTEGRATION_TYPES } from './types'
-import { createTestLibrary } from './test-lib'
 import fs from 'fs/promises'
-import path from 'path'
 import os from 'os'
+import path from 'path'
+
+import { scanForProviders } from '_lib/scanner'
+import { INTEGRATION_TYPES } from '_lib/types'
+import { createTestLibrary } from './test-lib'
 
 describe('scanner', () => {
   let tempDir

@@ -1,13 +1,13 @@
-import { cmdRemove } from './remove'
-import * as cache from '../storage/cache'
-import * as registry from '../storage/registry'
-import * as pluginRegistry from '../storage/claude-plugin-registry'
-import { INTEGRATION_TYPES } from '../types'
+import { cmdRemove } from '_lib/commands/remove'
+import * as cache from '_lib/storage/cache'
+import * as pluginRegistry from '_lib/storage/claude-plugin-registry'
+import * as registry from '_lib/storage/registry'
+import { INTEGRATION_TYPES } from '_lib/types'
 
-jest.mock('../scanner')
-jest.mock('../storage/cache')
-jest.mock('../storage/registry')
-jest.mock('../storage/claude-plugin-registry')
+jest.mock('_lib/scanner')
+jest.mock('_lib/storage/cache')
+jest.mock('_lib/storage/registry')
+jest.mock('_lib/storage/claude-plugin-registry')
 
 describe('remove command', () => {
   let consoleLogSpy

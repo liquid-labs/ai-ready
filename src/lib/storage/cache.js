@@ -1,6 +1,8 @@
 import fs from 'fs/promises'
 import path from 'path'
+
 import simpleGit from 'simple-git'
+
 import { isValidCache } from '../types'
 import { SOURCE_TYPE } from '../types'
 import { loadConfig } from './config'

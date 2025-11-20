@@ -1,11 +1,11 @@
-import { logErrAndExit } from './ui-lib'
-import { findProviderAndIntegration } from './data-lib'
 import { scanAll } from '../scanner'
 import { loadProvidersWithCache } from '../storage/cache'
-import { loadInstallationStatus, createBackup, readGenericRegistry, writeGenericRegistry } from '../storage/registry'
 import { getDefaultRegistry } from '../storage/claude-plugin-registry'
-import { parseLibraryIntegration } from '../utils/parse-library-integration'
+import { createBackup, loadInstallationStatus, readGenericRegistry, writeGenericRegistry } from '../storage/registry'
 import { DEFAULT_CONFIG, INTEGRATION_TYPES } from '../types'
+import { parseLibraryIntegration } from '../utils/parse-library-integration'
+import { findProviderAndIntegration } from './data-lib'
+import { logErrAndExit } from './ui-lib'
 
 /**
  * @import { Integration, IntegrationProvider } from '../types.js'
@@ -116,7 +116,13 @@ function determineTypesToInstall(integration, options) {
  */
 async function installType(libraryName, integrationName, integration, type, libraryPath, provider) {
   if (type === INTEGRATION_TYPES.CLAUDE_SKILL) {
-    await installClaudeSkillIntegration(libraryName, integrationName, integration.dirName, libraryPath, provider.version)
+    await installClaudeSkillIntegration(
+      libraryName,
+      integrationName,
+      integration.dirName,
+      libraryPath,
+      provider.version
+    )
     console.log('✔ Claude Skill installed')
   }
   else if (type === INTEGRATION_TYPES.GENERIC) {

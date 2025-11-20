@@ -3,9 +3,36 @@
 # node-build for further details
 
 SDLC_JS_SELECTOR=\( -name "*.js" -o -name "*.cjs" -o -name "*.mjs" \)
-SDLC_TEST_SELECTOR=\( -name "*.test.*js" -o -path "*/test/*" \)
 
-# all source, non-test files (cli and lib)
-SDLC_ALL_JS_FILES_SRC:=$(shell find $(SRC) $(SDLC_JS_SELECTOR) -not $(SDLC_DATA_SELECTOR) -type f)
-SDLC_ALL_NON_TEST_JS_FILES_SRC:=$(shell find $(SRC) $(SDLC_JS_SELECTOR) -not $(SDLC_DATA_SELECTOR) -not $(SDLC_TEST_SELECTOR) -type f)
-SDLC_JS_TEST_FILES_BUILT:=$(patsubst %.cjs, %.js, $(patsubst %.mjs, %.js, $(patsubst $(SRC)/%, test-staging/%, $(SDLC_ALL_JS_FILES_SRC))))
+SDLC_MAIN_JS_FILES_SRC:=$(shell find $(SRC) $(SDLC_JS_SELECTOR) -not $(SDLC_DATA_SELECTOR) -type f)
+SDLC_MAIN_JS_FILES_BUILT:=$(shell echo $(SDLC_MAIN_JS_FILES_SRC) | sed -E 's%(^| )src/%\1test-staging/%g' | sed -E 's%[.][mc]js( |$$)%.js\1%g')
+
+bar: # DEBUG
+	@echo "SDLC_MAIN_JS_FILES_SRC: $(SDLC_MAIN_JS_FILES_SRC)"
+	@echo "SDLC_MAIN_JS_FILES_BUILT: $(SDLC_MAIN_JS_FILES_BUILT)"
+
+# SDLC_UNIT_TEST_SELECTOR=\( -name "*.test.*js" -o -path "*/test/*" \)
+# The location of test files should be determined when the Makefile is generated (@sdlc/clever-make?)
+# SDLC_UNIT_TEST_FILES_SRC:=$(shell find $(SRC) $(SDLC_UNIT_TEST_SELECTOR) -not $(SDLC_DATA_SELECTOR) -type f) \
+#	$(shell find $(TESTS)/unit $(SDLC_JS_SELECTOR) -not $(SDLC_DATA_SELECTOR) -type f)
+# SDLC_BUILT_TEST_FILE_PATH_TRANSFORMER:=sed -E 's%([.]/)?(.+)[.][mc]js( |$$)%test-staging/\2.js\3%g'
+SDLC_BUILT_TEST_FILE_PATH_TRANSFORMER:=sed -E 's%[.][mc]js( |$$)%.js\1%g; s%(^| )([.]/)?%\1test-staging/%g'
+
+SDLC_UNIT_TEST_FILES_SRC:=$(shell find $(TESTS)/unit $(SDLC_JS_SELECTOR) -not $(SDLC_DATA_SELECTOR) -type f)
+SDLC_UNIT_TEST_FILES_BUILT:=$(shell echo $(SDLC_UNIT_TEST_FILES_SRC) | $(SDLC_BUILT_TEST_FILE_PATH_TRANSFORMER))
+SDLC_MAIN_AND_UNIT_BUILT:=$(SDLC_MAIN_JS_FILES_BUILT) $(SDLC_UNIT_TEST_FILES_BUILT)
+
+foo: # DEBUG
+	@echo "SDLC_UNIT_TEST_FILES_SRC: $(SDLC_UNIT_TEST_FILES_SRC)"
+	@echo "SDLC_UNIT_TEST_FILES_BUILT: $(SDLC_UNIT_TEST_FILES_BUILT)"
+
+SDLC_FUNCTIONAL_TEST_FILES_SRC:=$(shell find $(TESTS)/functional $(SDLC_JS_SELECTOR) -not $(SDLC_DATA_SELECTOR) -type f)
+SDLC_FUNCTIONAL_TEST_FILES_BUILT:=$(shell echo $(SDLC_FUNCTIONAL_TEST_FILES_SRC) | $(SDLC_BUILT_TEST_FILE_PATH_TRANSFORMER))
+SDLC_MAIN_AND_FUNCTIONAL_TEST_BUILT:=$(SDLC_MAIN_JS_FILES_BUILT) $(SDLC_FUNCTIONAL_TEST_FILES_BUILT)
+
+SDLC_INTEGRATION_TEST_FILES_SRC:=$(shell find $(TESTS)/integration $(SDLC_JS_SELECTOR) -not $(SDLC_DATA_SELECTOR) -type f)
+SDLC_INTEGRATION_TEST_FILES_BUILT:=$(shell echo $(SDLC_INTEGRATION_TEST_FILES_SRC) | $(SDLC_BUILT_TEST_FILE_PATH_TRANSFORMER))
+SDLC_MAIN_AND_INTEGRATION_TEST_BUILT:=$(SDLC_MAIN_JS_FILES_BUILT) $(SDLC_INTEGRATION_TEST_FILES_BUILT)
+
+SDLC_ALL_JS_FILES_SRC:=$(SDLC_MAIN_JS_FILES_SRC) $(SDLC_UNIT_TEST_FILES_SRC) $(SDLC_FUNCTIONAL_TEST_FILES_SRC) $(SDLC_INTEGRATION_TEST_FILES_SRC)
+SDLC_ALL_JS_FILES_BUILT:=$(patsubst %, $(TEST_STAGING)/%, $(shell echo $(SDLC_ALL_JS_FILES_SRC) | sed -E 's%(^| )src/%\1%g' | sed -E 's%[.][mc]js( |$$)%.js\1%g'))

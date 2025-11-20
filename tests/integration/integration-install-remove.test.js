@@ -1,34 +1,12 @@
 /**
- * Docker-based integration tests for install/remove workflows
+ * Integration tests for install/remove workflows
  * These tests verify behavior in a clean, isolated environment
  */
-
-import { describe, it, expect, beforeAll, afterAll } from '@jest/globals'
-import { execFile } from 'child_process'
-import { promisify } from 'util'
 import fs from 'fs/promises'
-import path from 'path'
 import os from 'os'
+import path from 'path'
 
-const execFileAsync = promisify(execFile)
-
-/**
- * Resolve project root (handles running from test-staging or project root)
- */
-function getProjectRoot () {
-  const cwd = process.cwd()
-  // If running from test-staging, go up one level
-  if (cwd.endsWith('test-staging')) {
-    return path.resolve(cwd, '..')
-  }
-  return cwd
-}
-
-const PROJECT_ROOT = getProjectRoot()
-
-// Path to CLI (adjust based on where tests run)
-const CLI_PATH = process.env.CLI_PATH || path.resolve(PROJECT_ROOT, 'dist/ai-ready-exec.js')
-const FIXTURE_PATH = process.env.FIXTURE_PATH || path.resolve(PROJECT_ROOT, 'tests/fixtures/test-air-package')
+import { readFile, readJsonFile, runCLI, setupTestProject } from './test-helpers'
 
 describe('Integration: Install and Remove workflows', () => {
   let testDir
@@ -40,6 +18,9 @@ describe('Integration: Install and Remove workflows', () => {
     originalHome = process.env.HOME
 
     // Set HOME to test directory (isolates Claude plugin directory)
+    // NOTE: This requires tests to run sequentially (--runInBand in Jest config)
+    // to prevent parallel test conflicts. The modified HOME is passed to child
+    // processes via runCLI() helper which explicitly includes process.env.
     process.env.HOME = testDir
 
     // Setup test project with fixture package
@@ -49,15 +30,16 @@ describe('Integration: Install and Remove workflows', () => {
   beforeEach(async () => {
     // Clean up test directory before each test
     const entries = await fs.readdir(testDir)
-    for (const entry of entries) {
+    await Promise.all(entries.map(async (entry) => {
       const fullPath = path.join(testDir, entry)
       const stat = await fs.stat(fullPath)
       if (stat.isDirectory()) {
-        await fs.rm(fullPath, { recursive: true, force: true })
-      } else {
+        await fs.rm(fullPath, { recursive : true, force : true })
+      }
+      else {
         await fs.unlink(fullPath)
       }
-    }
+    }))
     await setupTestProject(testDir)
   })
 
@@ -67,9 +49,10 @@ describe('Integration: Install and Remove workflows', () => {
 
     // Cleanup test directory
     try {
-      await fs.rm(testDir, { recursive: true, force: true })
-    } catch (error) {
-      console.warn('Failed to cleanup test directory:', error.message)
+      await fs.rm(testDir, { recursive : true, force : true })
+    }
+    catch {
+      // Silently ignore cleanup errors
     }
   })
 
@@ -87,9 +70,7 @@ describe('Integration: Install and Remove workflows', () => {
       await runCLI(['install', 'test-air-package/SkillOnly'], testDir)
 
       // Verify plugin registry in $HOME/.claude/plugins/
-      const pluginRegistry = await readJsonFile(
-        path.join(testDir, '.claude/plugins/installed_plugins.json')
-      )
+      const pluginRegistry = await readJsonFile(path.join(testDir, '.claude/plugins/installed_plugins.json'))
       expect(pluginRegistry).toBeTruthy()
       expect(Object.keys(pluginRegistry.plugins)).toContain('skill-only@test-air-package-marketplace')
     })
@@ -111,9 +92,7 @@ describe('Integration: Install and Remove workflows', () => {
       await runCLI(['remove', 'test-air-package/SkillOnly'], testDir)
 
       // Verify removed
-      const pluginRegistry = await readJsonFile(
-        path.join(testDir, '.claude/plugins/installed_plugins.json')
-      )
+      const pluginRegistry = await readJsonFile(path.join(testDir, '.claude/plugins/installed_plugins.json'))
       expect(Object.keys(pluginRegistry?.plugins || {})).not.toContain('skill-only@test-air-package-marketplace')
     })
 
@@ -137,9 +116,7 @@ describe('Integration: Install and Remove workflows', () => {
       await runCLI(['install', 'test-air-package/DualTypeIntegration'], testDir)
 
       // Verify skill installed
-      const pluginRegistry = await readJsonFile(
-        path.join(testDir, '.claude/plugins/installed_plugins.json')
-      )
+      const pluginRegistry = await readJsonFile(path.join(testDir, '.claude/plugins/installed_plugins.json'))
       expect(Object.keys(pluginRegistry?.plugins || {})).toContain('dual-type-integration@test-air-package-marketplace')
 
       // Verify generic installed
@@ -151,9 +128,7 @@ describe('Integration: Install and Remove workflows', () => {
       await runCLI(['install', 'test-air-package/DualTypeIntegration', '--skill'], testDir)
 
       // Verify skill installed
-      const pluginRegistry = await readJsonFile(
-        path.join(testDir, '.claude/plugins/installed_plugins.json')
-      )
+      const pluginRegistry = await readJsonFile(path.join(testDir, '.claude/plugins/installed_plugins.json'))
       expect(Object.keys(pluginRegistry?.plugins || {})).toContain('dual-type-integration@test-air-package-marketplace')
 
       // Verify generic NOT installed (file may not exist if only skill was installed)
@@ -171,10 +146,10 @@ describe('Integration: Install and Remove workflows', () => {
       expect(agentsContent).toContain('DualTypeIntegration')
 
       // Verify skill NOT installed
-      const pluginRegistry = await readJsonFile(
-        path.join(testDir, '.claude/plugins/installed_plugins.json')
+      const pluginRegistry = await readJsonFile(path.join(testDir, '.claude/plugins/installed_plugins.json'))
+      expect(Object.keys(pluginRegistry?.plugins || {})).not.toContain(
+        'dual-type-integration@test-air-package-marketplace'
       )
-      expect(Object.keys(pluginRegistry?.plugins || {})).not.toContain('dual-type-integration@test-air-package-marketplace')
     })
 
     it('should allow removing only skill type', async () => {
@@ -185,10 +160,10 @@ describe('Integration: Install and Remove workflows', () => {
       await runCLI(['remove', 'test-air-package/DualTypeIntegration', '--skill'], testDir)
 
       // Verify skill removed
-      const pluginRegistry = await readJsonFile(
-        path.join(testDir, '.claude/plugins/installed_plugins.json')
+      const pluginRegistry = await readJsonFile(path.join(testDir, '.claude/plugins/installed_plugins.json'))
+      expect(Object.keys(pluginRegistry?.plugins || {})).not.toContain(
+        'dual-type-integration@test-air-package-marketplace'
       )
-      expect(Object.keys(pluginRegistry?.plugins || {})).not.toContain('dual-type-integration@test-air-package-marketplace')
 
       // Verify generic still installed
       const agentsContent = await fs.readFile(path.join(testDir, 'AGENTS.md'), 'utf8')
@@ -207,9 +182,7 @@ describe('Integration: Install and Remove workflows', () => {
       expect(agentsContent).not.toContain('DualTypeIntegration')
 
       // Verify skill still installed
-      const pluginRegistry = await readJsonFile(
-        path.join(testDir, '.claude/plugins/installed_plugins.json')
-      )
+      const pluginRegistry = await readJsonFile(path.join(testDir, '.claude/plugins/installed_plugins.json'))
       expect(Object.keys(pluginRegistry?.plugins || {})).toContain('dual-type-integration@test-air-package-marketplace')
     })
   })
@@ -237,93 +210,3 @@ describe('Integration: Install and Remove workflows', () => {
     })
   })
 })
-
-// Helper functions
-async function setupTestProject (testDir) {
-  // Create package.json
-  const packageJson = {
-    name: 'integration-test-project',
-    version: '1.0.0',
-    dependencies: {
-      'test-air-package': '1.0.0'
-    }
-  }
-  await fs.writeFile(
-    path.join(testDir, 'package.json'),
-    JSON.stringify(packageJson, null, 2)
-  )
-
-  // Create node_modules and copy fixture
-  const nodeModulesDir = path.join(testDir, 'node_modules')
-  await fs.mkdir(nodeModulesDir, { recursive: true })
-  await copyDir(FIXTURE_PATH, path.join(nodeModulesDir, 'test-air-package'))
-
-  // Create package-lock.json
-  const packageLock = {
-    name: 'integration-test-project',
-    version: '1.0.0',
-    lockfileVersion: 3,
-    requires: true,
-    packages: {
-      '': {
-        dependencies: {
-          'test-air-package': '1.0.0'
-        }
-      },
-      'node_modules/test-air-package': {
-        version: '1.0.0'
-      }
-    }
-  }
-  await fs.writeFile(
-    path.join(testDir, 'package-lock.json'),
-    JSON.stringify(packageLock, null, 2)
-  )
-}
-
-async function copyDir (src, dest) {
-  await fs.mkdir(dest, { recursive: true })
-  const entries = await fs.readdir(src, { withFileTypes: true })
-
-  for (const entry of entries) {
-    const srcPath = path.join(src, entry.name)
-    const destPath = path.join(dest, entry.name)
-
-    if (entry.isDirectory()) {
-      await copyDir(srcPath, destPath)
-    } else {
-      await fs.copyFile(srcPath, destPath)
-    }
-  }
-}
-
-async function runCLI (args, cwd) {
-  const { stdout, stderr } = await execFileAsync('node', [CLI_PATH, ...args], {
-    cwd,
-    env: process.env  // Explicitly pass environment variables including HOME
-  })
-  return { stdout, stderr }
-}
-
-async function readJsonFile (filePath) {
-  try {
-    const content = await fs.readFile(filePath, 'utf8')
-    return JSON.parse(content)
-  } catch (error) {
-    if (error.code === 'ENOENT') {
-      return null
-    }
-    throw error
-  }
-}
-
-async function readFile (filePath) {
-  try {
-    return await fs.readFile(filePath, 'utf8')
-  } catch (error) {
-    if (error.code === 'ENOENT') {
-      return null
-    }
-    throw error
-  }
-}
