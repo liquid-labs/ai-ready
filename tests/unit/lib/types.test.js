@@ -4,7 +4,7 @@ import {
   isValidCache,
   isValidIntegration,
   isValidProvider
-} from '../../../lib/types'
+} from '_lib/types'
 
 describe('types', () => {
   describe('DEFAULT_CONFIG', () => {

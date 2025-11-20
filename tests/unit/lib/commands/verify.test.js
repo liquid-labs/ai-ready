@@ -2,7 +2,7 @@ import fs from 'fs/promises'
 import os from 'os'
 import path from 'path'
 
-import { cmdVerify } from '../../../../lib/commands/verify'
+import { cmdVerify } from '_lib/commands/verify'
 
 describe('verify command', () => {
   let tempDir

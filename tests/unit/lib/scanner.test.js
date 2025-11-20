@@ -2,8 +2,8 @@ import fs from 'fs/promises'
 import os from 'os'
 import path from 'path'
 
-import { scanForProviders } from '../../../lib/scanner'
-import { INTEGRATION_TYPES } from '../../../lib/types'
+import { scanForProviders } from '_lib/scanner'
+import { INTEGRATION_TYPES } from '_lib/types'
 import { createTestLibrary } from './test-lib'
 
 describe('scanner', () => {

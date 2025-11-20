@@ -2,14 +2,14 @@ import fs from 'fs/promises'
 import os from 'os'
 import path from 'path'
 
-import { ClaudePluginRegistry } from '../../../../lib/storage/claude-plugin-registry'
+import { ClaudePluginRegistry } from '_lib/storage/claude-plugin-registry'
 import {
   createBackup,
   loadInstallationStatus,
   readGenericRegistry,
   writeGenericRegistry
-} from '../../../../lib/storage/registry'
-import { INTEGRATION_TYPES } from '../../../../lib/types'
+} from '_lib/storage/registry'
+import { INTEGRATION_TYPES } from '_lib/types'
 import { makeProvider, mkTable } from '../test-lib'
 
 describe('registry', () => {

@@ -37,6 +37,52 @@ const CLI_PATH = path.resolve(PROJECT_ROOT, 'dist/ai-ready-exec.js')
 const FIXTURE_PACKAGE_PATH = path.resolve(PROJECT_ROOT, 'tests/fixtures/test-air-package')
 
 /**
+ * Create package.json for test environment
+ * @returns {object} Package.json content
+ */
+function createTestPackageJson() {
+  return {
+    name         : 'test-project',
+    version      : '1.0.0',
+    dependencies : {
+      'test-air-package'         : '1.0.0',
+      '@ai-ready/scoped-package' : '1.0.0',
+    },
+  }
+}
+
+/**
+ * Create package-lock.json for test environment
+ * @returns {object} Package-lock.json content
+ */
+function createTestPackageLockJson() {
+  return {
+    name            : 'test-project',
+    version         : '1.0.0',
+    lockfileVersion : 3,
+    requires        : true,
+    packages        : {
+      '' : {
+        name         : 'test-project',
+        version      : '1.0.0',
+        dependencies : {
+          'test-air-package'         : '1.0.0',
+          '@ai-ready/scoped-package' : '1.0.0',
+        },
+      },
+      'node_modules/test-air-package' : {
+        version  : '1.0.0',
+        resolved : 'file:../tests/fixtures/test-air-package',
+      },
+      'node_modules/@ai-ready/scoped-package' : {
+        version  : '1.0.0',
+        resolved : 'file:../tests/fixtures/test-air-package',
+      },
+    },
+  }
+}
+
+/**
  * Run the ai-ready CLI with given arguments
  * @param {string[]} args - Command arguments
  * @param {string} cwd - Working directory
@@ -89,51 +135,17 @@ export async function setupTestEnv() {
   scopedPkgJson.name = '@ai-ready/scoped-package'
   await fs.writeFile(scopedPackageJsonPath, JSON.stringify(scopedPkgJson, null, 2))
 
-  // Create package.json in test directory
-  const packageJson = {
-    name         : 'test-project',
-    version      : '1.0.0',
-    dependencies : {
-      'test-air-package'         : '1.0.0',
-      '@ai-ready/scoped-package' : '1.0.0',
-    },
-  }
-  await fs.writeFile(path.join(testDir, 'package.json'), JSON.stringify(packageJson, null, 2))
-
-  // Create package-lock.json
-  const packageLockJson = {
-    name            : 'test-project',
-    version         : '1.0.0',
-    lockfileVersion : 3,
-    requires        : true,
-    packages        : {
-      '' : {
-        name         : 'test-project',
-        version      : '1.0.0',
-        dependencies : {
-          'test-air-package'         : '1.0.0',
-          '@ai-ready/scoped-package' : '1.0.0',
-        },
-      },
-      'node_modules/test-air-package' : {
-        version  : '1.0.0',
-        resolved : 'file:../tests/fixtures/test-air-package',
-      },
-      'node_modules/@ai-ready/scoped-package' : {
-        version  : '1.0.0',
-        resolved : 'file:../tests/fixtures/test-air-package',
-      },
-    },
-  }
-  await fs.writeFile(path.join(testDir, 'package-lock.json'), JSON.stringify(packageLockJson, null, 2))
+  // Create package.json and package-lock.json in test directory
+  await fs.writeFile(path.join(testDir, 'package.json'), JSON.stringify(createTestPackageJson(), null, 2))
+  await fs.writeFile(path.join(testDir, 'package-lock.json'), JSON.stringify(createTestPackageLockJson(), null, 2))
 
   // Cleanup function
   const cleanup = async () => {
     try {
       await fs.rm(testDir, { recursive : true, force : true })
     }
-    catch (error) {
-      console.warn(`Warning: Failed to cleanup test directory ${testDir}:`, error.message)
+    catch {
+      // Silently ignore cleanup errors
     }
   }
 
@@ -149,7 +161,7 @@ async function copyDir(src, dest) {
   await fs.mkdir(dest, { recursive : true })
   const entries = await fs.readdir(src, { withFileTypes : true })
 
-  for (const entry of entries) {
+  await Promise.all(entries.map(async (entry) => {
     const srcPath = path.join(src, entry.name)
     const destPath = path.join(dest, entry.name)
 
@@ -159,7 +171,7 @@ async function copyDir(src, dest) {
     else {
       await fs.copyFile(srcPath, destPath)
     }
-  }
+  }))
 }
 
 /**

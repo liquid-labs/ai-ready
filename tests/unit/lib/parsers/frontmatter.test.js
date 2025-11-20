@@ -2,7 +2,7 @@ import fs from 'fs/promises'
 import os from 'os'
 import path from 'path'
 
-import { parseFrontmatter, parseFrontmatterFromString } from '../../../../lib/parsers/frontmatter'
+import { parseFrontmatter, parseFrontmatterFromString } from '_lib/parsers/frontmatter'
 
 describe('frontmatter parser', () => {
   let tempDir

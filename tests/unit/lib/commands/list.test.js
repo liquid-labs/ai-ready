@@ -1,14 +1,14 @@
-import { cmdList } from '../../../../lib/commands/list'
-import * as cache from '../../../../lib/storage/cache'
-import * as claudePluginRegistry from '../../../../lib/storage/claude-plugin-registry'
-import * as registry from '../../../../lib/storage/registry'
-import { INTEGRATION_TYPES } from '../../../../lib/types'
+import { cmdList } from '_lib/commands/list'
+import * as cache from '_lib/storage/cache'
+import * as claudePluginRegistry from '_lib/storage/claude-plugin-registry'
+import * as registry from '_lib/storage/registry'
+import { INTEGRATION_TYPES } from '_lib/types'
 
 // Mock modules
-jest.mock('../../../../lib/scanner')
-jest.mock('../../../../lib/storage/cache')
-jest.mock('../../../../lib/storage/registry')
-jest.mock('../../../../lib/storage/claude-plugin-registry')
+jest.mock('_lib/scanner')
+jest.mock('_lib/storage/cache')
+jest.mock('_lib/storage/registry')
+jest.mock('_lib/storage/claude-plugin-registry')
 
 describe('list command', () => {
   let consoleLogSpy

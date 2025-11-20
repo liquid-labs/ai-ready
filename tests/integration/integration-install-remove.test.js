@@ -30,7 +30,7 @@ describe('Integration: Install and Remove workflows', () => {
   beforeEach(async () => {
     // Clean up test directory before each test
     const entries = await fs.readdir(testDir)
-    for (const entry of entries) {
+    await Promise.all(entries.map(async (entry) => {
       const fullPath = path.join(testDir, entry)
       const stat = await fs.stat(fullPath)
       if (stat.isDirectory()) {
@@ -39,7 +39,7 @@ describe('Integration: Install and Remove workflows', () => {
       else {
         await fs.unlink(fullPath)
       }
-    }
+    }))
     await setupTestProject(testDir)
   })
 
@@ -51,8 +51,8 @@ describe('Integration: Install and Remove workflows', () => {
     try {
       await fs.rm(testDir, { recursive : true, force : true })
     }
-    catch (error) {
-      console.warn('Failed to cleanup test directory:', error.message)
+    catch {
+      // Silently ignore cleanup errors
     }
   })
 

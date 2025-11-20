@@ -83,7 +83,7 @@ export async function copyDir(src, dest) {
   await fs.mkdir(dest, { recursive : true })
   const entries = await fs.readdir(src, { withFileTypes : true })
 
-  for (const entry of entries) {
+  await Promise.all(entries.map(async (entry) => {
     const srcPath = path.join(src, entry.name)
     const destPath = path.join(dest, entry.name)
 
@@ -93,7 +93,7 @@ export async function copyDir(src, dest) {
     else {
       await fs.copyFile(srcPath, destPath)
     }
-  }
+  }))
 }
 
 /**

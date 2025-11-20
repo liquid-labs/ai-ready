@@ -8,7 +8,7 @@ import {
   loadProvidersWithCache,
   readCache,
   writeCache
-} from '../../../../lib/storage/cache'
+} from '_lib/storage/cache'
 
 const writeTestPackageJson = async (tempDir) => {
   const pkgPath = path.join(tempDir, 'package.json')
