@@ -2,10 +2,9 @@ import fs from 'fs/promises'
 import os from 'os'
 import path from 'path'
 
-import { scanForProviders } from '_lib/scanner'
-import { INTEGRATION_TYPES } from '_lib/types'
+import { scanDependencies } from '_lib/scanner'
 
-import { createTestLibrary } from './test-lib'
+import { createTestPackage } from './test-lib'
 
 describe('scanner', () => {
   let tempDir
@@ -20,265 +19,228 @@ describe('scanner', () => {
     }
   })
 
-  describe('scanForProviders', () => {
-    it('should discover library with generic integration', async () => {
-      await createTestLibrary(tempDir, 'test-lib-1', [
-        {
-          dirName : 'TestIntegration',
-          generic : {
-            name    : 'TestIntegration',
-            summary : 'A test integration',
-          },
-        },
-      ])
-
-      const providers = await scanForProviders(['node_modules'], tempDir)
-
-      expect(providers).toHaveLength(1)
-      expect(providers[0]).toMatchObject({
-        libraryName : 'test-lib-1',
+  describe('scanDependencies', () => {
+    it('should discover packages with .claude-plugin/marketplace.json', async () => {
+      await createTestPackage(tempDir, 'test-lib', {
+        name        : 'test-plugin',
         version     : '1.0.0',
-        path        : path.join(tempDir, 'node_modules', 'test-lib-1'),
+        description : 'Test plugin',
+        skillPath   : '.claude-plugin/skill',
       })
-      expect(providers[0].integrations).toHaveLength(1)
-      expect(providers[0].integrations[0]).toMatchObject({
-        name           : 'TestIntegration',
-        summary        : 'A test integration',
-        types          : [INTEGRATION_TYPES.GENERIC],
-        installedTypes : [],
-      })
-    })
 
-    it('should discover library with Claude Skill', async () => {
-      await createTestLibrary(tempDir, 'test-lib-2', [
-        {
-          dirName : 'SkillIntegration',
-          skill   : {
-            name    : 'SkillIntegration',
-            summary : 'A skill integration',
-          },
-        },
-      ])
-
-      const providers = await scanForProviders(['node_modules'], tempDir)
+      const providers = await scanDependencies(tempDir)
 
       expect(providers).toHaveLength(1)
-      expect(providers[0].integrations[0]).toMatchObject({
-        name           : 'SkillIntegration',
-        summary        : 'A skill integration',
-        types          : [INTEGRATION_TYPES.CLAUDE_SKILL],
-        installedTypes : [],
-      })
+      expect(providers[0].packageName).toBe('test-lib')
+      expect(providers[0].version).toBe('1.0.0')
+      expect(providers[0].path).toBe(path.join(tempDir, 'node_modules', 'test-lib'))
+      expect(providers[0].pluginDeclaration.name).toBe('test-plugin')
+      expect(providers[0].pluginDeclaration.version).toBe('1.0.0')
+      expect(providers[0].pluginDeclaration.description).toBe('Test plugin')
+      expect(providers[0].pluginDeclaration.skillPath).toBe('.claude-plugin/skill')
     })
 
-    it('should discover library with both integration types', async () => {
-      await createTestLibrary(tempDir, 'test-lib-3', [
-        {
-          dirName : 'DualIntegration',
-          generic : {
-            name    : 'DualIntegration',
-            summary : 'A dual-type integration',
-          },
-          skill : {
-            name    : 'DualIntegration',
-            summary : 'A dual-type integration',
-          },
-        },
-      ])
+    it('should handle scoped packages', async () => {
+      await createTestPackage(tempDir, '@myorg/test-lib', {
+        name        : 'scoped-plugin',
+        version     : '2.0.0',
+        description : 'Scoped test',
+        skillPath   : '.claude-plugin/skill',
+      })
 
-      const providers = await scanForProviders(['node_modules'], tempDir)
+      const providers = await scanDependencies(tempDir)
 
       expect(providers).toHaveLength(1)
-      expect(providers[0].integrations[0]).toMatchObject({
-        name           : 'DualIntegration',
-        summary        : 'A dual-type integration',
-        types          : [INTEGRATION_TYPES.GENERIC, INTEGRATION_TYPES.CLAUDE_SKILL],
-        installedTypes : [],
+      expect(providers[0].packageName).toBe('@myorg/test-lib')
+      expect(providers[0].pluginDeclaration.name).toBe('scoped-plugin')
+    })
+
+    it('should skip packages without marketplace.json', async () => {
+      const nodeModules = path.join(tempDir, 'node_modules')
+      await fs.mkdir(path.join(nodeModules, 'regular-package'), { recursive : true })
+      await fs.writeFile(
+        path.join(nodeModules, 'regular-package', 'package.json'),
+        JSON.stringify({ name : 'regular-package', version : '1.0.0' }),
+        'utf8'
+      )
+
+      const providers = await scanDependencies(tempDir)
+      expect(providers).toHaveLength(0)
+    })
+
+    it('should return empty array if node_modules missing', async () => {
+      const providers = await scanDependencies(tempDir)
+      expect(providers).toEqual([])
+    })
+
+    it('should discover multiple packages with plugins', async () => {
+      await createTestPackage(tempDir, 'lib-1', {
+        name        : 'plugin-1',
+        version     : '1.0.0',
+        description : 'Plugin 1',
+        skillPath   : '.claude-plugin/skill',
       })
-    })
 
-    it('should discover multiple integrations in one library', async () => {
-      await createTestLibrary(tempDir, 'test-lib-4', [
-        {
-          dirName : 'Integration1',
-          generic : {
-            name    : 'Integration1',
-            summary : 'First integration',
-          },
-        },
-        {
-          dirName : 'Integration2',
-          skill   : {
-            name    : 'Integration2',
-            summary : 'Second integration',
-          },
-        },
-      ])
+      await createTestPackage(tempDir, 'lib-2', {
+        name        : 'plugin-2',
+        version     : '2.0.0',
+        description : 'Plugin 2',
+        skillPath   : '.claude-plugin/skill',
+      })
 
-      const providers = await scanForProviders(['node_modules'], tempDir)
-
-      expect(providers).toHaveLength(1)
-      expect(providers[0].integrations).toHaveLength(2)
-      expect(providers[0].integrations[0].name).toBe('Integration1')
-      expect(providers[0].integrations[1].name).toBe('Integration2')
-    })
-
-    it('should discover multiple libraries', async () => {
-      await createTestLibrary(tempDir, 'lib-a', [
-        {
-          dirName : 'IntegrationA',
-          generic : {
-            name    : 'IntegrationA',
-            summary : 'Integration A',
-          },
-        },
-      ])
-
-      await createTestLibrary(tempDir, 'lib-b', [
-        {
-          dirName : 'IntegrationB',
-          skill   : {
-            name    : 'IntegrationB',
-            summary : 'Integration B',
-          },
-        },
-      ])
-
-      const providers = await scanForProviders(['node_modules'], tempDir)
+      const providers = await scanDependencies(tempDir)
 
       expect(providers).toHaveLength(2)
-      expect(providers.find((p) => p.libraryName === 'lib-a')).toBeDefined()
-      expect(providers.find((p) => p.libraryName === 'lib-b')).toBeDefined()
+      expect(providers.find((p) => p.packageName === 'lib-1')).toBeDefined()
+      expect(providers.find((p) => p.packageName === 'lib-2')).toBeDefined()
     })
 
-    it('should skip libraries without ai-ready directory', async () => {
-      const libraryPath = path.join(tempDir, 'node_modules', 'regular-lib')
-      await fs.mkdir(libraryPath, { recursive : true })
+    it('should handle packages with and without plugins', async () => {
+      // Package with plugin
+      await createTestPackage(tempDir, 'plugin-lib', {
+        name        : 'my-plugin',
+        version     : '1.0.0',
+        description : 'My plugin',
+        skillPath   : '.claude-plugin/skill',
+      })
+
+      // Regular package without plugin
+      const nodeModules = path.join(tempDir, 'node_modules')
+      await fs.mkdir(path.join(nodeModules, 'regular-lib'), { recursive : true })
       await fs.writeFile(
-        path.join(libraryPath, 'package.json'),
+        path.join(nodeModules, 'regular-lib', 'package.json'),
         JSON.stringify({ name : 'regular-lib', version : '1.0.0' }),
         'utf8'
       )
 
-      const providers = await scanForProviders(['node_modules'], tempDir)
+      const providers = await scanDependencies(tempDir)
 
-      expect(providers).toHaveLength(0)
+      expect(providers).toHaveLength(1)
+      expect(providers[0].packageName).toBe('plugin-lib')
     })
 
-    it('should skip integration directories without metadata files', async () => {
-      const libraryPath = path.join(tempDir, 'node_modules', 'test-lib')
-      const integrationPath = path.join(libraryPath, 'ai-ready', 'integrations', 'InvalidIntegration')
-      await fs.mkdir(integrationPath, { recursive : true })
+    it('should handle malformed marketplace.json gracefully', async () => {
+      const nodeModules = path.join(tempDir, 'node_modules')
+      const packagePath = path.join(nodeModules, 'bad-plugin')
+      const pluginDir = path.join(packagePath, '.claude-plugin')
+      await fs.mkdir(pluginDir, { recursive : true })
       await fs.writeFile(
-        path.join(libraryPath, 'package.json'),
-        JSON.stringify({ name : 'test-lib', version : '1.0.0' }),
+        path.join(packagePath, 'package.json'),
+        JSON.stringify({ name : 'bad-plugin', version : '1.0.0' }),
+        'utf8'
+      )
+      await fs.writeFile(
+        path.join(pluginDir, 'marketplace.json'),
+        '{invalid json}',
         'utf8'
       )
 
-      const providers = await scanForProviders(['node_modules'], tempDir)
-
+      const providers = await scanDependencies(tempDir)
       expect(providers).toHaveLength(0)
     })
 
     it('should handle missing package.json gracefully', async () => {
-      const libraryPath = path.join(tempDir, 'node_modules', 'no-package-lib')
-      const integrationPath = path.join(libraryPath, 'ai-ready', 'integrations', 'TestIntegration')
-      await fs.mkdir(integrationPath, { recursive : true })
-      await fs.writeFile(path.join(integrationPath, 'AI_INTEGRATION.md'), '---\nname: Test\nsummary: Test\n---', 'utf8')
+      const nodeModules = path.join(tempDir, 'node_modules')
+      const packagePath = path.join(nodeModules, 'no-package-json')
+      const pluginDir = path.join(packagePath, '.claude-plugin')
+      await fs.mkdir(pluginDir, { recursive : true })
+      await fs.writeFile(
+        path.join(pluginDir, 'marketplace.json'),
+        JSON.stringify({
+          name        : 'test-plugin',
+          version     : '1.0.0',
+          description : 'Test',
+          skillPath   : '.claude-plugin/skill',
+        }),
+        'utf8'
+      )
 
-      const providers = await scanForProviders(['node_modules'], tempDir)
+      // Suppress console.warn for this test
+      // eslint-disable-next-line no-console
+      const originalWarn = console.warn
+      // eslint-disable-next-line no-console
+      console.warn = () => {}
+
+      const providers = await scanDependencies(tempDir)
+
+      // eslint-disable-next-line no-console
+      console.warn = originalWarn
 
       expect(providers).toHaveLength(1)
       expect(providers[0].version).toBe('unknown')
+      expect(providers[0].packageName).toBe('no-package-json')
     })
 
-    it('should handle non-existent scan path gracefully', async () => {
-      const providers = await scanForProviders(['non-existent-path'], tempDir)
+    it('should handle invalid marketplace.json (missing required fields)', async () => {
+      const nodeModules = path.join(tempDir, 'node_modules')
+      const packagePath = path.join(nodeModules, 'invalid-plugin')
+      const pluginDir = path.join(packagePath, '.claude-plugin')
+      await fs.mkdir(pluginDir, { recursive : true })
+      await fs.writeFile(
+        path.join(packagePath, 'package.json'),
+        JSON.stringify({ name : 'invalid-plugin', version : '1.0.0' }),
+        'utf8'
+      )
+      await fs.writeFile(
+        path.join(pluginDir, 'marketplace.json'),
+        JSON.stringify({ name : 'incomplete' }), // Missing required fields
+        'utf8'
+      )
+
+      const providers = await scanDependencies(tempDir)
       expect(providers).toHaveLength(0)
     })
 
-    it('should scan multiple scan paths', async () => {
-      // Create library in first path
-      await createTestLibrary(tempDir, 'lib-1', [
-        {
-          dirName : 'Integration1',
-          generic : { name : 'Integration1', summary : 'Test 1' },
-        },
-      ])
-
-      // Create library in second path
-      const otherPath = path.join(tempDir, 'other-modules')
-      await fs.mkdir(otherPath, { recursive : true })
-      const lib2Path = path.join(otherPath, 'lib-2')
-      await fs.mkdir(path.join(lib2Path, 'ai-ready', 'integrations', 'Integration2'), {
-        recursive : true,
+    it('should handle scoped packages with multiple subpackages', async () => {
+      await createTestPackage(tempDir, '@myorg/pkg-1', {
+        name        : 'plugin-1',
+        version     : '1.0.0',
+        description : 'Plugin 1',
+        skillPath   : '.claude-plugin/skill',
       })
-      await fs.writeFile(
-        path.join(lib2Path, 'package.json'),
-        JSON.stringify({ name : 'lib-2', version : '2.0.0' }),
-        'utf8'
-      )
-      await fs.writeFile(
-        path.join(lib2Path, 'ai-ready', 'integrations', 'Integration2', 'AI_INTEGRATION.md'),
-        '---\nname: Integration2\nsummary: Test 2\n---',
-        'utf8'
-      )
 
-      const providers = await scanForProviders(['node_modules', 'other-modules'], tempDir)
+      await createTestPackage(tempDir, '@myorg/pkg-2', {
+        name        : 'plugin-2',
+        version     : '2.0.0',
+        description : 'Plugin 2',
+        skillPath   : '.claude-plugin/skill',
+      })
+
+      const providers = await scanDependencies(tempDir)
 
       expect(providers).toHaveLength(2)
-      expect(providers.find((p) => p.libraryName === 'lib-1')).toBeDefined()
-      expect(providers.find((p) => p.libraryName === 'lib-2')).toBeDefined()
+      expect(providers.find((p) => p.packageName === '@myorg/pkg-1')).toBeDefined()
+      expect(providers.find((p) => p.packageName === '@myorg/pkg-2')).toBeDefined()
     })
 
-    it('should skip non-directory entries in scan path', async () => {
-      await fs.mkdir(path.join(tempDir, 'node_modules'), { recursive : true })
-      await fs.writeFile(path.join(tempDir, 'node_modules', 'file.txt'), 'test', 'utf8')
+    it('should use package.json name over directory name', async () => {
+      const nodeModules = path.join(tempDir, 'node_modules')
+      const packagePath = path.join(nodeModules, 'dir-name')
+      await fs.mkdir(packagePath, { recursive : true })
+      await fs.writeFile(
+        path.join(packagePath, 'package.json'),
+        JSON.stringify({ name : 'actual-package-name', version : '3.0.0' }),
+        'utf8'
+      )
 
-      const providers = await scanForProviders(['node_modules'], tempDir)
-      expect(providers).toHaveLength(0)
-    })
+      const pluginDir = path.join(packagePath, '.claude-plugin')
+      await fs.mkdir(pluginDir, { recursive : true })
+      await fs.writeFile(
+        path.join(pluginDir, 'marketplace.json'),
+        JSON.stringify({
+          name        : 'my-plugin',
+          version     : '1.0.0',
+          description : 'Test',
+          skillPath   : '.claude-plugin/skill',
+        }),
+        'utf8'
+      )
 
-    it('should use skill metadata when generic is missing', async () => {
-      await createTestLibrary(tempDir, 'test-lib', [
-        {
-          dirName : 'SkillOnly',
-          skill   : {
-            name    : 'SkillOnlyName',
-            summary : 'Skill only summary',
-          },
-        },
-      ])
+      const providers = await scanDependencies(tempDir)
 
-      const providers = await scanForProviders(['node_modules'], tempDir)
-
-      expect(providers[0].integrations[0]).toMatchObject({
-        name    : 'SkillOnlyName',
-        summary : 'Skill only summary',
-      })
-    })
-
-    it('should prefer generic metadata when both exist', async () => {
-      await createTestLibrary(tempDir, 'test-lib', [
-        {
-          dirName : 'Both',
-          generic : {
-            name    : 'GenericName',
-            summary : 'Generic summary',
-          },
-          skill : {
-            name    : 'SkillName',
-            summary : 'Skill summary',
-          },
-        },
-      ])
-
-      const providers = await scanForProviders(['node_modules'], tempDir)
-
-      expect(providers[0].integrations[0]).toMatchObject({
-        name    : 'GenericName',
-        summary : 'Generic summary',
-      })
+      expect(providers).toHaveLength(1)
+      expect(providers[0].packageName).toBe('actual-package-name')
+      expect(providers[0].version).toBe('3.0.0')
     })
   })
 })
