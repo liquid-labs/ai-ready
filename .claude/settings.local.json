@@ -29,7 +29,9 @@
       "Bash(npm run build:*)",
       "Bash(TEST=integration-install-remove.test make:*)",
       "Bash(TEST=integration-cache.test make:*)",
-      "Bash(find:*)"
+      "Bash(find:*)",
+      "Bash(git add:*)",
+      "Bash(git commit:*)"
     ],
     "deny": [],
     "ask": []

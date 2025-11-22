@@ -37,16 +37,18 @@ describe('Integration: Cache invalidation', () => {
   beforeEach(async () => {
     // Clean up test directory before each test
     const entries = await fs.readdir(testDir)
-    await Promise.all(entries.map(async (entry) => {
-      const fullPath = path.join(testDir, entry)
-      const stat = await fs.stat(fullPath)
-      if (stat.isDirectory()) {
-        await fs.rm(fullPath, { recursive : true, force : true })
-      }
-      else {
-        await fs.unlink(fullPath)
-      }
-    }))
+    await Promise.all(
+      entries.map(async (entry) => {
+        const fullPath = path.join(testDir, entry)
+        const stat = await fs.stat(fullPath)
+        if (stat.isDirectory()) {
+          await fs.rm(fullPath, { recursive : true, force : true })
+        }
+        else {
+          await fs.unlink(fullPath)
+        }
+      })
+    )
     await setupTestProject(testDir, { projectName : 'cache-test-project' })
   })
 

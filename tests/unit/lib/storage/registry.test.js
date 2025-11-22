@@ -3,13 +3,9 @@ import os from 'os'
 import path from 'path'
 
 import { ClaudePluginRegistry } from '_lib/storage/claude-plugin-registry'
-import {
-  createBackup,
-  loadInstallationStatus,
-  readGenericRegistry,
-  writeGenericRegistry
-} from '_lib/storage/registry'
+import { createBackup, loadInstallationStatus, readGenericRegistry, writeGenericRegistry } from '_lib/storage/registry'
 import { INTEGRATION_TYPES } from '_lib/types'
+
 import { makeProvider, mkTable } from '../test-lib'
 
 describe('registry', () => {
