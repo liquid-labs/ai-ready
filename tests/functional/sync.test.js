@@ -52,8 +52,8 @@ describe('air sync (functional)', () => {
       expect(await fileExists(settingsPath)).toBe(true)
 
       const settings = await readJsonFile(settingsPath)
-      expect(settings.plugins.enabled).toContain('TestPlugin')
-      expect(settings.plugins.enabled).toContain('ScopedPlugin')
+      expect(settings.plugins.enabled).toContain('TestPlugin@test-plugin-marketplace')
+      expect(settings.plugins.enabled).toContain('ScopedPlugin@scoped-plugin-marketplace')
     })
 
     it('should create marketplace entries', async () => {
@@ -65,7 +65,7 @@ describe('air sync (functional)', () => {
       const settings = await readJsonFile(settingsPath)
 
       expect(settings.plugins.marketplaces['test-plugin-marketplace']).toBeDefined()
-      expect(settings.plugins.marketplaces['@scoped/plugin-marketplace']).toBeDefined()
+      expect(settings.plugins.marketplaces['scoped-plugin-marketplace']).toBeDefined()
 
       // Check marketplace structure
       const marketplace = settings.plugins.marketplaces['test-plugin-marketplace']
@@ -95,9 +95,9 @@ describe('air sync (functional)', () => {
       // Manually disable a plugin
       const settingsPath = path.join(homeDir, '.claude/settings.json')
       let settings = await readJsonFile(settingsPath)
-      const pluginName = 'TestPlugin'
-      settings.plugins.enabled = settings.plugins.enabled.filter((p) => p !== pluginName)
-      settings.plugins.disabled = [pluginName]
+      const pluginKey = 'TestPlugin@test-plugin-marketplace'
+      settings.plugins.enabled = settings.plugins.enabled.filter((p) => p !== pluginKey)
+      settings.plugins.disabled = [pluginKey]
       await require('fs/promises').writeFile(settingsPath, JSON.stringify(settings, null, 2))
 
       // Sync again
@@ -107,8 +107,8 @@ describe('air sync (functional)', () => {
 
       // Verify plugin is still disabled
       settings = await readJsonFile(settingsPath)
-      expect(settings.plugins.disabled).toContain(pluginName)
-      expect(settings.plugins.enabled).not.toContain(pluginName)
+      expect(settings.plugins.disabled).toContain(pluginKey)
+      expect(settings.plugins.enabled).not.toContain(pluginKey)
     })
 
     it('should preserve other enabled plugins', async () => {
@@ -180,8 +180,8 @@ describe('air sync (functional)', () => {
       const settings = await readJsonFile(settingsPath)
 
       // Check scoped package marketplace
-      expect(settings.plugins.marketplaces['@scoped/plugin-marketplace']).toBeDefined()
-      expect(settings.plugins.enabled).toContain('ScopedPlugin')
+      expect(settings.plugins.marketplaces['scoped-plugin-marketplace']).toBeDefined()
+      expect(settings.plugins.enabled).toContain('ScopedPlugin@scoped-plugin-marketplace')
     })
   })
 

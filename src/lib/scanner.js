@@ -140,10 +140,13 @@ async function scanPackage(packagePath) {
     console.warn(`Could not read package.json for ${packagePath}`)
   }
 
+  // Resolve symlinks to get canonical path
+  const canonicalPath = await fs.realpath(packagePath)
+
   return {
     packageName,
     version,
-    path              : packagePath,
+    path              : canonicalPath,
     pluginDeclaration : declaration,
   }
 }

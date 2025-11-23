@@ -29,7 +29,7 @@ const PROJECT_ROOT = getProjectRoot()
 /**
  * Path to the bundled CLI executable
  */
-const CLI_PATH = path.resolve(PROJECT_ROOT, 'dist/ai-ready-exec.js')
+const CLI_PATH = path.resolve(PROJECT_ROOT, 'dist/ai-ready-exec')
 
 /**
  * Run the ai-ready CLI with given arguments

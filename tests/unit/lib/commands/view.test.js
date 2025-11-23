@@ -112,7 +112,7 @@ describe('view command', () => {
         JSON.stringify({
           plugins : {
             enabled      : [],
-            disabled     : ['disabled-plugin'],
+            disabled     : ['disabled-plugin@disabled-lib-marketplace'],
             marketplaces : {},
           },
         }),

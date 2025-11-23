@@ -38,7 +38,7 @@ describe('sync command', () => {
       await syncCommand({ path : tempDir, quiet : true, config })
 
       const settings = await readSettings(settingsPath)
-      expect(settings.plugins.enabled).toContain('test-plugin')
+      expect(settings.plugins.enabled).toContain('test-plugin@test-lib-marketplace')
       expect(settings.plugins.marketplaces['test-lib-marketplace']).toBeDefined()
       expect(settings.plugins.marketplaces['test-lib-marketplace'].plugins['test-plugin'].version).toBe('1.0.0')
     })
@@ -50,7 +50,7 @@ describe('sync command', () => {
         JSON.stringify({
           plugins : {
             enabled      : [],
-            disabled     : ['test-plugin'],
+            disabled     : ['test-plugin@test-lib-marketplace'],
             marketplaces : {},
           },
         }),
@@ -69,8 +69,8 @@ describe('sync command', () => {
       await syncCommand({ path : tempDir, quiet : true, config })
 
       const settings = await readSettings(settingsPath)
-      expect(settings.plugins.enabled).not.toContain('test-plugin')
-      expect(settings.plugins.disabled).toContain('test-plugin')
+      expect(settings.plugins.enabled).not.toContain('test-plugin@test-lib-marketplace')
+      expect(settings.plugins.disabled).toContain('test-plugin@test-lib-marketplace')
     })
 
     it('should handle no plugins found', async () => {
@@ -109,8 +109,8 @@ describe('sync command', () => {
       await syncCommand({ path : tempDir, quiet : true, config })
 
       const settings = await readSettings(settingsPath)
-      expect(settings.plugins.enabled).toContain('plugin-1')
-      expect(settings.plugins.enabled).toContain('plugin-2')
+      expect(settings.plugins.enabled).toContain('plugin-1@lib-1-marketplace')
+      expect(settings.plugins.enabled).toContain('plugin-2@lib-2-marketplace')
       expect(settings.plugins.marketplaces['lib-1-marketplace']).toBeDefined()
       expect(settings.plugins.marketplaces['lib-2-marketplace']).toBeDefined()
     })
@@ -217,7 +217,7 @@ describe('sync command', () => {
       await syncCommand({ path : tempDir, quiet : true, noCache : true, config })
 
       const settings = await readSettings(settingsPath)
-      expect(settings.plugins.enabled).toContain('test-plugin')
+      expect(settings.plugins.enabled).toContain('test-plugin@test-lib-marketplace')
     })
   })
 })

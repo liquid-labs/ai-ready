@@ -8,6 +8,19 @@ import { PLUGIN_STATUSES } from '../types'
  */
 
 /**
+ * Convert package name to marketplace name
+ * Handles scoped packages: @scope/package -> scope-package-marketplace
+ * @param {string} packageName - npm package name
+ * @returns {string} Marketplace name
+ */
+function packageNameToMarketplaceName(packageName) {
+  // Remove @ prefix, replace / with -, and convert to lowercase
+  const normalized = packageName.replace(/^@/, '').replace(/\//g, '-').toLowerCase()
+
+  return `${normalized}-marketplace`
+}
+
+/**
  * Read Claude Code settings.json
  * @param {string} settingsPath - Path to settings.json
  * @returns {Promise<ClaudeSettings>} Settings object
@@ -72,29 +85,26 @@ export async function updateSettings(settingsPath, providers) {
   const settings = await readSettings(settingsPath)
   const changes = { added : [], updated : [] }
 
+  // Check if settings file exists
+  let settingsFileExists = false
+  try {
+    await fs.access(settingsPath)
+    settingsFileExists = true
+  }
+  catch {
+    settingsFileExists = false
+  }
+
+  let marketplacesUpdated = false
+
   for (const provider of providers) {
     const pluginName = provider.pluginDeclaration.name
-    const marketplaceName = `${provider.packageName}-marketplace`
+    const marketplaceName = packageNameToMarketplaceName(provider.packageName)
+    const pluginKey = `${pluginName}@${marketplaceName}` // Full plugin key format
 
-    // Skip if plugin is explicitly disabled
-    if (settings.plugins.disabled.includes(pluginName)) {
-      continue
-    }
-
-    // Check if plugin is already enabled
-    const isEnabled = settings.plugins.enabled.includes(pluginName)
-
-    if (!isEnabled) {
-      // Add to enabled list
-      settings.plugins.enabled.push(pluginName)
-      changes.added.push(pluginName)
-    }
-    else {
-      changes.updated.push(pluginName)
-    }
-
-    // Update marketplace entry (always update path/version)
-    settings.plugins.marketplaces[marketplaceName] = {
+    // Check if marketplace entry needs updating
+    const existingMarketplace = settings.plugins.marketplaces[marketplaceName]
+    const newMarketplace = {
       source : {
         type : 'directory',
         path : provider.path,
@@ -106,10 +116,39 @@ export async function updateSettings(settingsPath, providers) {
         },
       },
     }
+
+    // Only update if marketplace entry changed
+    if (
+      !existingMarketplace
+      || existingMarketplace.source.path !== newMarketplace.source.path
+      || existingMarketplace.plugins[pluginName]?.version !== newMarketplace.plugins[pluginName].version
+      || existingMarketplace.plugins[pluginName]?.skillPath !== newMarketplace.plugins[pluginName].skillPath
+    ) {
+      settings.plugins.marketplaces[marketplaceName] = newMarketplace
+      marketplacesUpdated = true
+    }
+
+    // Don't enable disabled plugins, but do track them
+    if (settings.plugins.disabled.includes(pluginKey)) {
+      continue
+    }
+
+    // Check if plugin is already enabled
+    const isEnabled = settings.plugins.enabled.includes(pluginKey)
+
+    if (!isEnabled) {
+      // Add to enabled list
+      settings.plugins.enabled.push(pluginKey)
+      changes.added.push(pluginName)
+    }
+    else {
+      changes.updated.push(pluginName)
+    }
   }
 
-  // Only write if there were changes
-  if (changes.added.length > 0 || changes.updated.length > 0) {
+  // Write if there were changes OR if marketplaces were updated OR if settings file doesn't exist
+  // (ensure settings file is always created, even for empty projects)
+  if (changes.added.length > 0 || changes.updated.length > 0 || marketplacesUpdated || !settingsFileExists) {
     await writeSettings(settingsPath, settings)
   }
 
@@ -178,15 +217,19 @@ async function createBackup(settingsPath) {
 /**
  * Get plugin state from settings
  * @param {string} pluginName - Plugin name
+ * @param {string} packageName - Package name (for constructing plugin key)
  * @param {ClaudeSettings} settings - Settings object
  * @returns {string} Status: 'enabled' | 'disabled' | 'not-installed'
  */
-export function getPluginState(pluginName, settings) {
-  if (settings.plugins.enabled.includes(pluginName)) {
+export function getPluginState(pluginName, packageName, settings) {
+  const marketplaceName = packageNameToMarketplaceName(packageName)
+  const pluginKey = `${pluginName}@${marketplaceName}`
+
+  if (settings.plugins.enabled.includes(pluginKey)) {
     return PLUGIN_STATUSES.ENABLED
   }
 
-  if (settings.plugins.disabled.includes(pluginName)) {
+  if (settings.plugins.disabled.includes(pluginKey)) {
     return PLUGIN_STATUSES.DISABLED
   }
 
@@ -202,7 +245,7 @@ export function getPluginState(pluginName, settings) {
 export function getPluginStates(providers, settings) {
   return providers.map((provider) => ({
     name        : provider.pluginDeclaration.name,
-    status      : getPluginState(provider.pluginDeclaration.name, settings),
+    status      : getPluginState(provider.pluginDeclaration.name, provider.packageName, settings),
     source      : provider.path,
     version     : provider.pluginDeclaration.version,
     description : provider.pluginDeclaration.description,
