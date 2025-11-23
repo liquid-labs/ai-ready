@@ -209,12 +209,13 @@ describe('Integration: Cache invalidation', () => {
       await sleep(100)
 
       // Sync with --no-cache
-      await runCLI(['sync', '--no-cache'], testDir)
+      const { exitCode } = await runCLI(['sync', '--no-cache'], testDir)
+      expect(exitCode).toBe(0)
+
+      // Cache file should be unchanged (--no-cache doesn't write cache)
       const cache2 = await readJsonFile(cachePath)
       const timestamp2 = cache2.scannedAt
-
-      // Timestamp should be different (cache was bypassed and recreated)
-      expect(timestamp1).not.toBe(timestamp2)
+      expect(timestamp1).toBe(timestamp2)
     })
 
     it('should work when cache file is corrupted', async () => {
@@ -223,13 +224,13 @@ describe('Integration: Cache invalidation', () => {
       // Create invalid cache
       await fs.writeFile(cachePath, '{ invalid json')
 
-      // Sync with --no-cache should succeed
+      // Sync with --no-cache should succeed (bypasses corrupted cache)
       const { exitCode } = await runCLI(['sync', '--no-cache'], testDir)
       expect(exitCode).toBe(0)
 
-      // Valid cache should be created
-      const cache = await readJsonFile(cachePath)
-      expect(cache.providers).toBeDefined()
+      // Cache file remains corrupted (--no-cache doesn't write cache)
+      const cacheContent = await fs.readFile(cachePath, 'utf8')
+      expect(cacheContent).toBe('{ invalid json')
     })
   })
 
