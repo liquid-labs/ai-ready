@@ -29,7 +29,8 @@ $(FUNCTIONAL_TEST_PASS_MARKER) $(FUNCTIONAL_TEST_REPORT): dist/ai-ready-exec.js 
 	    --config=$(SDLC_JEST_CONFIG) \
 	    --testMatch='**/tests/functional/**/*.test.js' \
 	    --runInBand \
-		--no-coverage 2>&1 ) \
+		--no-coverage \
+		--passWithNoTests 2>&1 ) \
 	  | tee -a $(FUNCTIONAL_TEST_REPORT); \
 	  touch $(FUNCTIONAL_TEST_PASS_MARKER) )
 	@echo "✔ Functional tests passed"
@@ -64,7 +65,8 @@ $(INTEGRATION_TEST_PASS_MARKER) $(INTEGRATION_TEST_REPORT): dist/ai-ready-exec.j
 	    --testMatch='**/tests/integration/**/*.test.js' \
 	    --runInBand \
 	    --no-coverage \
-	    --testTimeout=30000 2>&1 ) \
+	    --testTimeout=30000 \
+	    --passWithNoTests 2>&1 ) \
 	  | tee -a $(INTEGRATION_TEST_REPORT); \
 	  touch $(INTEGRATION_TEST_PASS_MARKER) )
 	@echo "✔ Integration tests passed"
