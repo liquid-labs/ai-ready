@@ -1,9 +1,9 @@
 import {
-  isValidMarketplaceReference,
-  isValidPluginProvider,
-  isValidPluginState,
   MARKETPLACE_JSON_SCHEMA,
   PLUGIN_STATUSES,
+  isValidMarketplaceReference,
+  isValidPluginProvider,
+  isValidPluginState
 } from '_lib/types'
 
 describe('types', () => {
@@ -17,12 +17,7 @@ describe('types', () => {
 
   describe('MARKETPLACE_JSON_SCHEMA', () => {
     it('should define required fields', () => {
-      expect(MARKETPLACE_JSON_SCHEMA.requiredFields).toEqual([
-        'name',
-        'version',
-        'description',
-        'skillPath',
-      ])
+      expect(MARKETPLACE_JSON_SCHEMA.requiredFields).toEqual(['name', 'version', 'description', 'skillPath'])
     })
 
     it('should define optional fields', () => {

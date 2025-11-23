@@ -1,9 +1,9 @@
 /* eslint-disable no-console, no-process-exit */
-import { scanDependencies } from '../scanner.js'
-import { loadProvidersWithCache } from '../storage/cache.js'
-import { ClaudePluginConfig } from '../storage/claude-config.js'
-import { getPluginStates, readSettings } from '../storage/claude-settings.js'
-import { PLUGIN_STATUSES } from '../types.js'
+import { scanDependencies } from '../scanner'
+import { loadProvidersWithCache } from '../storage/cache'
+import { ClaudePluginConfig } from '../storage/claude-config'
+import { getPluginStates, readSettings } from '../storage/claude-settings'
+import { PLUGIN_STATUSES } from '../types'
 
 /**
  * @import { PluginProvider } from '../types.js'
@@ -149,18 +149,4 @@ function formatStatus(status) {
     default:
       return status
   }
-}
-
-// ===========================================================================
-// DEPRECATED: Old command implementation kept for backward compatibility
-// These will be removed in Phase 5
-// ===========================================================================
-
-/**
- * @deprecated Old v1 implementation - Use viewCommand() instead
- * @returns {Promise<void>}
- */
-export async function cmdView() {
-  console.error('cmdView() is deprecated. Use viewCommand() instead.')
-  process.exit(1)
 }

@@ -1,9 +1,8 @@
 /* eslint-disable no-console, no-process-exit */
-
-import { scanDependencies } from '../scanner.js'
-import { loadProvidersWithCache } from '../storage/cache.js'
-import { readSettings, updateSettings } from '../storage/claude-settings.js'
-import { ClaudePluginConfig } from '../storage/claude-config.js'
+import { scanDependencies } from '../scanner'
+import { loadProvidersWithCache } from '../storage/cache'
+import { ClaudePluginConfig } from '../storage/claude-config'
+import { updateSettings } from '../storage/claude-settings'
 
 /**
  * @import { PluginProvider } from '../types.js'
@@ -30,9 +29,7 @@ export async function syncCommand(options = {}) {
 
     // Scan dependencies (with cache unless --no-cache)
     const scanFn = () => scanDependencies(baseDir)
-    const providers = options.noCache
-      ? await scanFn()
-      : await loadProvidersWithCache(scanFn, baseDir)
+    const providers = options.noCache ? await scanFn() : await loadProvidersWithCache(scanFn, baseDir)
 
     if (!quiet) {
       console.log(`Found ${providers.length} plugin${providers.length === 1 ? '' : 's'}\n`)
@@ -58,7 +55,9 @@ export async function syncCommand(options = {}) {
 
       if (changes.added.length > 0 || changes.updated.length > 0) {
         console.log(`Updated settings: ${config.settingsPath}`)
-        console.log(`✓ ${changes.added.length} plugin${changes.added.length === 1 ? '' : 's'} added, ${changes.updated.length} updated\n`)
+        console.log(
+          `✓ ${changes.added.length} plugin${changes.added.length === 1 ? '' : 's'} added, ${changes.updated.length} updated\n`
+        )
 
         if (changes.added.length > 0) {
           console.log('⚠️  Restart Claude Code to load new plugins\n')
@@ -75,12 +74,4 @@ export async function syncCommand(options = {}) {
     }
     process.exit(1)
   }
-}
-
-/**
- * @deprecated Use syncCommand() instead
- * @returns {Promise<void>}
- */
-export async function cmdSync() {
-  await syncCommand()
 }
