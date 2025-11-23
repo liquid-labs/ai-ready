@@ -211,13 +211,14 @@ describe('air view (functional)', () => {
       expect(stdout).toContain('TestPlugin')
     })
 
-    it('should handle invalid path', async () => {
-      const { stderr, exitCode } = await runCLI(['view', '/nonexistent/path'], '/', {
+    it('should handle invalid path gracefully', async () => {
+      const { exitCode, stdout } = await runCLI(['view', '/nonexistent/path'], '/', {
         env : { ...process.env, HOME : homeDir },
       })
 
-      expect(exitCode).not.toBe(0)
-      expect(stderr.toLowerCase()).toMatch(/enoent|no such file|not found|does not exist/)
+      // Should succeed with no plugins (graceful degradation)
+      expect(exitCode).toBe(0)
+      expect(stdout.toLowerCase()).toMatch(/no.*plugins? found/i)
     })
   })
 })

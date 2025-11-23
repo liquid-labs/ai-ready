@@ -45,7 +45,6 @@ Discover and enable plugins from dependencies.
 ```bash
 air sync
 air sync --quiet  # For use in hooks
-air sync --no-cache  # Force fresh scan
 ```
 
 ## Session Start Hook
@@ -100,9 +99,8 @@ Users who install your package will automatically get your plugin enabled via `a
 ## How It Works
 
 1. **Discovery**: Scans direct dependencies (from `package.json`) for packages with `.claude-plugin/marketplace.json`
-2. **Caching**: Caches results based on `package.json` and `package-lock.json` mtimes
-3. **Settings Update**: Non-destructively updates `$HOME/.claude/settings.json`
-4. **Respect User Choice**: Never re-enables plugins that users have explicitly disabled
+2. **Settings Update**: Non-destructively updates `$HOME/.claude/settings.json`
+3. **Respect User Choice**: Never re-enables plugins that users have explicitly disabled
 
 ## Example Workflow
 

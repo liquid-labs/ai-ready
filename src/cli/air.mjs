@@ -18,9 +18,8 @@ const run = () => {
     .command('sync [path]')
     .description('Discover and enable plugins from dependencies')
     .option('-q, --quiet', 'Suppress output (for hooks)')
-    .option('--no-cache', 'Skip cache, force fresh scan')
     .action(async (path, options) => {
-      await syncCommand({ path, quiet : options.quiet, noCache : !options.cache })
+      await syncCommand({ path, quiet : options.quiet })
     })
 
   program.parse()

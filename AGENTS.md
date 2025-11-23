@@ -40,7 +40,7 @@ cd test-staging && npx jest lib/scanner.test.js
 ### Core Data Flow
 
 ```
-Scanner → Cache → Settings Manager → Commands
+Scanner → Settings Manager → Commands
 ```
 
 1. **Scanner** (`src/lib/scanner.js`)
@@ -49,19 +49,13 @@ Scanner → Cache → Settings Manager → Commands
    - Resolves plugin source paths (skillPath)
    - Returns `PluginProvider[]`
 
-2. **Cache** (`src/lib/storage/cache.js`)
-   - Stores scan results in `.aircache.json`
-   - Validates cache against `package.json` and `package-lock.json` mtimes
-   - Invalidates on dependency changes
-   - Speeds up repeated scans
-
-3. **Settings Manager** (`src/lib/storage/settings-manager.js`)
+2. **Settings Manager** (`src/lib/storage/settings-manager.js`)
    - Non-destructively updates `$HOME/.claude/settings.json`
    - Manages `plugins.enabled`, `plugins.disabled`, `plugins.marketplaces`
    - Respects user choices (never re-enables disabled plugins)
    - Creates marketplace entries for each plugin provider
 
-4. **Commands** (`src/lib/commands/*.js`)
+3. **Commands** (`src/lib/commands/*.js`)
    - **view**: Display plugin status (project or all)
    - **sync**: Discover and enable plugins automatically
 
@@ -114,13 +108,6 @@ PluginState {
   description: string           // Plugin description
 }
 
-CacheData {
-  scannedAt: string             // ISO timestamp
-  packageJsonMTime: number      // Unix mtime (ms)
-  packageLockMTime: number
-  providers: PluginProvider[]
-}
-
 ClaudeSettings {
   plugins: {
     enabled: string[]           // Plugin keys
@@ -145,7 +132,7 @@ ClaudeSettings {
 **Directory Structure:**
 - `src/lib/` - Core modules (scanner, types, test helpers)
 - `src/lib/commands/` - CLI command implementations
-- `src/lib/storage/` - **Persistent state & file I/O** (cache, settings-manager)
+- `src/lib/storage/` - **Persistent state & file I/O** (settings-manager)
 
 **Layered Dependencies:**
 ```
@@ -258,15 +245,6 @@ try {
 - **Plugin key format**: `{pluginName}@{marketplaceName}` (kebab-case)
 - **Settings location**: `$HOME/.claude/settings.json`
 
-### Cache Behavior
-- **Cache location**: `.aircache.json` in project directory
-- **Cache validation**: Compares mtimes of `package.json` and `package-lock.json`
-- **Invalidation triggers**:
-  - Cache file missing or malformed
-  - `package.json` mtime changed
-  - `package-lock.json` mtime changed
-  - User passes `--no-cache` flag
-
 ### Command Behavior
 - **view**:
   - Without `--all`: Shows plugins from current project's dependencies
@@ -276,7 +254,6 @@ try {
   - Scans dependencies → Updates settings → Enables new plugins
   - Respects disabled plugins (won't re-enable)
   - `--quiet` flag: Suppresses output (for hooks)
-  - `--no-cache` flag: Forces fresh scan
 
 ### Validation Layers
 1. **Type validation** (`types.js`) - Structure checks via `isValidPluginProvider()`, `isValidPluginState()`
@@ -298,7 +275,6 @@ try {
 - `tests/unit/lib/test-lib.js` - Test fixture helpers
 
 ### Storage
-- `src/lib/storage/cache.js` - Scan result caching
 - `src/lib/storage/settings-manager.js` - Claude Code settings integration
 
 ## Related Documentation
