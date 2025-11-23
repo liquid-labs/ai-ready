@@ -3,14 +3,7 @@
  */
 import path from 'path'
 
-import {
-  createTestPackage,
-  fileExists,
-  readJsonFile,
-  runCLI,
-  setupClaudeSettings,
-  setupTestEnv,
-} from './helpers'
+import { createTestPackage, readJsonFile, runCLI, setupClaudeSettings, setupTestEnv } from './helpers'
 
 describe('air view (functional)', () => {
   let testDir
@@ -100,7 +93,7 @@ describe('air view (functional)', () => {
       })
 
       // Run from different directory
-      const { stdout, exitCode } = await runCLI(['view', '--all'], '/', {
+      const { exitCode } = await runCLI(['view', '--all'], '/', {
         env : { ...process.env, HOME : homeDir },
       })
 

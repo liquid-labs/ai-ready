@@ -32,7 +32,7 @@ export const CLI_PATH = process.env.CLI_PATH || path.resolve(PROJECT_ROOT, 'dist
  * @param {string[]} args - Command arguments
  * @param {string} cwd - Working directory
  * @param {object} [options] - Additional options
- * @returns {Promise<{stdout: string, stderr: string, exitCode: number}>}
+ * @returns {Promise<{stdout: string, stderr: string, exitCode: number}>} CLI execution results
  */
 export async function runCLI(args, cwd, options = {}) {
   try {

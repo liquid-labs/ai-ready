@@ -3,14 +3,7 @@
  */
 import path from 'path'
 
-import {
-  createTestPackage,
-  fileExists,
-  readJsonFile,
-  runCLI,
-  setupClaudeSettings,
-  setupTestEnv,
-} from './helpers'
+import { createTestPackage, fileExists, readJsonFile, runCLI, setupClaudeSettings, setupTestEnv } from './helpers'
 
 describe('air sync (functional)', () => {
   let testDir
@@ -48,7 +41,7 @@ describe('air sync (functional)', () => {
 
   describe('Basic sync functionality', () => {
     it('should discover and enable plugins', async () => {
-      const { stdout, exitCode } = await runCLI(['sync'], testDir, {
+      const { exitCode } = await runCLI(['sync'], testDir, {
         env : { ...process.env, HOME : homeDir },
       })
 
@@ -316,7 +309,7 @@ describe('air sync (functional)', () => {
       // Remove node_modules
       await require('fs/promises').rm(path.join(testDir, 'node_modules'), { recursive : true, force : true })
 
-      const { stdout, exitCode } = await runCLI(['sync'], testDir, {
+      const { exitCode } = await runCLI(['sync'], testDir, {
         env : { ...process.env, HOME : homeDir },
       })
 
@@ -327,7 +320,7 @@ describe('air sync (functional)', () => {
 
   describe('Path parameter', () => {
     it('should sync plugins from specified path', async () => {
-      const { stdout, exitCode } = await runCLI(['sync', testDir], '/', {
+      const { exitCode } = await runCLI(['sync', testDir], '/', {
         env : { ...process.env, HOME : homeDir },
       })
 
