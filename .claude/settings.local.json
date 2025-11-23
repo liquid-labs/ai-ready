@@ -31,7 +31,8 @@
       "Bash(TEST=integration-cache.test make:*)",
       "Bash(find:*)",
       "Bash(git add:*)",
-      "Bash(git commit:*)"
+      "Bash(git commit:*)",
+      "Bash(npm uninstall:*)"
     ],
     "deny": [],
     "ask": []

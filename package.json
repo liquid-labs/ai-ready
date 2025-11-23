@@ -36,7 +36,6 @@
     "check-disk-space": "^3.4.0",
     "commander": "^14.0.2",
     "find-plus": "^2.0.0",
-    "gray-matter": "^4.0.3",
     "js-yaml": "^4.1.0",
     "simple-git": "^3.30.0",
     "string-input": "^1.0.0-alpha.13"
