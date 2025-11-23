@@ -75,19 +75,6 @@ describe('air sync (functional)', () => {
       expect(marketplace.plugins.TestPlugin.version).toBe('1.0.0')
     })
 
-    it('should create cache file', async () => {
-      await runCLI(['sync'], testDir, {
-        env : { ...process.env, HOME : homeDir },
-      })
-
-      const cachePath = path.join(testDir, '.air-plugin-cache.json')
-      expect(await fileExists(cachePath)).toBe(true)
-
-      const cache = await readJsonFile(cachePath)
-      expect(cache.providers).toHaveLength(2)
-      expect(cache.providers.some((p) => p.packageName === 'test-plugin')).toBe(true)
-    })
-
     it('should display success message', async () => {
       const { stdout, exitCode } = await runCLI(['sync'], testDir, {
         env : { ...process.env, HOME : homeDir },
@@ -183,88 +170,6 @@ describe('air sync (functional)', () => {
     })
   })
 
-  describe('No-cache mode', () => {
-    it('should skip cache with --no-cache flag', async () => {
-      // First sync to create cache
-      await runCLI(['sync'], testDir, {
-        env : { ...process.env, HOME : homeDir },
-      })
-
-      // Modify cache to be invalid
-      const cachePath = path.join(testDir, '.air-plugin-cache.json')
-      const cache = await readJsonFile(cachePath)
-      cache.providers = [] // Empty providers
-      await require('fs/promises').writeFile(cachePath, JSON.stringify(cache, null, 2))
-
-      // Sync with --no-cache should ignore the empty cache
-      await runCLI(['sync', '--no-cache'], testDir, {
-        env : { ...process.env, HOME : homeDir },
-      })
-
-      const settings = await readJsonFile(path.join(homeDir, '.claude/settings.json'))
-      // Should still find plugins despite bad cache
-      expect(settings.plugins.enabled.length).toBeGreaterThan(0)
-    })
-  })
-
-  describe('Cache usage', () => {
-    it('should use cache on repeated syncs', async () => {
-      // First sync
-      await runCLI(['sync'], testDir, {
-        env : { ...process.env, HOME : homeDir },
-      })
-
-      const cachePath = path.join(testDir, '.air-plugin-cache.json')
-      const cache1 = await readJsonFile(cachePath)
-      const timestamp1 = cache1.scannedAt
-
-      // Wait a bit
-      await new Promise((resolve) => setTimeout(resolve, 100))
-
-      // Second sync
-      await runCLI(['sync'], testDir, {
-        env : { ...process.env, HOME : homeDir },
-      })
-
-      const cache2 = await readJsonFile(cachePath)
-      const timestamp2 = cache2.scannedAt
-
-      // Timestamp should be the same (cache was used)
-      expect(timestamp1).toBe(timestamp2)
-    })
-
-    it('should invalidate cache when package.json changes', async () => {
-      // First sync
-      await runCLI(['sync'], testDir, {
-        env : { ...process.env, HOME : homeDir },
-      })
-
-      const cachePath = path.join(testDir, '.air-plugin-cache.json')
-      const cache1 = await readJsonFile(cachePath)
-      const timestamp1 = cache1.scannedAt
-
-      // Wait a bit
-      await new Promise((resolve) => setTimeout(resolve, 100))
-
-      // Modify package.json
-      const packageJsonPath = path.join(testDir, 'package.json')
-      const packageJson = await readJsonFile(packageJsonPath)
-      packageJson.version = '1.0.1'
-      await require('fs/promises').writeFile(packageJsonPath, JSON.stringify(packageJson, null, 2))
-
-      // Second sync
-      await runCLI(['sync'], testDir, {
-        env : { ...process.env, HOME : homeDir },
-      })
-
-      const cache2 = await readJsonFile(cachePath)
-      const timestamp2 = cache2.scannedAt
-
-      // Timestamp should be different (cache was invalidated)
-      expect(timestamp1).not.toBe(timestamp2)
-    })
-  })
-
   describe('Scoped packages', () => {
     it('should handle scoped package names correctly', async () => {
       await runCLI(['sync'], testDir, {
@@ -331,13 +236,13 @@ describe('air sync (functional)', () => {
       expect(settings.plugins.enabled.length).toBeGreaterThan(0)
     })
 
-    it('should handle invalid path', async () => {
-      const { stderr, exitCode } = await runCLI(['sync', '/nonexistent/path'], '/', {
+    it('should handle invalid path gracefully', async () => {
+      const { exitCode } = await runCLI(['sync', '/nonexistent/path'], '/', {
         env : { ...process.env, HOME : homeDir },
       })
 
-      expect(exitCode).not.toBe(0)
-      expect(stderr.toLowerCase()).toMatch(/enoent|no such file|not found|does not exist/)
+      // Should succeed with no plugins (graceful degradation)
+      expect(exitCode).toBe(0)
     })
   })
 })

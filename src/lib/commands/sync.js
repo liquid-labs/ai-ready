@@ -1,6 +1,5 @@
 /* eslint-disable no-console, no-process-exit */
 import { scanDependencies } from '../scanner'
-import { loadProvidersWithCache } from '../storage/cache'
 import { ClaudePluginConfig } from '../storage/claude-config'
 import { updateSettings } from '../storage/claude-settings'
 
@@ -13,7 +12,6 @@ import { updateSettings } from '../storage/claude-settings'
  * @param {object} options - Command options
  * @param {string} [options.path] - Project path (default: cwd)
  * @param {boolean} [options.quiet] - Suppress output (for hooks)
- * @param {boolean} [options.noCache] - Skip cache, force fresh scan
  * @param {ClaudePluginConfig} [options.config] - Config instance (for testing)
  * @returns {Promise<void>}
  */
@@ -27,9 +25,8 @@ export async function syncCommand(options = {}) {
       console.log('Scanning dependencies for Claude Code plugins...')
     }
 
-    // Scan dependencies (with cache unless --no-cache)
-    const scanFn = () => scanDependencies(baseDir)
-    const providers = options.noCache ? await scanFn() : await loadProvidersWithCache(scanFn, baseDir)
+    // Scan dependencies
+    const providers = await scanDependencies(baseDir)
 
     if (!quiet) {
       console.log(`Found ${providers.length} plugin${providers.length === 1 ? '' : 's'}\n`)

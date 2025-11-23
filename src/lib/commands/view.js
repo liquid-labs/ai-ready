@@ -1,6 +1,5 @@
 /* eslint-disable no-console, no-process-exit */
 import { scanDependencies } from '../scanner'
-import { loadProvidersWithCache } from '../storage/cache'
 import { ClaudePluginConfig } from '../storage/claude-config'
 import { getPluginStates, readSettings } from '../storage/claude-settings'
 import { PLUGIN_STATUSES } from '../types'
@@ -44,8 +43,8 @@ export async function viewCommand(options = {}) {
 async function viewProjectPlugins(baseDir, settingsPath) {
   console.log(`\nDiscovered Claude Code Plugins in ${baseDir}\n`)
 
-  // Scan dependencies (with cache)
-  const providers = await loadProvidersWithCache(() => scanDependencies(baseDir), baseDir)
+  // Scan dependencies
+  const providers = await scanDependencies(baseDir)
 
   if (providers.length === 0) {
     console.log('No Claude Code plugins found in dependencies.\n')
