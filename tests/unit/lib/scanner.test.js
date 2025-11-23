@@ -129,11 +129,7 @@ describe('scanner', () => {
         JSON.stringify({ name : 'bad-plugin', version : '1.0.0' }),
         'utf8'
       )
-      await fs.writeFile(
-        path.join(pluginDir, 'marketplace.json'),
-        '{invalid json}',
-        'utf8'
-      )
+      await fs.writeFile(path.join(pluginDir, 'marketplace.json'), '{invalid json}', 'utf8')
 
       const providers = await scanDependencies(tempDir)
       expect(providers).toHaveLength(0)

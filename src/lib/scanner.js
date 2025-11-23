@@ -77,9 +77,7 @@ export async function scanDependencies(baseDir = process.cwd()) {
   const packages = await enumeratePackages(nodeModulesPath)
 
   // Scan packages in parallel
-  const results = await Promise.all(
-    packages.map((pkg) => scanPackage(pkg))
-  )
+  const results = await Promise.all(packages.map((pkg) => scanPackage(pkg)))
 
   // Filter out null results (packages without plugins)
   return results.filter((provider) => provider !== null)

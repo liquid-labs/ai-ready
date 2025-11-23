@@ -80,20 +80,12 @@ export async function createTestPackage(baseDir, packageName, pluginDeclaration)
     version     : pluginDeclaration.version || '1.0.0',
     description : pluginDeclaration.description || 'Test package',
   }
-  await fs.writeFile(
-    path.join(packagePath, 'package.json'),
-    JSON.stringify(packageJson, null, 2),
-    'utf8'
-  )
+  await fs.writeFile(path.join(packagePath, 'package.json'), JSON.stringify(packageJson, null, 2), 'utf8')
 
   // Write .claude-plugin/marketplace.json
   const pluginDir = path.join(packagePath, '.claude-plugin')
   await fs.mkdir(pluginDir, { recursive : true })
-  await fs.writeFile(
-    path.join(pluginDir, 'marketplace.json'),
-    JSON.stringify(pluginDeclaration, null, 2),
-    'utf8'
-  )
+  await fs.writeFile(path.join(pluginDir, 'marketplace.json'), JSON.stringify(pluginDeclaration, null, 2), 'utf8')
 
   // Create skill directory with dummy SKILL.md
   const skillPath = path.join(packagePath, pluginDeclaration.skillPath || '.claude-plugin/skill')
