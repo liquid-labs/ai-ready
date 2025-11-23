@@ -61,6 +61,34 @@ summary: ${integration.skill.summary}
 }
 
 /**
+ * Helper to create or update root package.json with dependencies
+ * @param {string} baseDir - Base directory
+ * @param {string[]} dependencies - Package names to add as dependencies
+ * @returns {Promise<void>}
+ */
+export async function createPackageJson(baseDir, dependencies) {
+  const packageJsonPath = path.join(baseDir, 'package.json')
+
+  // Check if package.json already exists
+  let packageJson = { name : 'test-project', version : '1.0.0' }
+  try {
+    const existing = await fs.readFile(packageJsonPath, 'utf8')
+    packageJson = JSON.parse(existing)
+  }
+  catch {
+    // File doesn't exist or is invalid, use defaults
+  }
+
+  // Add/update dependencies
+  packageJson.dependencies = packageJson.dependencies || {}
+  for (const dep of dependencies) {
+    packageJson.dependencies[dep] = '1.0.0'
+  }
+
+  await fs.writeFile(packageJsonPath, JSON.stringify(packageJson, null, 2), 'utf8')
+}
+
+/**
  * Helper to create a test package with .claude-plugin/marketplace.json
  * @param {string} baseDir - Base directory (should contain or will create node_modules)
  * @param {string} packageName - Package name (supports scoped: @org/pkg)

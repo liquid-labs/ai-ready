@@ -6,7 +6,7 @@ import { viewCommand } from '_lib/commands/view'
 import { ClaudePluginConfig } from '_lib/storage/claude-config'
 import { updateSettings } from '_lib/storage/claude-settings'
 
-import { createTestPackage } from '../test-lib'
+import { createPackageJson, createTestPackage } from '../test-lib'
 
 describe('view command', () => {
   let tempDir
@@ -32,6 +32,7 @@ describe('view command', () => {
         description : 'Test plugin',
         skillPath   : '.claude-plugin/skill',
       })
+      await createPackageJson(tempDir, ['test-lib'])
 
       // Capture console output
       const logs = []
@@ -40,7 +41,8 @@ describe('view command', () => {
       // eslint-disable-next-line no-console
       console.log = (...args) => logs.push(args.join(' '))
 
-      await viewCommand({ path : tempDir })
+      const config = ClaudePluginConfig.createForTest(tempDir)
+      await viewCommand({ path : tempDir, config })
 
       // eslint-disable-next-line no-console
       console.log = originalLog
@@ -60,6 +62,7 @@ describe('view command', () => {
         description : 'Enabled plugin',
         skillPath   : '.claude-plugin/skill',
       })
+      await createPackageJson(tempDir, ['enabled-lib'])
 
       // Mark plugin as enabled
       await updateSettings(settingsPath, [
@@ -82,7 +85,7 @@ describe('view command', () => {
       // eslint-disable-next-line no-console
       console.log = (...args) => logs.push(args.join(' '))
 
-      const config = ClaudePluginConfig.createForTest(claudeDir)
+      const config = ClaudePluginConfig.createForTest(tempDir)
       await viewCommand({ path : tempDir, config })
 
       // eslint-disable-next-line no-console
@@ -101,6 +104,7 @@ describe('view command', () => {
         description : 'Disabled plugin',
         skillPath   : '.claude-plugin/skill',
       })
+      await createPackageJson(tempDir, ['disabled-lib'])
 
       // Create settings with disabled plugin
       await fs.writeFile(
@@ -121,7 +125,7 @@ describe('view command', () => {
       // eslint-disable-next-line no-console
       console.log = (...args) => logs.push(args.join(' '))
 
-      const config = ClaudePluginConfig.createForTest(claudeDir)
+      const config = ClaudePluginConfig.createForTest(tempDir)
       await viewCommand({ path : tempDir, config })
 
       // eslint-disable-next-line no-console
@@ -140,7 +144,8 @@ describe('view command', () => {
       // eslint-disable-next-line no-console
       console.log = (...args) => logs.push(args.join(' '))
 
-      await viewCommand({ path : tempDir })
+      const config = ClaudePluginConfig.createForTest(tempDir)
+      await viewCommand({ path : tempDir, config })
 
       // eslint-disable-next-line no-console
       console.log = originalLog
@@ -164,6 +169,7 @@ describe('view command', () => {
         description : 'Second plugin',
         skillPath   : '.claude-plugin/skill',
       })
+      await createPackageJson(tempDir, ['lib-1', 'lib-2'])
 
       const logs = []
       // eslint-disable-next-line no-console
@@ -171,7 +177,8 @@ describe('view command', () => {
       // eslint-disable-next-line no-console
       console.log = (...args) => logs.push(args.join(' '))
 
-      await viewCommand({ path : tempDir })
+      const config = ClaudePluginConfig.createForTest(tempDir)
+      await viewCommand({ path : tempDir, config })
 
       // eslint-disable-next-line no-console
       console.log = originalLog
@@ -190,6 +197,7 @@ describe('view command', () => {
         description : 'New plugin',
         skillPath   : '.claude-plugin/skill',
       })
+      await createPackageJson(tempDir, ['new-lib'])
 
       const logs = []
       // eslint-disable-next-line no-console
@@ -197,7 +205,8 @@ describe('view command', () => {
       // eslint-disable-next-line no-console
       console.log = (...args) => logs.push(args.join(' '))
 
-      await viewCommand({ path : tempDir })
+      const config = ClaudePluginConfig.createForTest(tempDir)
+      await viewCommand({ path : tempDir, config })
 
       // eslint-disable-next-line no-console
       console.log = originalLog
@@ -266,7 +275,7 @@ describe('view command', () => {
       // eslint-disable-next-line no-console
       console.log = (...args) => logs.push(args.join(' '))
 
-      const config = ClaudePluginConfig.createForTest(claudeDir)
+      const config = ClaudePluginConfig.createForTest(tempDir)
       await viewCommand({ all : true, config })
 
       // eslint-disable-next-line no-console
@@ -289,7 +298,7 @@ describe('view command', () => {
       // eslint-disable-next-line no-console
       console.log = (...args) => logs.push(args.join(' '))
 
-      const config = ClaudePluginConfig.createForTest(claudeDir)
+      const config = ClaudePluginConfig.createForTest(tempDir)
       await viewCommand({ all : true, config })
 
       // eslint-disable-next-line no-console
@@ -320,7 +329,7 @@ describe('view command', () => {
       // eslint-disable-next-line no-console
       console.log = (...args) => logs.push(args.join(' '))
 
-      const config = ClaudePluginConfig.createForTest(claudeDir)
+      const config = ClaudePluginConfig.createForTest(tempDir)
       await viewCommand({ all : true, config })
 
       // eslint-disable-next-line no-console
@@ -341,7 +350,8 @@ describe('view command', () => {
       // Create invalid package.json to trigger error
       await fs.writeFile(path.join(tempDir, 'package.json'), '{invalid json}', 'utf8')
 
-      await viewCommand({ path : tempDir })
+      const config = ClaudePluginConfig.createForTest(tempDir)
+      await viewCommand({ path : tempDir, config })
 
       expect(exitSpy).toHaveBeenCalledWith(1)
 

@@ -24,12 +24,20 @@ npm packages declare Claude Code plugins by including a `.claude-plugin/marketpl
 
 ### Discovery Process
 
-The system scans `node_modules/` for packages containing `.claude-plugin/marketplace.json` declarations. For each discovered plugin:
+The system scans **only direct dependencies** (listed in `dependencies` and `devDependencies` in `package.json`) for packages containing `.claude-plugin/marketplace.json` declarations. This intentional, explicit approach ensures:
 
-1. Read and validate the marketplace declaration
-2. Extract plugin metadata (name, version, description)
-3. Determine the absolute path to the plugin content
-4. Check current installation and enabled state in Claude Code settings
+- **Performance**: Only scan packages the project explicitly depends on, not all transitive dependencies
+- **Predictability**: Matches npm's dependency model
+- **Control**: Developers explicitly choose which packages can provide plugins
+
+For each discovered plugin:
+
+1. Read project's `package.json` to get dependency list
+2. Check each dependency in `node_modules` for `.claude-plugin/marketplace.json`
+3. Read and validate the marketplace declaration
+4. Extract plugin metadata (name, version, description)
+5. Determine the absolute path to the plugin content
+6. Check current installation and enabled state in Claude Code settings
 
 ### Settings Management
 
@@ -60,13 +68,14 @@ The primary workflow runs automatically at session start (via hook or script):
 
 ### Layer 1: Discovery (Scanner)
 
-**Responsibility**: Find `.claude-plugin/marketplace.json` files in dependencies
+**Responsibility**: Find `.claude-plugin/marketplace.json` files in direct dependencies
 
 **Module**: `src/lib/scanner.js`
 
 **Operations**:
-- `scanDependencies(baseDir)` - Scan node_modules for plugin declarations
+- `scanDependencies(baseDir)` - Reads `package.json`, scans only listed dependencies in `node_modules` for plugin declarations
 - Returns array of `PluginProvider` objects with metadata
+- Throws error if `package.json` is missing or malformed
 
 **Data Structure**:
 ```javascript

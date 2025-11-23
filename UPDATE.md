@@ -282,59 +282,57 @@ import path from 'path'
 import { parseMarketplaceJson } from './parsers/marketplace-json.js'
 
 /**
- * Scan node_modules for packages with .claude-plugin/marketplace.json
+ * Scan direct dependencies for packages with .claude-plugin/marketplace.json
+ * Only scans packages listed in dependencies and devDependencies in package.json
  * @param {string} baseDir - Project root directory
  * @returns {Promise<PluginProvider[]>} Discovered plugin providers
  */
 export async function scanDependencies(baseDir = process.cwd()) {
   const nodeModulesPath = path.resolve(baseDir, 'node_modules')
+  const packageJsonPath = path.resolve(baseDir, 'package.json')
 
+  // Read package.json to get dependency list
+  let packageJson
+  try {
+    const content = await fs.readFile(packageJsonPath, 'utf8')
+    packageJson = JSON.parse(content)
+  } catch (error) {
+    if (error.code === 'ENOENT') {
+      return [] // No package.json, no dependencies to scan
+    }
+    throw error // Malformed package.json should be reported
+  }
+
+  // Get list of direct dependencies
+  const dependencies = {
+    ...packageJson.dependencies,
+    ...packageJson.devDependencies,
+  }
+  const dependencyNames = Object.keys(dependencies)
+
+  if (dependencyNames.length === 0) {
+    return [] // No dependencies
+  }
+
+  // Check if node_modules exists
   try {
     await fs.access(nodeModulesPath)
   } catch {
     return [] // No node_modules directory
   }
 
-  const providers = []
-  const packages = await enumeratePackages(nodeModulesPath)
+  // Scan only listed dependencies
+  const packagePaths = dependencyNames.map(name =>
+    path.join(nodeModulesPath, name)
+  )
 
   // Scan packages in parallel
   const results = await Promise.all(
-    packages.map(pkg => scanPackage(pkg))
+    packagePaths.map(pkg => scanPackage(pkg))
   )
 
   // Filter out null results (packages without plugins)
   return results.filter(provider => provider !== null)
-}
-
-/**
- * Enumerate all packages in node_modules (including scoped)
- * @param {string} nodeModulesPath - Path to node_modules
- * @returns {Promise<string[]>} Array of absolute package paths
- */
-async function enumeratePackages(nodeModulesPath) {
-  const packages = []
-  const entries = await fs.readdir(nodeModulesPath, { withFileTypes: true })
-
-  for (const entry of entries) {
-    if (!entry.isDirectory()) continue
-
-    const entryPath = path.join(nodeModulesPath, entry.name)
-
-    // Handle scoped packages (@org/package)
-    if (entry.name.startsWith('@')) {
-      const scopedEntries = await fs.readdir(entryPath, { withFileTypes: true })
-      for (const scopedEntry of scopedEntries) {
-        if (scopedEntry.isDirectory()) {
-          packages.push(path.join(entryPath, scopedEntry.name))
-        }
-      }
-    } else {
-      packages.push(entryPath)
-    }
-  }
-
-  return packages
 }
 
 /**

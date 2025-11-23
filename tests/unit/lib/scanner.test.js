@@ -4,7 +4,7 @@ import path from 'path'
 
 import { scanDependencies } from '_lib/scanner'
 
-import { createTestPackage } from './test-lib'
+import { createPackageJson, createTestPackage } from './test-lib'
 
 describe('scanner', () => {
   let tempDir
@@ -27,6 +27,7 @@ describe('scanner', () => {
         description : 'Test plugin',
         skillPath   : '.claude-plugin/skill',
       })
+      await createPackageJson(tempDir, ['test-lib'])
 
       const providers = await scanDependencies(tempDir)
 
@@ -47,6 +48,7 @@ describe('scanner', () => {
         description : 'Scoped test',
         skillPath   : '.claude-plugin/skill',
       })
+      await createPackageJson(tempDir, ['@myorg/test-lib'])
 
       const providers = await scanDependencies(tempDir)
 
@@ -63,6 +65,7 @@ describe('scanner', () => {
         JSON.stringify({ name : 'regular-package', version : '1.0.0' }),
         'utf8'
       )
+      await createPackageJson(tempDir, ['regular-package'])
 
       const providers = await scanDependencies(tempDir)
       expect(providers).toHaveLength(0)
@@ -87,6 +90,7 @@ describe('scanner', () => {
         description : 'Plugin 2',
         skillPath   : '.claude-plugin/skill',
       })
+      await createPackageJson(tempDir, ['lib-1', 'lib-2'])
 
       const providers = await scanDependencies(tempDir)
 
@@ -112,6 +116,7 @@ describe('scanner', () => {
         JSON.stringify({ name : 'regular-lib', version : '1.0.0' }),
         'utf8'
       )
+      await createPackageJson(tempDir, ['plugin-lib', 'regular-lib'])
 
       const providers = await scanDependencies(tempDir)
 
@@ -130,6 +135,7 @@ describe('scanner', () => {
         'utf8'
       )
       await fs.writeFile(path.join(pluginDir, 'marketplace.json'), '{invalid json}', 'utf8')
+      await createPackageJson(tempDir, ['bad-plugin'])
 
       const providers = await scanDependencies(tempDir)
       expect(providers).toHaveLength(0)
@@ -150,6 +156,7 @@ describe('scanner', () => {
         }),
         'utf8'
       )
+      await createPackageJson(tempDir, ['no-package-json'])
 
       // Suppress console.warn for this test
       // eslint-disable-next-line no-console
@@ -182,6 +189,7 @@ describe('scanner', () => {
         JSON.stringify({ name : 'incomplete' }), // Missing required fields
         'utf8'
       )
+      await createPackageJson(tempDir, ['invalid-plugin'])
 
       const providers = await scanDependencies(tempDir)
       expect(providers).toHaveLength(0)
@@ -201,6 +209,7 @@ describe('scanner', () => {
         description : 'Plugin 2',
         skillPath   : '.claude-plugin/skill',
       })
+      await createPackageJson(tempDir, ['@myorg/pkg-1', '@myorg/pkg-2'])
 
       const providers = await scanDependencies(tempDir)
 
@@ -211,7 +220,7 @@ describe('scanner', () => {
 
     it('should use package.json name over directory name', async () => {
       const nodeModules = path.join(tempDir, 'node_modules')
-      const packagePath = path.join(nodeModules, 'dir-name')
+      const packagePath = path.join(nodeModules, 'actual-package-name')
       await fs.mkdir(packagePath, { recursive : true })
       await fs.writeFile(
         path.join(packagePath, 'package.json'),
@@ -231,6 +240,7 @@ describe('scanner', () => {
         }),
         'utf8'
       )
+      await createPackageJson(tempDir, ['actual-package-name'])
 
       const providers = await scanDependencies(tempDir)
 
