@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-**ai-ready** is a CLI tool that implements the AIR (AI Ready) protocol, enabling developers to discover and install AI integrations bundled within their npm packages. The tool scans `node_modules`, manages installation state, and provides commands to interact with integrations.
+**ai-ready** is a CLI tool that automatically discovers and enables Claude Code plugins bundled within npm dependencies. The tool scans direct dependencies (from `package.json`), detects packages with `.claude-plugin/marketplace.json`, and non-destructively updates Claude Code's settings to enable discovered plugins.
 
 ## Development Commands
 
@@ -40,71 +40,103 @@ cd test-staging && npx jest lib/scanner.test.js
 ### Core Data Flow
 
 ```
-Scanner → Cache → Registry → Commands
+Scanner → Cache → Settings Manager → Commands
 ```
 
 1. **Scanner** (`src/lib/scanner.js`)
-   - Discovers integrations in `node_modules/*/ai-ready/integrations/`
-   - Parses frontmatter from `AI_INTEGRATION.md` (generic) and `claude-skill/SKILL.md` (skills)
-   - Returns `IntegrationProvider[]` with available types
+   - Scans direct dependencies from `package.json` (dependencies + devDependencies)
+   - Discovers packages with `.claude-plugin/marketplace.json`
+   - Resolves plugin source paths (skillPath)
+   - Returns `PluginProvider[]`
 
 2. **Cache** (`src/lib/storage/cache.js`)
    - Stores scan results in `.aircache.json`
    - Validates cache against `package.json` and `package-lock.json` mtimes
    - Invalidates on dependency changes
+   - Speeds up repeated scans
 
-3. **Registry** (`src/lib/storage/registry.js` + `src/lib/storage/claude-plugin-registry.js`)
-   - Tracks installed integrations in two formats:
-     - `$HOME/.claude/plugins/installed_plugins.json` - Claude Skills (via plugin system)
-     - `AGENTS.md` (Markdown table) - Generic integrations
-   - Overlays installation status onto provider data
+3. **Settings Manager** (`src/lib/storage/settings-manager.js`)
+   - Non-destructively updates `$HOME/.claude/settings.json`
+   - Manages `plugins.enabled`, `plugins.disabled`, `plugins.marketplaces`
+   - Respects user choices (never re-enables disabled plugins)
+   - Creates marketplace entries for each plugin provider
 
 4. **Commands** (`src/lib/commands/*.js`)
-   - Orchestrate the flow: load → filter → display/modify
+   - **view**: Display plugin status (project or all)
+   - **sync**: Discover and enable plugins automatically
 
-### Integration Type System
+### Plugin Provider System
 
-**Two Types, Independent Installation:**
+**Single Type, Automatic Discovery:**
 
-- **Claude Skills** (`claudeSkill`)
-  - File: `ai-ready/integrations/<Name>/claude-skill/SKILL.md`
-  - Registry: `$HOME/.claude/plugins/installed_plugins.json` and `$HOME/.claude/plugins/known_marketplaces.json`
-  - Installation: Registers skill in Claude's plugin system (marketplace + installed plugin entries)
-  - **Important:** Users must restart Claude Code after installing/removing skills for changes to take effect
-  - Flag: `--skill`
+- **Plugin Format:**
+  - Declaration: `.claude-plugin/marketplace.json` in package root
+  - Skill code: Specified by `skillPath` field (typically `.claude-plugin/skill/`)
+  - Package distributed via npm (part of `dependencies` or `devDependencies`)
 
-- **Generic Integrations** (`genericIntegration`)
-  - File: `ai-ready/integrations/<Name>/AI_INTEGRATION.md`
-  - Registry: `AGENTS.md` or `CLAUDE.md` (Markdown table)
-  - Installation: Listed in markdown table (no separate tracking needed)
-  - Flag: `--generic`
+- **Discovery Process:**
+  1. Read `package.json` dependencies/devDependencies
+  2. Check each package for `.claude-plugin/marketplace.json`
+  3. Parse plugin declaration
+  4. Resolve absolute paths to skill directories
 
-**Dual-Type Support:** An integration can provide both types by including both files. Users can install one or both types independently.
+- **Settings Integration:**
+  - Marketplace name: `{packageName}-marketplace`
+  - Plugin key: `{pluginName}@{marketplaceName}`
+  - Settings structure: `plugins.marketplaces[marketplaceName]`
+  - Enabled plugins: `plugins.enabled[]`
+  - Disabled plugins: `plugins.disabled[]`
 
 ### Key Data Types
 
 From `src/lib/types.js`:
 
 ```javascript
-Integration {
-  name: string              // Integration name
-  summary: string           // One-line description
-  types: string[]           // Available: ['genericIntegration', 'claudeSkill']
-  installedTypes: string[]  // Dynamically computed by checking filesystem/markdown
+PluginProvider {
+  packageName: string           // npm package name
+  version: string               // Package version from package.json
+  path: string                  // Absolute path to package directory
+  pluginDeclaration: PluginDeclaration
 }
 
-IntegrationProvider {
-  libraryName: string       // npm package name
-  version: string           // From package.json
-  path: string             // Absolute path
-  integrations: Integration[]
+PluginDeclaration {
+  name: string                  // Plugin name
+  version: string               // Plugin version
+  description: string           // Plugin description
+  skillPath: string             // Relative path to skill directory
+}
+
+PluginState {
+  name: string                  // Plugin name
+  status: 'enabled'|'disabled'|'not-installed'
+  source: string                // Absolute path to plugin source
+  version: string               // Plugin version
+  description: string           // Plugin description
 }
 
 CacheData {
-  scannedAt: string           // ISO timestamp
-  packageJsonMTime: number    // Unix mtime (ms)
+  scannedAt: string             // ISO timestamp
+  packageJsonMTime: number      // Unix mtime (ms)
   packageLockMTime: number
-  providers: IntegrationProvider[]
+  providers: PluginProvider[]
+}
+
+ClaudeSettings {
+  plugins: {
+    enabled: string[]           // Plugin keys
+    disabled: string[]          // Plugin keys
+    marketplaces: {
+      [name]: {
+        source: { type: 'directory', path: string }
+        plugins: {
+          [pluginName]: {
+            version: string
+            skillPath: string   // Relative path within source
+          }
+        }
+      }
+    }
+  }
 }
 ```
 
@@ -113,9 +145,7 @@ CacheData {
 **Directory Structure:**
 - `src/lib/` - Core modules (scanner, types, test helpers)
 - `src/lib/commands/` - CLI command implementations
-- `src/lib/storage/` - **Persistent state & file I/O operations** (cache, registry, config, repos)
-- `src/lib/parsers/` - Data format parsing utilities
-- `src/lib/utils/` - General utilities (git operations)
+- `src/lib/storage/` - **Persistent state & file I/O** (cache, settings-manager)
 
 **Layered Dependencies:**
 ```
@@ -124,8 +154,6 @@ CLI (air.mjs)
 Commands (commands/*.js)
   ↓
 Core (scanner.js, types.js) + Storage (storage/*.js)
-  ↓
-Parsers (parsers/*.js) + Utilities (utils/*.js)
 ```
 
 **Key Principles:**
@@ -136,28 +164,33 @@ Parsers (parsers/*.js) + Utilities (utils/*.js)
 
 ## Testing Patterns
 
-### Test Helper
-Use `createTestLibrary()` from `src/lib/test-lib.js` to create fixture libraries:
+### Test Helpers
+Use helpers from `tests/unit/lib/test-lib.js`:
 
 ```javascript
-await createTestLibrary(tempDir, 'my-lib', [
-  {
-    dirName: 'TestIntegration',
-    generic: { name: 'TestInt', summary: 'Description' },
-    skill: { name: 'SkillInt', summary: 'Skill description' }
-  }
-])
+import { createPackageJson, createTestPackage } from './test-lib'
+
+// Create root package.json with dependencies
+await createPackageJson(tempDir, ['my-lib', '@scope/other-lib'])
+
+// Create test package with plugin
+await createTestPackage(tempDir, 'my-lib', {
+  name: 'my-plugin',
+  version: '1.0.0',
+  description: 'Test plugin',
+  skillPath: '.claude-plugin/skill'
+})
 ```
 
 ### Parameterized Tests
-Use `it.each()` for data-driven tests (see `registry.test.js` for examples):
+Use `it.each()` for data-driven tests:
 
 ```javascript
 it.each([
-  ['case 1', input1, expected1],
-  ['case 2', input2, expected2],
-])('should handle %s', async (desc, input, expected) => {
-  // test implementation
+  ['valid provider', validProvider, true],
+  ['missing name', invalidProvider, false],
+])('should validate %s', (desc, input, expected) => {
+  expect(isValidPluginProvider(input)).toBe(expected)
 })
 ```
 
@@ -165,9 +198,9 @@ it.each([
 
 ### JSDoc Type System
 - All modules use JSDoc (no TypeScript)
-- Import types: `@import { Integration } from './types'`
-- Inline types: `@param {string[]} scanPaths`
-- Return types: `@returns {Promise<IntegrationProvider[]>}`
+- Import types: `@import { PluginProvider } from './types'`
+- Inline types: `@param {string[]} dependencies`
+- Return types: `@returns {Promise<PluginProvider[]>}`
 
 ### Error Handling
 
@@ -207,124 +240,68 @@ try {
 ### File I/O
 - Always use `path.resolve(baseDir, relativePath)` for consistency
 - Default `baseDir` is `process.cwd()`
-- Create backups before modifying registry files:
-  ```javascript
-  await createBackup(filePath)  // Creates .bak file
-  // ... modify and write
-  ```
+- Non-destructive updates: read → merge → write
 
 ## Important Implementation Details
 
-### Scanner Name Resolution Priority
-1. Generic metadata name (if `AI_INTEGRATION.md` exists)
-2. Skill metadata name (if `claude-skill/SKILL.md` exists)
-3. Directory name (fallback)
+### Scanner Behavior
+- **Dependency-only scanning**: Only scans packages listed in `package.json` dependencies/devDependencies
+- **Package resolution**: Uses `path.join(baseDir, 'node_modules', packageName)`
+- **Scoped packages**: Handles `@scope/package` names correctly
+- **Plugin detection**: Checks for `.claude-plugin/marketplace.json`
+- **Path resolution**: Converts relative `skillPath` to absolute paths
 
-### Registry Behavior
-- **Claude Skills:**
-  - Installation:
-    1. Creates/updates marketplace entry in `$HOME/.claude/plugins/known_marketplaces.json`
-    2. Adds plugin entry to `$HOME/.claude/plugins/installed_plugins.json`
-    3. Uses library name as marketplace name (e.g., `my-lib-marketplace`)
-    4. Plugin key format: `<skill-name-kebab-case>@<marketplace-name>`
-  - Removal: Removes plugin entry from `installed_plugins.json`
-  - Detection: Checks for plugin entry in `installed_plugins.json`
-  - **Note:** Claude Code must be restarted for skill changes to take effect
-- **Generic Integrations:**
-  - Installation: Writes to **first** file in `DEFAULT_CONFIG.registryFiles.generic` array
-  - Removal: Removes entry from table
-  - Detection: Parses markdown tables from all configured files
-  - **Multiple generic files:** Reads from all, merges results
+### Settings Manager Behavior
+- **Non-destructive merging**: Preserves existing settings, only adds/updates plugins
+- **User choice respect**: Never re-enables plugins in `disabled` array
+- **Marketplace creation**: Creates marketplace entry for each plugin provider
+- **Plugin key format**: `{pluginName}@{marketplaceName}` (kebab-case)
+- **Settings location**: `$HOME/.claude/settings.json`
 
-### Plugin Registry Architecture
+### Cache Behavior
+- **Cache location**: `.aircache.json` in project directory
+- **Cache validation**: Compares mtimes of `package.json` and `package-lock.json`
+- **Invalidation triggers**:
+  - Cache file missing or malformed
+  - `package.json` mtime changed
+  - `package-lock.json` mtime changed
+  - User passes `--no-cache` flag
 
-**Key Classes:**
-
-1. **`ClaudePluginConfig`** (`src/lib/storage/claude-config.js`)
-   - Pure configuration class holding plugin directory paths
-   - Factory methods: `createDefault()` for production, `createForTest(testDir)` for tests
-   - Separates configuration from operations (SRP)
-
-2. **`ClaudePluginRegistry`** (`src/lib/storage/claude-plugin-registry.js`)
-   - Manages Claude Skills registration in the plugin system
-   - Factory methods: `createDefault()` for production, `createForTest(testDir)` for tests
-   - Operations: `installPlugin()`, `removePlugin()`, `isPluginInstalled()`
-
-**Usage Patterns:**
-
-```javascript
-// Production: Use singleton via getDefaultRegistry()
-import { getDefaultRegistry } from './storage/claude-plugin-registry'
-
-const registry = getDefaultRegistry()
-await registry.installPlugin('my-lib', 'MySkill', '/path/to/lib', '1.0.0')
-
-// Testing: Use factory method with test directory
-import { ClaudePluginRegistry } from './storage/claude-plugin-registry'
-
-const testRegistry = ClaudePluginRegistry.createForTest(tempDir)
-await testRegistry.installPlugin('test-lib', 'TestSkill', '/path', '1.0.0')
-
-// Commands call registry directly (no wrapper functions)
-const registry = getDefaultRegistry()
-const providersWithStatus = await loadInstallationStatus(
-  providers,
-  claudeSkillsDir,
-  genericFiles,
-  process.cwd(),
-  registry  // Pass registry instance directly
-)
-```
-
-**Design Principles:**
-- **Dependency Injection:** Registry instance passed explicitly to functions
-- **Factory Pattern:** `createDefault()` and `createForTest()` for instance creation
-- **Singleton Pattern:** `getDefaultRegistry()` for production convenience
-- **Test Isolation:** Test instances use temporary directories, never touch global config
-- **No Wrapper Functions:** Commands call registry methods directly
+### Command Behavior
+- **view**:
+  - Without `--all`: Shows plugins from current project's dependencies
+  - With `--all`: Shows all plugins in Claude Code settings
+  - Output: Table with status (enabled/disabled/not-installed)
+- **sync**:
+  - Scans dependencies → Updates settings → Enables new plugins
+  - Respects disabled plugins (won't re-enable)
+  - `--quiet` flag: Suppresses output (for hooks)
+  - `--no-cache` flag: Forces fresh scan
 
 ### Validation Layers
-1. **Type validation** (`types.js`) - Structure checks
-2. **Format validation** (`parsers/frontmatter.js`) - YAML/frontmatter parsing
-3. **Business validation** (commands) - Existence, availability, installation status
-
-### Cache Invalidation
-Cache is invalidated when:
-- `package.json` mtime changes
-- `package-lock.json` mtime changes
-- Cache file is missing or malformed
+1. **Type validation** (`types.js`) - Structure checks via `isValidPluginProvider()`, `isValidPluginState()`
+2. **Schema validation** - marketplace.json against `MARKETPLACE_JSON_SCHEMA`
+3. **Business validation** (commands) - Dependency presence, file existence
 
 ## Key Files Reference
 
-### CLI Commands
+### CLI
 - `src/cli/air.mjs` - Command routing (Commander.js)
-- `src/lib/commands/list.js` - List integrations
-- `src/lib/commands/view.js` - View integration details
-- `src/lib/commands/install.js` - Install integrations
-- `src/lib/commands/remove.js` - Remove integrations
-- `src/lib/commands/verify.js` - Verify integration metadata
+
+### Commands
+- `src/lib/commands/view.js` - Display plugin status
+- `src/lib/commands/sync.js` - Discover and enable plugins
 
 ### Core Modules
-- `src/lib/scanner.js` - Discovery logic
+- `src/lib/scanner.js` - Plugin discovery logic
 - `src/lib/types.js` - Type definitions and constants
-- `src/lib/test-lib.js` - Test fixture helper
+- `tests/unit/lib/test-lib.js` - Test fixture helpers
 
-### Storage (Persistent State & File I/O)
-- `src/lib/storage/cache.js` - Performance optimization cache
-- `src/lib/storage/registry.js` - Installation state management
-- `src/lib/storage/claude-plugin-registry.js` - Claude plugin system integration
-- `src/lib/storage/claude-config.js` - Plugin configuration class
-- `src/lib/storage/config.js` - Remote repository configuration storage
-- `src/lib/storage/remote-repos.js` - Git repository management
-
-### Utilities
-- `src/lib/utils/git.js` - Git repository utilities
-
-### Parsers
-- `src/lib/parsers/frontmatter.js` - YAML frontmatter parser
+### Storage
+- `src/lib/storage/cache.js` - Scan result caching
+- `src/lib/storage/settings-manager.js` - Claude Code settings integration
 
 ## Related Documentation
 
-- `docs/AIR_PROTOCOL_SPEC.md` - Protocol specification
-- `docs/AIR_PROTOCOL_LIBRARY_AUTHOR_GUIDE.md` - Guide for package authors
+- `CHANGELOG.md` - Version history and migration guides
 - `README.md` - User-facing documentation

@@ -2,13 +2,7 @@ import fs from 'fs/promises'
 import os from 'os'
 import path from 'path'
 
-import {
-  createCacheData,
-  isCacheValid,
-  loadProvidersWithCache,
-  readCache,
-  writeCache
-} from '_lib/storage/cache'
+import { invalidateCache, loadProvidersWithCache } from '_lib/storage/cache'
 
 const writeTestPackageJson = async (tempDir) => {
   const pkgPath = path.join(tempDir, 'package.json')
@@ -37,282 +31,252 @@ describe('cache', () => {
     }
   })
 
-  const validCacheData = {
-    scannedAt        : '2025-11-07T12:00:00Z',
-    packageJsonMTime : 1234567890,
-    packageLockMTime : 1234567890,
-    npmProviders     : [
-      {
-        libraryName  : 'test-lib',
-        version      : '1.0.0',
-        path         : '/path/to/test-lib',
-        integrations : [],
+  const sampleProviders = [
+    {
+      packageName       : 'test-lib',
+      version           : '1.0.0',
+      path              : '/path/to/test-lib',
+      pluginDeclaration : {
+        name        : 'test-plugin',
+        version     : '1.0.0',
+        description : 'Test plugin',
+        skillPath   : '.claude-plugin/skill',
       },
-    ],
-    remoteProviders : [],
-  }
-
-  describe('readCache', () => {
-    it('should read valid cache file', async () => {
-      const cacheFile = path.join(tempDir, '.aircache.json')
-      await fs.writeFile(cacheFile, JSON.stringify(validCacheData), 'utf8')
-
-      const cache = await readCache(cacheFile, tempDir)
-      expect(cache).toEqual(validCacheData)
-    })
-
-    it('should return null for non-existent cache file', async () => {
-      const cache = await readCache('.aircache.json', tempDir)
-      expect(cache).toBeNull()
-    })
-
-    it('should return null for invalid cache data', async () => {
-      const cacheFile = path.join(tempDir, '.aircache.json')
-      await fs.writeFile(cacheFile, JSON.stringify({ invalid : 'data' }), 'utf8')
-
-      const cache = await readCache(cacheFile, tempDir)
-      expect(cache).toBeNull()
-    })
-
-    it('should return null for malformed JSON', async () => {
-      const cacheFile = path.join(tempDir, '.aircache.json')
-      await fs.writeFile(cacheFile, 'not json', 'utf8')
-
-      const cache = await readCache(cacheFile, tempDir)
-      expect(cache).toBeNull()
-    })
-  })
-
-  describe('writeCache', () => {
-    it('should write cache to file', async () => {
-      const cacheFile = '.aircache.json'
-      await writeCache(cacheFile, validCacheData, tempDir)
-
-      const content = await fs.readFile(path.join(tempDir, cacheFile), 'utf8')
-      expect(JSON.parse(content)).toEqual(validCacheData)
-    })
-
-    it('should throw error for invalid cache data', async () => {
-      const invalidData = { invalid : 'data' }
-      await expect(writeCache('.aircache.json', invalidData, tempDir)).rejects.toThrow('Invalid cache data')
-    })
-
-    it('should format JSON with 2-space indentation', async () => {
-      const cacheFile = '.aircache.json'
-      await writeCache(cacheFile, validCacheData, tempDir)
-
-      const content = await fs.readFile(path.join(tempDir, cacheFile), 'utf8')
-      expect(content).toContain('  "scannedAt"')
-    })
-  })
-
-  describe('isCacheValid', () => {
-    it('should return false for null cache', async () => {
-      const isValid = await isCacheValid(null, tempDir)
-      expect(isValid).toBe(false)
-    })
-
-    it('should return false when package.json is missing', async () => {
-      const isValid = await isCacheValid(validCacheData, tempDir)
-      expect(isValid).toBe(false)
-    })
-
-    it.each([
-      {
-        description         : 'should return true when timestamps match',
-        createPackageLock   : true,
-        getPackageJsonMTime : async (packageJsonPath) => {
-          return Math.floor((await fs.stat(packageJsonPath)).mtimeMs)
-        },
-        getPackageLockMTime : async (packageLockPath) => {
-          return Math.floor((await fs.stat(packageLockPath)).mtimeMs)
-        },
-        expectedValid : true,
-      },
-      {
-        description         : 'should return false when package.json mtime differs',
-        createPackageLock   : true,
-        getPackageJsonMTime : async () => 999999999, // eslint-disable-line require-await
-        getPackageLockMTime : async (packageLockPath) => {
-          return Math.floor((await fs.stat(packageLockPath)).mtimeMs)
-        },
-        expectedValid : false,
-      },
-      {
-        description         : 'should return false when package-lock.json mtime differs',
-        createPackageLock   : true,
-        getPackageJsonMTime : async (packageJsonPath) => {
-          return Math.floor((await fs.stat(packageJsonPath)).mtimeMs)
-        },
-        getPackageLockMTime : async () => 999999999, // eslint-disable-line require-await
-        expectedValid       : false,
-      },
-      {
-        description         : 'should handle missing package-lock.json when cache expects it',
-        createPackageLock   : false,
-        getPackageJsonMTime : async (packageJsonPath) => {
-          return Math.floor((await fs.stat(packageJsonPath)).mtimeMs)
-        },
-        // eslint-disable-next-line require-await
-        getPackageLockMTime : async () => 1234567890, // non-zero, expects lock file
-        expectedValid       : false,
-      },
-      {
-        description         : 'should be valid when package-lock.json is missing and cache expects no lock file',
-        createPackageLock   : false,
-        getPackageJsonMTime : async (packageJsonPath) => {
-          return Math.floor((await fs.stat(packageJsonPath)).mtimeMs)
-        },
-        // eslint-disable-next-line require-await
-        getPackageLockMTime : async () => 0, // expects no lock file
-        expectedValid       : true,
-      },
-    ])('$description', async ({ createPackageLock, getPackageJsonMTime, getPackageLockMTime, expectedValid }) => {
-      const packageJsonPath = path.join(tempDir, 'package.json')
-      await fs.writeFile(packageJsonPath, JSON.stringify({ name : 'test' }), 'utf8')
-
-      let packageLockPath
-      if (createPackageLock) {
-        packageLockPath = path.join(tempDir, 'package-lock.json')
-        await fs.writeFile(packageLockPath, JSON.stringify({ version : '1.0.0' }), 'utf8')
-      }
-
-      const cache = {
-        ...validCacheData,
-        packageJsonMTime : await getPackageJsonMTime(packageJsonPath),
-        packageLockMTime : await getPackageLockMTime(packageLockPath),
-      }
-
-      const isValid = await isCacheValid(cache, tempDir)
-      expect(isValid).toBe(expectedValid)
-    })
-  })
-
-  describe('createCacheData', () => {
-    it('should create cache data with current timestamps', async () => {
-      await writeTestPackageJson(tempDir)
-      await writeTestPackageLockJson(tempDir)
-
-      const providers = {
-        npmProviders : [
-          {
-            libraryName  : 'test-lib',
-            version      : '1.0.0',
-            path         : '/path/to/test-lib',
-            integrations : [],
-          },
-        ],
-        remoteProviders : [],
-      }
-
-      const cache = await createCacheData(providers, tempDir)
-
-      expect(cache.npmProviders).toEqual(providers.npmProviders)
-      expect(cache.remoteProviders).toEqual(providers.remoteProviders)
-      expect(typeof cache.scannedAt).toBe('string')
-      expect(cache.packageJsonMTime).toBeGreaterThan(0)
-      expect(cache.packageLockMTime).toBeGreaterThan(0)
-    })
-
-    it('should set mtimes to 0 when files are missing', async () => {
-      const providers = {
-        npmProviders    : [],
-        remoteProviders : [],
-      }
-      const cache = await createCacheData(providers, tempDir)
-
-      expect(cache.packageJsonMTime).toBe(0)
-      expect(cache.packageLockMTime).toBe(0)
-    })
-
-    it('should create valid ISO timestamp', async () => {
-      const cache = await createCacheData({ npmProviders : [], remoteProviders : [] }, tempDir)
-      expect(() => new Date(cache.scannedAt)).not.toThrow()
-      expect(new Date(cache.scannedAt).toISOString()).toBe(cache.scannedAt)
-    })
-  })
+    },
+  ]
 
   describe('loadProvidersWithCache', () => {
     it('should return cached providers when cache is valid', async () => {
-      // Setup files
-      const packageJsonPath = await writeTestPackageJson(tempDir)
-      const packageLockPath = await writeTestPackageLockJson(tempDir)
-      const cacheFile = '.aircache.json'
+      // Setup package files
+      await writeTestPackageJson(tempDir)
+      await writeTestPackageLockJson(tempDir)
 
-      const cache = {
-        ...validCacheData,
-        packageJsonMTime : Math.floor((await fs.stat(packageJsonPath)).mtimeMs),
-        packageLockMTime : Math.floor((await fs.stat(packageLockPath)).mtimeMs),
-      }
+      // First call - creates cache
+      const scanFn1 = jest.fn().mockResolvedValue(sampleProviders)
+      const providers1 = await loadProvidersWithCache(scanFn1, tempDir)
 
-      await writeCache(cacheFile, cache, tempDir)
+      expect(providers1).toEqual(sampleProviders)
+      expect(scanFn1).toHaveBeenCalledTimes(1)
 
-      const scanFn = jest.fn()
-      const providers = await loadProvidersWithCache(cacheFile, scanFn, tempDir)
+      // Second call - should use cache
+      const scanFn2 = jest.fn()
+      const providers2 = await loadProvidersWithCache(scanFn2, tempDir)
 
-      expect(providers.npmProviders).toEqual(cache.npmProviders)
-      expect(providers.remoteProviders).toEqual(cache.remoteProviders)
-      expect(scanFn).not.toHaveBeenCalled()
+      expect(providers2).toEqual(sampleProviders)
+      expect(scanFn2).not.toHaveBeenCalled()
     })
 
-    it('should call scan function when cache is invalid', async () => {
+    it('should call scan function when cache does not exist', async () => {
       await writeTestPackageJson(tempDir)
 
-      const cacheFile = '.aircache.json'
-      const newProviders = {
-        npmProviders : [
-          {
-            libraryName  : 'new-lib',
-            version      : '2.0.0',
-            path         : '/path/to/new-lib',
-            integrations : [],
-          },
-        ],
-        remoteProviders : [],
-      }
+      const scanFn = jest.fn().mockResolvedValue(sampleProviders)
+      const providers = await loadProvidersWithCache(scanFn, tempDir)
 
-      const scanFn = jest.fn().mockResolvedValue(newProviders)
-      const providers = await loadProvidersWithCache(cacheFile, scanFn, tempDir)
+      expect(providers).toEqual(sampleProviders)
+      expect(scanFn).toHaveBeenCalledTimes(1)
+    })
+
+    it('should invalidate cache when package.json changes', async () => {
+      const packageJsonPath = await writeTestPackageJson(tempDir)
+      await writeTestPackageLockJson(tempDir)
+
+      // First call - creates cache
+      const scanFn1 = jest.fn().mockResolvedValue(sampleProviders)
+      await loadProvidersWithCache(scanFn1, tempDir)
+
+      // Modify package.json (change mtime)
+      await new Promise((resolve) => setTimeout(resolve, 10))
+      await fs.writeFile(packageJsonPath, JSON.stringify({ name : 'test', version : '2.0.0' }), 'utf8')
+
+      // Second call - cache should be invalid
+      const newProviders = [
+        {
+          packageName       : 'new-lib',
+          version           : '2.0.0',
+          path              : '/path/to/new-lib',
+          pluginDeclaration : {
+            name        : 'new-plugin',
+            version     : '2.0.0',
+            description : 'New plugin',
+            skillPath   : '.claude-plugin/skill',
+          },
+        },
+      ]
+      const scanFn2 = jest.fn().mockResolvedValue(newProviders)
+      const providers = await loadProvidersWithCache(scanFn2, tempDir)
 
       expect(providers).toEqual(newProviders)
-      expect(scanFn).toHaveBeenCalledTimes(1)
+      expect(scanFn2).toHaveBeenCalledTimes(1)
     })
 
-    it('should write new cache after scanning', async () => {
+    it('should invalidate cache when package-lock.json changes', async () => {
       await writeTestPackageJson(tempDir)
+      const packageLockPath = await writeTestPackageLockJson(tempDir)
 
-      const cacheFile = '.aircache.json'
-      const newProviders = {
-        npmProviders : [
-          {
-            libraryName  : 'new-lib',
-            version      : '2.0.0',
-            path         : '/path/to/new-lib',
-            integrations : [],
+      // First call - creates cache
+      const scanFn1 = jest.fn().mockResolvedValue(sampleProviders)
+      await loadProvidersWithCache(scanFn1, tempDir)
+
+      // Modify package-lock.json (change mtime)
+      await new Promise((resolve) => setTimeout(resolve, 10))
+      await fs.writeFile(packageLockPath, JSON.stringify({ version : '2.0.0' }), 'utf8')
+
+      // Second call - cache should be invalid
+      const newProviders = [
+        {
+          packageName       : 'new-lib',
+          version           : '2.0.0',
+          path              : '/path/to/new-lib',
+          pluginDeclaration : {
+            name        : 'new-plugin',
+            version     : '2.0.0',
+            description : 'New plugin',
+            skillPath   : '.claude-plugin/skill',
           },
-        ],
-        remoteProviders : [],
-      }
+        },
+      ]
+      const scanFn2 = jest.fn().mockResolvedValue(newProviders)
+      const providers = await loadProvidersWithCache(scanFn2, tempDir)
 
-      const scanFn = jest.fn().mockResolvedValue(newProviders)
-      await loadProvidersWithCache(cacheFile, scanFn, tempDir)
-
-      const cache = await readCache(cacheFile, tempDir)
-      expect(cache).not.toBeNull()
-      expect(cache.npmProviders).toEqual(newProviders.npmProviders)
-      expect(cache.remoteProviders).toEqual(newProviders.remoteProviders)
+      expect(providers).toEqual(newProviders)
+      expect(scanFn2).toHaveBeenCalledTimes(1)
     })
 
-    it('should call scan function when cache file does not exist', async () => {
+    it('should handle missing package.json', async () => {
+      // No package files created
+
+      const scanFn = jest.fn().mockResolvedValue(sampleProviders)
+      const providers = await loadProvidersWithCache(scanFn, tempDir)
+
+      expect(providers).toEqual(sampleProviders)
+      expect(scanFn).toHaveBeenCalledTimes(1)
+    })
+
+    it('should handle missing package-lock.json', async () => {
+      await writeTestPackageJson(tempDir)
+      // No package-lock.json created
+
+      const scanFn = jest.fn().mockResolvedValue(sampleProviders)
+      const providers = await loadProvidersWithCache(scanFn, tempDir)
+
+      expect(providers).toEqual(sampleProviders)
+      expect(scanFn).toHaveBeenCalledTimes(1)
+    })
+
+    it('should write cache to .air-plugin-cache.json', async () => {
       await writeTestPackageJson(tempDir)
 
-      const cacheFile = '.aircache.json'
-      const newProviders = []
+      const scanFn = jest.fn().mockResolvedValue(sampleProviders)
+      await loadProvidersWithCache(scanFn, tempDir)
 
-      const scanFn = jest.fn().mockResolvedValue(newProviders)
-      await loadProvidersWithCache(cacheFile, scanFn, tempDir)
+      const cacheFile = path.join(tempDir, '.air-plugin-cache.json')
+      const cacheExists = await fs
+        .access(cacheFile)
+        .then(() => true)
+        .catch(() => false)
 
+      expect(cacheExists).toBe(true)
+
+      const cacheContent = await fs.readFile(cacheFile, 'utf8')
+      const cache = JSON.parse(cacheContent)
+
+      expect(cache.providers).toEqual(sampleProviders)
+      expect(typeof cache.scannedAt).toBe('string')
+      expect(typeof cache.packageJsonMTime).toBe('number')
+      expect(typeof cache.packageLockMTime).toBe('number')
+    })
+
+    it('should return empty array when scan function returns empty', async () => {
+      await writeTestPackageJson(tempDir)
+
+      const scanFn = jest.fn().mockResolvedValue([])
+      const providers = await loadProvidersWithCache(scanFn, tempDir)
+
+      expect(providers).toEqual([])
       expect(scanFn).toHaveBeenCalledTimes(1)
+    })
+
+    it('should handle malformed cache file gracefully', async () => {
+      await writeTestPackageJson(tempDir)
+
+      // Write invalid cache file
+      const cacheFile = path.join(tempDir, '.air-plugin-cache.json')
+      await fs.writeFile(cacheFile, '{invalid json}', 'utf8')
+
+      const scanFn = jest.fn().mockResolvedValue(sampleProviders)
+      const providers = await loadProvidersWithCache(scanFn, tempDir)
+
+      expect(providers).toEqual(sampleProviders)
+      expect(scanFn).toHaveBeenCalledTimes(1)
+    })
+
+    it('should invalidate cache when package-lock.json is deleted', async () => {
+      await writeTestPackageJson(tempDir)
+      const packageLockPath = await writeTestPackageLockJson(tempDir)
+
+      // First call - creates cache with lock file
+      const scanFn1 = jest.fn().mockResolvedValue(sampleProviders)
+      await loadProvidersWithCache(scanFn1, tempDir)
+
+      // Delete package-lock.json
+      await fs.unlink(packageLockPath)
+
+      // Second call - cache should be invalid
+      const scanFn2 = jest.fn().mockResolvedValue(sampleProviders)
+      await loadProvidersWithCache(scanFn2, tempDir)
+
+      expect(scanFn2).toHaveBeenCalledTimes(1)
+    })
+
+    it('should invalidate cache when package-lock.json is created', async () => {
+      await writeTestPackageJson(tempDir)
+      // No package-lock.json initially
+
+      // First call - creates cache without lock file
+      const scanFn1 = jest.fn().mockResolvedValue(sampleProviders)
+      await loadProvidersWithCache(scanFn1, tempDir)
+
+      // Create package-lock.json
+      await new Promise((resolve) => setTimeout(resolve, 10))
+      await writeTestPackageLockJson(tempDir)
+
+      // Second call - cache should be invalid
+      const scanFn2 = jest.fn().mockResolvedValue(sampleProviders)
+      await loadProvidersWithCache(scanFn2, tempDir)
+
+      expect(scanFn2).toHaveBeenCalledTimes(1)
+    })
+  })
+
+  describe('invalidateCache', () => {
+    it('should delete cache file', async () => {
+      await writeTestPackageJson(tempDir)
+
+      // Create cache
+      const scanFn = jest.fn().mockResolvedValue(sampleProviders)
+      await loadProvidersWithCache(scanFn, tempDir)
+
+      const cacheFile = path.join(tempDir, '.air-plugin-cache.json')
+      let cacheExists = await fs
+        .access(cacheFile)
+        .then(() => true)
+        .catch(() => false)
+
+      expect(cacheExists).toBe(true)
+
+      // Invalidate cache
+      await invalidateCache(tempDir)
+
+      cacheExists = await fs
+        .access(cacheFile)
+        .then(() => true)
+        .catch(() => false)
+
+      expect(cacheExists).toBe(false)
+    })
+
+    it('should not throw error when cache file does not exist', async () => {
+      await expect(invalidateCache(tempDir)).resolves.not.toThrow()
     })
   })
 })

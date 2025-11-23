@@ -1,208 +1,279 @@
 import {
-  DEFAULT_CONFIG,
-  INTEGRATION_TYPES,
-  isValidCache,
-  isValidIntegration,
-  isValidProvider
+  MARKETPLACE_JSON_SCHEMA,
+  PLUGIN_STATUSES,
+  isValidMarketplaceReference,
+  isValidPluginProvider,
+  isValidPluginState
 } from '_lib/types'
 
 describe('types', () => {
-  describe('DEFAULT_CONFIG', () => {
-    it('should have correct default values', () => {
-      expect(DEFAULT_CONFIG.scanPaths).toEqual(['node_modules'])
-      expect(DEFAULT_CONFIG.registryFiles.claudeSkillsDir).toBe('.claude/skills')
-      expect(DEFAULT_CONFIG.registryFiles.generic).toEqual(['AGENTS.md', 'CLAUDE.md'])
-      expect(DEFAULT_CONFIG.cacheFile).toBe('.aircache.json')
+  describe('PLUGIN_STATUSES', () => {
+    it('should define status constants', () => {
+      expect(PLUGIN_STATUSES.ENABLED).toBe('enabled')
+      expect(PLUGIN_STATUSES.DISABLED).toBe('disabled')
+      expect(PLUGIN_STATUSES.NOT_INSTALLED).toBe('not-installed')
     })
   })
 
-  describe('INTEGRATION_TYPES', () => {
-    it('should define integration type constants', () => {
-      expect(INTEGRATION_TYPES.GENERIC).toBe('genericIntegration')
-      expect(INTEGRATION_TYPES.CLAUDE_SKILL).toBe('claudeSkill')
+  describe('MARKETPLACE_JSON_SCHEMA', () => {
+    it('should define required fields', () => {
+      expect(MARKETPLACE_JSON_SCHEMA.requiredFields).toEqual(['name', 'version', 'description', 'skillPath'])
+    })
+
+    it('should define optional fields', () => {
+      expect(MARKETPLACE_JSON_SCHEMA.optionalFields).toEqual(['author', 'license', 'homepage'])
     })
   })
 
-  describe('isValidIntegration', () => {
-    it('should validate a correct integration', () => {
-      const integration = {
-        name    : 'TestIntegration',
-        summary : 'A test integration',
-        types   : ['genericIntegration'],
+  describe('isValidPluginProvider', () => {
+    it('should validate a valid PluginProvider', () => {
+      const provider = {
+        packageName       : 'test-lib',
+        version           : '1.0.0',
+        path              : '/path/to/lib',
+        pluginDeclaration : {
+          name        : 'test-plugin',
+          version     : '1.0.0',
+          description : 'Test plugin',
+          skillPath   : '.claude-plugin/skill',
+        },
       }
-      expect(isValidIntegration(integration)).toBe(true)
+
+      expect(isValidPluginProvider(provider)).toBe(true)
     })
 
-    it('should reject integration with missing name', () => {
-      const integration = {
-        summary : 'A test integration',
-        types   : ['genericIntegration'],
+    it('should reject provider with missing packageName', () => {
+      const provider = {
+        version           : '1.0.0',
+        path              : '/path',
+        pluginDeclaration : {
+          name        : 'test',
+          version     : '1.0.0',
+          description : 'Test',
+          skillPath   : 'skill',
+        },
       }
-      expect(isValidIntegration(integration)).toBe(false)
+
+      expect(isValidPluginProvider(provider)).toBe(false)
     })
 
-    it('should reject integration with empty name', () => {
-      const integration = {
-        name    : '',
-        summary : 'A test integration',
-        types   : ['genericIntegration'],
+    it('should reject provider with empty packageName', () => {
+      const provider = {
+        packageName       : '',
+        version           : '1.0.0',
+        path              : '/path',
+        pluginDeclaration : {
+          name        : 'test',
+          version     : '1.0.0',
+          description : 'Test',
+          skillPath   : 'skill',
+        },
       }
-      expect(isValidIntegration(integration)).toBe(false)
+
+      expect(isValidPluginProvider(provider)).toBe(false)
     })
 
-    it('should reject integration with non-array types', () => {
-      const integration = {
-        name    : 'TestIntegration',
-        summary : 'A test integration',
-        types   : 'genericIntegration',
+    it('should reject provider with missing pluginDeclaration', () => {
+      const provider = {
+        packageName : 'test-lib',
+        version     : '1.0.0',
+        path        : '/path',
       }
-      expect(isValidIntegration(integration)).toBe(false)
+
+      expect(isValidPluginProvider(provider)).toBe(false)
     })
 
-    it('should reject integration with empty types array', () => {
-      const integration = {
-        name    : 'TestIntegration',
-        summary : 'A test integration',
-        types   : [],
+    it('should reject provider with incomplete pluginDeclaration', () => {
+      const provider = {
+        packageName       : 'test-lib',
+        version           : '1.0.0',
+        path              : '/path',
+        pluginDeclaration : {
+          name : 'test',
+        },
       }
-      expect(isValidIntegration(integration)).toBe(false)
-    })
 
-    it('should reject null or undefined', () => {
-      expect(isValidIntegration(null)).toBe(false)
-      expect(isValidIntegration(undefined)).toBe(false)
+      expect(isValidPluginProvider(provider)).toBe(false)
     })
   })
 
-  describe('isValidProvider', () => {
-    it('should validate a correct provider', () => {
-      const provider = {
-        libraryName  : 'test-lib',
-        version      : '1.0.0',
-        path         : '/path/to/test-lib',
-        integrations : [
-          {
-            name    : 'TestIntegration',
-            summary : 'A test integration',
-            types   : ['genericIntegration'],
-          },
-        ],
+  describe('isValidPluginState', () => {
+    it('should validate a valid PluginState', () => {
+      const state = {
+        name        : 'test-plugin',
+        status      : 'enabled',
+        source      : '/path/to/plugin',
+        version     : '1.0.0',
+        description : 'Test plugin',
       }
-      expect(isValidProvider(provider)).toBe(true)
+
+      expect(isValidPluginState(state)).toBe(true)
     })
 
-    it('should reject provider with missing libraryName', () => {
-      const provider = {
-        version      : '1.0.0',
-        path         : '/path/to/test-lib',
-        integrations : [],
+    it('should accept all valid statuses', () => {
+      const baseState = {
+        name        : 'test',
+        source      : '/path',
+        version     : '1.0.0',
+        description : 'Test',
       }
-      expect(isValidProvider(provider)).toBe(false)
+
+      expect(isValidPluginState({ ...baseState, status : 'enabled' })).toBe(true)
+      expect(isValidPluginState({ ...baseState, status : 'disabled' })).toBe(true)
+      expect(isValidPluginState({ ...baseState, status : 'not-installed' })).toBe(true)
     })
 
-    it('should reject provider with empty libraryName', () => {
-      const provider = {
-        libraryName  : '',
-        version      : '1.0.0',
-        path         : '/path/to/test-lib',
-        integrations : [],
+    it('should reject invalid status', () => {
+      const state = {
+        name        : 'test',
+        status      : 'invalid-status',
+        source      : '/path',
+        version     : '1.0.0',
+        description : 'Test',
       }
-      expect(isValidProvider(provider)).toBe(false)
+
+      expect(isValidPluginState(state)).toBe(false)
     })
 
-    it('should reject provider with invalid integrations', () => {
-      const provider = {
-        libraryName  : 'test-lib',
-        version      : '1.0.0',
-        path         : '/path/to/test-lib',
-        integrations : [
-          {
-            name    : '',
-            summary : 'Invalid',
-            types   : [],
-          },
-        ],
+    it('should reject state with missing name', () => {
+      const state = {
+        status      : 'enabled',
+        source      : '/path',
+        version     : '1.0.0',
+        description : 'Test',
       }
-      expect(isValidProvider(provider)).toBe(false)
+
+      expect(isValidPluginState(state)).toBe(false)
     })
 
-    it('should accept provider with empty integrations array', () => {
-      const provider = {
-        libraryName  : 'test-lib',
-        version      : '1.0.0',
-        path         : '/path/to/test-lib',
-        integrations : [],
+    it('should reject state with empty name', () => {
+      const state = {
+        name        : '',
+        status      : 'enabled',
+        source      : '/path',
+        version     : '1.0.0',
+        description : 'Test',
       }
-      expect(isValidProvider(provider)).toBe(true)
-    })
 
-    it('should reject null or undefined', () => {
-      expect(isValidProvider(null)).toBe(false)
-      expect(isValidProvider(undefined)).toBe(false)
+      expect(isValidPluginState(state)).toBe(false)
     })
   })
 
-  describe('isValidCache', () => {
-    it('should validate correct cache data', () => {
-      const cache = {
-        scannedAt        : '2025-11-07T12:00:00Z',
-        packageJsonMTime : 1234567890,
-        packageLockMTime : 1234567890,
-        npmProviders     : [
-          {
-            libraryName  : 'test-lib',
-            version      : '1.0.0',
-            path         : '/path/to/test-lib',
-            integrations : [],
-          },
-        ],
-        remoteProviders : [],
+  describe('isValidMarketplaceReference', () => {
+    it('should validate a valid github marketplace', () => {
+      const marketplace = {
+        name       : 'my-marketplace',
+        sourceType : 'github',
+        repo       : 'org/repo',
       }
-      expect(isValidCache(cache)).toBe(true)
+
+      expect(isValidMarketplaceReference(marketplace)).toBe(true)
     })
 
-    it('should reject cache with missing scannedAt', () => {
-      const cache = {
-        packageJsonMTime : 1234567890,
-        packageLockMTime : 1234567890,
-        providers        : [],
+    it('should validate a valid git marketplace', () => {
+      const marketplace = {
+        name       : 'my-marketplace',
+        sourceType : 'git',
+        url        : 'https://github.com/org/repo.git',
       }
-      expect(isValidCache(cache)).toBe(false)
+
+      expect(isValidMarketplaceReference(marketplace)).toBe(true)
     })
 
-    it('should reject cache with invalid packageJsonMTime', () => {
-      const cache = {
-        scannedAt        : '2025-11-07T12:00:00Z',
-        packageJsonMTime : '1234567890',
-        packageLockMTime : 1234567890,
-        providers        : [],
+    it('should validate a valid directory marketplace', () => {
+      const marketplace = {
+        name       : 'my-marketplace',
+        sourceType : 'directory',
+        path       : '/path/to/marketplace',
       }
-      expect(isValidCache(cache)).toBe(false)
+
+      expect(isValidMarketplaceReference(marketplace)).toBe(true)
     })
 
-    it('should reject cache with missing npmProviders', () => {
-      const cache = {
-        scannedAt        : '2025-11-07T12:00:00Z',
-        packageJsonMTime : 1234567890,
-        packageLockMTime : 1234567890,
-        remoteProviders  : [],
+    it('should reject marketplace with missing name', () => {
+      const marketplace = {
+        sourceType : 'github',
+        repo       : 'org/repo',
       }
-      expect(isValidCache(cache)).toBe(false)
+
+      expect(isValidMarketplaceReference(marketplace)).toBe(false)
     })
 
-    it('should reject cache with missing remoteProviders', () => {
-      const cache = {
-        scannedAt        : '2025-11-07T12:00:00Z',
-        packageJsonMTime : 1234567890,
-        packageLockMTime : 1234567890,
-        npmProviders     : [],
+    it('should reject marketplace with empty name', () => {
+      const marketplace = {
+        name       : '',
+        sourceType : 'github',
+        repo       : 'org/repo',
       }
-      expect(isValidCache(cache)).toBe(false)
+
+      expect(isValidMarketplaceReference(marketplace)).toBe(false)
     })
 
-    it('should reject null or undefined', () => {
-      expect(isValidCache(null)).toBe(false)
-      expect(isValidCache(undefined)).toBe(false)
+    it('should reject marketplace with invalid sourceType', () => {
+      const marketplace = {
+        name       : 'test',
+        sourceType : 'invalid',
+        repo       : 'org/repo',
+      }
+
+      expect(isValidMarketplaceReference(marketplace)).toBe(false)
+    })
+
+    it('should reject github marketplace without repo', () => {
+      const marketplace = {
+        name       : 'test',
+        sourceType : 'github',
+      }
+
+      expect(isValidMarketplaceReference(marketplace)).toBe(false)
+    })
+
+    it('should reject github marketplace with invalid repo format', () => {
+      const marketplace = {
+        name       : 'test',
+        sourceType : 'github',
+        repo       : 'invalid-no-slash',
+      }
+
+      expect(isValidMarketplaceReference(marketplace)).toBe(false)
+    })
+
+    it('should reject git marketplace without url', () => {
+      const marketplace = {
+        name       : 'test',
+        sourceType : 'git',
+      }
+
+      expect(isValidMarketplaceReference(marketplace)).toBe(false)
+    })
+
+    it('should reject git marketplace with non-http url', () => {
+      const marketplace = {
+        name       : 'test',
+        sourceType : 'git',
+        url        : 'git@github.com:org/repo.git',
+      }
+
+      expect(isValidMarketplaceReference(marketplace)).toBe(false)
+    })
+
+    it('should reject directory marketplace without path', () => {
+      const marketplace = {
+        name       : 'test',
+        sourceType : 'directory',
+      }
+
+      expect(isValidMarketplaceReference(marketplace)).toBe(false)
+    })
+
+    it('should reject directory marketplace with empty path', () => {
+      const marketplace = {
+        name       : 'test',
+        sourceType : 'directory',
+        path       : '',
+      }
+
+      expect(isValidMarketplaceReference(marketplace)).toBe(false)
     })
   })
 })

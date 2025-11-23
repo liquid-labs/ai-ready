@@ -1,108 +1,152 @@
-import { scanAll } from '../scanner'
-import { loadProvidersWithCache } from '../storage/cache'
-import { getDefaultRegistry } from '../storage/claude-plugin-registry'
-import { loadInstallationStatus } from '../storage/registry'
-import { DEFAULT_CONFIG } from '../types'
-import { parseLibraryIntegration } from '../utils/parse-library-integration'
-import { findProviderAndIntegration } from './data-lib'
-
-/**
- * @import { Integration, IntegrationProvider } from '../types.js'
- */
 /* eslint-disable no-console, no-process-exit */
+import { scanDependencies } from '../scanner'
+import { loadProvidersWithCache } from '../storage/cache'
+import { ClaudePluginConfig } from '../storage/claude-config'
+import { getPluginStates, readSettings } from '../storage/claude-settings'
+import { PLUGIN_STATUSES } from '../types'
 
 /**
- * View command implementation
- * @param {string} libraryIntegration - Library name or library/integration
+ * @import { PluginProvider } from '../types.js'
+ */
+
+/**
+ * View command: Show plugin status for current project or all plugins
+ * @param {object} options - Command options
+ * @param {string} [options.path] - Project path (default: cwd)
+ * @param {boolean} [options.all] - Show all plugins in settings
+ * @param {ClaudePluginConfig} [options.config] - Config instance (for testing)
  * @returns {Promise<void>}
  */
-export async function cmdView(libraryIntegration) {
-  if (!libraryIntegration) {
-    console.error('Error: Please specify a library or library/integration')
-    process.exit(1)
-  }
+export async function viewCommand(options = {}) {
+  const baseDir = options.path || process.cwd()
+  const config = options.config || ClaudePluginConfig.createDefault()
 
   try {
-    // Load providers with caching
-    const { npmProviders, remoteProviders } = await loadProvidersWithCache(DEFAULT_CONFIG.cacheFile, () => scanAll())
-
-    const providers = [...npmProviders, ...remoteProviders]
-
-    // Load installation status
-    const pluginRegistry = getDefaultRegistry()
-    const providersWithStatus = await loadInstallationStatus(
-      providers,
-      DEFAULT_CONFIG.registryFiles.claudeSkillsDir,
-      DEFAULT_CONFIG.registryFiles.generic,
-      process.cwd(),
-      pluginRegistry
-    )
-
-    // Parse input
-    const { libraryName, integrationName } = parseLibraryIntegration(libraryIntegration)
-
-    // Find library and optionally integration
-    const { provider, integration } = findProviderAndIntegration(providersWithStatus, libraryName, integrationName)
-
-    // Display library or integration
-    if (integration) {
-      displayIntegration(provider, integration)
+    if (options.all) {
+      await viewAllPlugins(config.settingsPath)
     }
     else {
-      displayLibrary(provider)
+      await viewProjectPlugins(baseDir, config.settingsPath)
     }
   }
   catch (error) {
-    console.error('Error viewing details:', error.message)
+    console.error(`Error: ${error.message}`)
     process.exit(1)
   }
 }
 
 /**
- * Displays library details
- * @param {IntegrationProvider} provider - Provider to display
+ * View plugins for specific project
+ * @param {string} baseDir - Project directory
+ * @param {string} settingsPath - Path to settings.json
+ * @returns {Promise<void>}
  */
-function displayLibrary(provider) {
-  console.log(`Library : ${provider.libraryName} (v${provider.version})`)
-  console.log(`Path    : ${provider.path}`)
-  console.log(`\nIntegrations:`)
+async function viewProjectPlugins(baseDir, settingsPath) {
+  console.log(`\nDiscovered Claude Code Plugins in ${baseDir}\n`)
 
-  if (provider.integrations.length === 0) {
-    console.log('  (none)')
+  // Scan dependencies (with cache)
+  const providers = await loadProvidersWithCache(() => scanDependencies(baseDir), baseDir)
+
+  if (providers.length === 0) {
+    console.log('No Claude Code plugins found in dependencies.\n')
 
     return
   }
 
-  for (const integration of provider.integrations) {
-    const installed = integration.installedTypes.length > 0 ? ' [installed]' : ''
-    console.log(`  - ${integration.name}${installed}`)
-    console.log(`    ${integration.summary}`)
+  // Get settings and plugin states
+  const settings = await readSettings(settingsPath)
+  const states = getPluginStates(providers, settings)
+
+  // Display plugins
+  let enabledCount = 0
+  let disabledCount = 0
+  let notInstalledCount = 0
+
+  for (let i = 0; i < providers.length; i++) {
+    const provider = providers[i]
+    const state = states[i]
+
+    console.log(`Package: ${provider.packageName} (v${provider.version})`)
+    console.log(`  Plugin: ${state.name}`)
+    console.log(`  Status: ${formatStatus(state.status)}`)
+    console.log(`  Description: ${state.description}`)
+    console.log()
+
+    if (state.status === PLUGIN_STATUSES.ENABLED) enabledCount++
+    else if (state.status === PLUGIN_STATUSES.DISABLED) disabledCount++
+    else notInstalledCount++
+  }
+
+  // Summary
+  console.log(`Summary: ${enabledCount} enabled, ${disabledCount} disabled, ${notInstalledCount} available`)
+
+  // Restart warning if there are new plugins
+  if (notInstalledCount > 0) {
+    console.log('\n⚠️  Run `air sync` to enable new plugins, then restart Claude Code\n')
   }
 }
 
 /**
- * Displays integration details
- * @param {IntegrationProvider} provider - Provider containing the integration
- * @param {Integration} integration - Integration to display
+ * View all plugins in settings (not just current project)
+ * @param {string} settingsPath - Path to settings.json
+ * @returns {Promise<void>}
  */
-function displayIntegration(provider, integration) {
-  console.log(`Library      : ${provider.libraryName} (v${provider.version})`)
-  console.log(`Integration  : ${integration.name}`)
-  console.log(`Summary      : ${integration.summary}`)
-  console.log(`Types        : ${formatTypes(integration.types)}`)
-  console.log(`Installed    : ${formatTypes(integration.installedTypes)}`)
+async function viewAllPlugins(settingsPath) {
+  console.log('\nAll Claude Code Plugins\n')
 
-  // Show usage snippet if available
-  // For now, we'll skip this as the spec mentions it's optional
+  const settings = await readSettings(settingsPath)
+
+  const allPlugins = new Set([...settings.plugins.enabled, ...settings.plugins.disabled])
+
+  if (allPlugins.size === 0) {
+    console.log('No plugins configured.\n')
+
+    return
+  }
+
+  let enabledCount = 0
+  let disabledCount = 0
+
+  for (const pluginName of allPlugins) {
+    const isEnabled = settings.plugins.enabled.includes(pluginName)
+    const status = isEnabled ? PLUGIN_STATUSES.ENABLED : PLUGIN_STATUSES.DISABLED
+
+    // Find source from marketplaces
+    let source = '(not found)'
+    for (const [, marketplace] of Object.entries(settings.plugins.marketplaces)) {
+      if (marketplace.plugins[pluginName]) {
+        source = marketplace.source.path
+
+        break
+      }
+    }
+
+    console.log(`Plugin: ${pluginName}`)
+    console.log(`  Source: ${source}`)
+    console.log(`  Status: ${formatStatus(status)}`)
+    console.log()
+
+    if (isEnabled) enabledCount++
+    else disabledCount++
+  }
+
+  console.log(`Summary: ${enabledCount} enabled, ${disabledCount} disabled\n`)
 }
 
 /**
- * Formats types array for display
- * @param {string[]} types - Array of type strings
- * @returns {string} - Formatted types string
+ * Format status with indicator
+ * @param {string} status - Plugin status
+ * @returns {string} Formatted status string
  */
-function formatTypes(types) {
-  if (types.length === 0) return '(none)'
-
-  return `[${types.join(', ')}]`
+function formatStatus(status) {
+  switch (status) {
+    case PLUGIN_STATUSES.ENABLED:
+      return '✓ Enabled'
+    case PLUGIN_STATUSES.DISABLED:
+      return '⊗ Disabled (by user)'
+    case PLUGIN_STATUSES.NOT_INSTALLED:
+      return '• Not installed'
+    default:
+      return status
+  }
 }

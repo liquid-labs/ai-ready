@@ -1,5 +1,5 @@
 /**
- * Integration tests for cache invalidation workflows
+ * Integration tests for cache invalidation workflows (v2.0.0)
  * Tests cache behavior with real file system modifications
  */
 import fs from 'fs/promises'
@@ -18,9 +18,6 @@ describe('Integration: Cache invalidation', () => {
     originalHome = process.env.HOME
 
     // Set HOME to test directory to isolate cache files
-    // NOTE: This requires tests to run sequentially (--runInBand in Jest config)
-    // to prevent parallel test conflicts. The modified HOME is passed to child
-    // processes via runCLI() helper which explicitly includes process.env.
     process.env.HOME = testDir
   })
 
@@ -37,286 +34,256 @@ describe('Integration: Cache invalidation', () => {
   beforeEach(async () => {
     // Clean up test directory before each test
     const entries = await fs.readdir(testDir)
-    await Promise.all(entries.map(async (entry) => {
-      const fullPath = path.join(testDir, entry)
-      const stat = await fs.stat(fullPath)
-      if (stat.isDirectory()) {
-        await fs.rm(fullPath, { recursive : true, force : true })
-      }
-      else {
-        await fs.unlink(fullPath)
-      }
-    }))
-    await setupTestProject(testDir, { projectName : 'cache-test-project' })
+    await Promise.all(
+      entries.map(async (entry) => {
+        const fullPath = path.join(testDir, entry)
+        const stat = await fs.stat(fullPath)
+        if (stat.isDirectory()) {
+          await fs.rm(fullPath, { recursive : true, force : true })
+        }
+        else {
+          await fs.unlink(fullPath)
+        }
+      })
+    )
+    await setupTestProject(testDir)
   })
 
   describe('Cache creation and usage', () => {
-    it('should create cache on first scan', async () => {
-      const cachePath = path.join(testDir, '.aircache.json')
+    it('should create .air-plugin-cache.json on first sync', async () => {
+      const cachePath = path.join(testDir, '.air-plugin-cache.json')
 
       // Verify cache doesn't exist
-      const existsBefore = await fileExists(cachePath)
-      expect(existsBefore).toBe(false)
+      expect(await fileExists(cachePath)).toBe(false)
 
-      // Run list command (triggers scan)
-      await runCLI(['list'], testDir)
+      // Run sync
+      const { exitCode } = await runCLI(['sync'], testDir)
+      expect(exitCode).toBe(0)
 
-      // Verify cache created
-      const existsAfter = await fileExists(cachePath)
-      expect(existsAfter).toBe(true)
+      // Verify cache was created
+      expect(await fileExists(cachePath)).toBe(true)
 
-      // Verify cache contains expected data
       const cache = await readJsonFile(cachePath)
-      expect(cache).toBeTruthy()
-      expect(cache.scannedAt).toBeTruthy()
-      expect(cache.packageJsonMTime).toBeTruthy()
-      expect(cache.packageLockMTime).toBeTruthy()
-      expect(cache.npmProviders).toBeTruthy()
-      expect(cache.npmProviders).toHaveLength(1)
-      expect(cache.npmProviders[0].libraryName).toBe('test-air-package')
+      expect(cache.scannedAt).toBeDefined()
+      expect(cache.packageJsonMTime).toBeDefined()
+      expect(cache.packageLockMTime).toBeDefined()
+      expect(cache.providers).toBeDefined()
     })
 
-    it('should use cached results on subsequent scans', async () => {
-      const cachePath = path.join(testDir, '.aircache.json')
+    it('should use cache on subsequent syncs', async () => {
+      const cachePath = path.join(testDir, '.air-plugin-cache.json')
 
-      // First scan - creates cache
-      await runCLI(['list'], testDir)
+      // First sync
+      await runCLI(['sync'], testDir)
       const cache1 = await readJsonFile(cachePath)
-      const scannedAt1 = cache1.scannedAt
+      const timestamp1 = cache1.scannedAt
 
-      // Wait a bit
+      // Wait to ensure different timestamp if rescanned
       await sleep(100)
 
-      // Second scan - should use cache
-      await runCLI(['list'], testDir)
+      // Second sync
+      await runCLI(['sync'], testDir)
       const cache2 = await readJsonFile(cachePath)
-      const scannedAt2 = cache2.scannedAt
+      const timestamp2 = cache2.scannedAt
 
-      // scannedAt should be the same (cache was reused)
-      expect(scannedAt2).toBe(scannedAt1)
+      // Timestamp should be same (cache was reused)
+      expect(timestamp1).toBe(timestamp2)
+    })
+
+    it('should cache plugin provider data', async () => {
+      await runCLI(['sync'], testDir)
+
+      const cachePath = path.join(testDir, '.air-plugin-cache.json')
+      const cache = await readJsonFile(cachePath)
+
+      expect(Array.isArray(cache.providers)).toBe(true)
+      expect(cache.providers.length).toBeGreaterThan(0)
+
+      // Check provider structure
+      const provider = cache.providers[0]
+      expect(provider.packageName).toBeDefined()
+      expect(provider.version).toBeDefined()
+      expect(provider.path).toBeDefined()
+      expect(provider.pluginDeclaration).toBeDefined()
     })
   })
 
   describe('Cache invalidation on package.json changes', () => {
     it('should invalidate cache when package.json is modified', async () => {
-      const cachePath = path.join(testDir, '.aircache.json')
+      const cachePath = path.join(testDir, '.air-plugin-cache.json')
       const packageJsonPath = path.join(testDir, 'package.json')
 
-      // First scan - creates cache
-      await runCLI(['list'], testDir)
+      // Initial sync
+      await runCLI(['sync'], testDir)
       const cache1 = await readJsonFile(cachePath)
-      const scannedAt1 = cache1.scannedAt
-
-      // Modify package.json
-      const packageJson = await readJsonFile(packageJsonPath)
-      packageJson.version = '2.0.0'
-      await fs.writeFile(packageJsonPath, JSON.stringify(packageJson, null, 2))
-
-      // Explicitly set mtime to ensure it differs from cached value
-      const newTime = new Date(Date.now() + 2000)
-      await fs.utimes(packageJsonPath, newTime, newTime)
-
-      // Second scan - should invalidate cache
-      await runCLI(['list'], testDir)
-      const cache2 = await readJsonFile(cachePath)
-      const scannedAt2 = cache2.scannedAt
-
-      // scannedAt should be different (cache was invalidated)
-      expect(scannedAt2).not.toBe(scannedAt1)
-      expect(new Date(scannedAt2).getTime()).toBeGreaterThan(new Date(scannedAt1).getTime())
-    })
-
-    it('should update packageJsonMTime in cache after modification', async () => {
-      const cachePath = path.join(testDir, '.aircache.json')
-      const packageJsonPath = path.join(testDir, 'package.json')
-
-      // First scan
-      await runCLI(['list'], testDir)
-      const cache1 = await readJsonFile(cachePath)
+      const timestamp1 = cache1.scannedAt
       const mtime1 = cache1.packageJsonMTime
 
+      // Wait to ensure file mtime changes
+      await sleep(1100)
+
       // Modify package.json
       const packageJson = await readJsonFile(packageJsonPath)
-      packageJson.description = 'Modified'
+      packageJson.version = '1.0.1'
       await fs.writeFile(packageJsonPath, JSON.stringify(packageJson, null, 2))
 
-      // Explicitly set mtime to ensure it differs from cached value
-      const newTime = new Date(Date.now() + 2000)
-      await fs.utimes(packageJsonPath, newTime, newTime)
-
-      // Second scan
-      await runCLI(['list'], testDir)
+      // Sync again
+      await runCLI(['sync'], testDir)
       const cache2 = await readJsonFile(cachePath)
+      const timestamp2 = cache2.scannedAt
       const mtime2 = cache2.packageJsonMTime
 
-      // mtime should be updated
-      expect(mtime2).toBeGreaterThan(mtime1)
+      // Cache should be invalidated
+      expect(timestamp1).not.toBe(timestamp2)
+      expect(mtime1).not.toBe(mtime2)
+    })
+
+    it('should invalidate cache when dependencies change', async () => {
+      const cachePath = path.join(testDir, '.air-plugin-cache.json')
+      const packageJsonPath = path.join(testDir, 'package.json')
+
+      // Initial sync
+      await runCLI(['sync'], testDir)
+      const cache1 = await readJsonFile(cachePath)
+      const timestamp1 = cache1.scannedAt
+
+      // Wait to ensure file mtime changes
+      await sleep(1100)
+
+      // Add new dependency
+      const packageJson = await readJsonFile(packageJsonPath)
+      packageJson.dependencies['new-package'] = '1.0.0'
+      await fs.writeFile(packageJsonPath, JSON.stringify(packageJson, null, 2))
+
+      // Sync again
+      await runCLI(['sync'], testDir)
+      const cache2 = await readJsonFile(cachePath)
+      const timestamp2 = cache2.scannedAt
+
+      // Cache should be invalidated
+      expect(timestamp1).not.toBe(timestamp2)
     })
   })
 
   describe('Cache invalidation on package-lock.json changes', () => {
     it('should invalidate cache when package-lock.json is modified', async () => {
-      const cachePath = path.join(testDir, '.aircache.json')
+      const cachePath = path.join(testDir, '.air-plugin-cache.json')
       const packageLockPath = path.join(testDir, 'package-lock.json')
 
-      // First scan
-      await runCLI(['list'], testDir)
+      // Initial sync
+      await runCLI(['sync'], testDir)
       const cache1 = await readJsonFile(cachePath)
-      const scannedAt1 = cache1.scannedAt
-
-      // Modify package-lock.json
-      const packageLock = await readJsonFile(packageLockPath)
-      packageLock.lockfileVersion = 2
-      await fs.writeFile(packageLockPath, JSON.stringify(packageLock, null, 2))
-
-      // Explicitly set mtime to ensure it differs from cached value
-      const newTime = new Date(Date.now() + 2000)
-      await fs.utimes(packageLockPath, newTime, newTime)
-
-      // Second scan
-      await runCLI(['list'], testDir)
-      const cache2 = await readJsonFile(cachePath)
-      const scannedAt2 = cache2.scannedAt
-
-      // Cache should be invalidated
-      expect(scannedAt2).not.toBe(scannedAt1)
-    })
-
-    it('should update packageLockMTime in cache after modification', async () => {
-      const cachePath = path.join(testDir, '.aircache.json')
-      const packageLockPath = path.join(testDir, 'package-lock.json')
-
-      // First scan
-      await runCLI(['list'], testDir)
-      const cache1 = await readJsonFile(cachePath)
+      const timestamp1 = cache1.scannedAt
       const mtime1 = cache1.packageLockMTime
 
+      // Wait to ensure file mtime changes
+      await sleep(1100)
+
       // Modify package-lock.json
       const packageLock = await readJsonFile(packageLockPath)
-      packageLock.lockfileVersion = 2
+      packageLock.version = '1.0.1'
       await fs.writeFile(packageLockPath, JSON.stringify(packageLock, null, 2))
 
-      // Explicitly set mtime to ensure it differs from cached value
-      const newTime = new Date(Date.now() + 2000)
-      await fs.utimes(packageLockPath, newTime, newTime)
-
-      // Second scan
-      await runCLI(['list'], testDir)
+      // Sync again
+      await runCLI(['sync'], testDir)
       const cache2 = await readJsonFile(cachePath)
+      const timestamp2 = cache2.scannedAt
       const mtime2 = cache2.packageLockMTime
 
-      // mtime should be updated
-      expect(mtime2).toBeGreaterThan(mtime1)
-    })
-  })
-
-  describe('Cache invalidation on dependency changes', () => {
-    it('should invalidate cache when dependencies are added', async () => {
-      const cachePath = path.join(testDir, '.aircache.json')
-      const packageJsonPath = path.join(testDir, 'package.json')
-
-      // First scan
-      await runCLI(['list'], testDir)
-      const cache1 = await readJsonFile(cachePath)
-
-      // Add dependency
-      const packageJson = await readJsonFile(packageJsonPath)
-      packageJson.dependencies['new-package'] = '1.0.0'
-      await fs.writeFile(packageJsonPath, JSON.stringify(packageJson, null, 2))
-
-      // Explicitly set mtime to ensure it differs from cached value
-      const newTime = new Date(Date.now() + 2000)
-      await fs.utimes(packageJsonPath, newTime, newTime)
-
-      // Second scan
-      await runCLI(['list'], testDir)
-      const cache2 = await readJsonFile(cachePath)
-
       // Cache should be invalidated
-      expect(cache2.scannedAt).not.toBe(cache1.scannedAt)
+      expect(timestamp1).not.toBe(timestamp2)
+      expect(mtime1).not.toBe(mtime2)
     })
+  })
 
-    it('should invalidate cache when dependencies are removed', async () => {
-      const cachePath = path.join(testDir, '.aircache.json')
-      const packageJsonPath = path.join(testDir, 'package.json')
+  describe('--no-cache flag', () => {
+    it('should bypass cache when --no-cache is used', async () => {
+      const cachePath = path.join(testDir, '.air-plugin-cache.json')
 
-      // First scan
-      await runCLI(['list'], testDir)
+      // Initial sync to create cache
+      await runCLI(['sync'], testDir)
       const cache1 = await readJsonFile(cachePath)
+      const timestamp1 = cache1.scannedAt
 
-      // Remove dependency
-      const packageJson = await readJsonFile(packageJsonPath)
-      delete packageJson.dependencies['test-air-package']
-      await fs.writeFile(packageJsonPath, JSON.stringify(packageJson, null, 2))
+      // Wait to ensure different timestamp if rescanned
+      await sleep(100)
 
-      // Explicitly set mtime to ensure it differs from cached value
-      const newTime = new Date(Date.now() + 2000)
-      await fs.utimes(packageJsonPath, newTime, newTime)
+      // Sync with --no-cache
+      const { exitCode } = await runCLI(['sync', '--no-cache'], testDir)
+      expect(exitCode).toBe(0)
 
-      // Second scan
-      await runCLI(['list'], testDir)
+      // Cache file should be unchanged (--no-cache doesn't write cache)
       const cache2 = await readJsonFile(cachePath)
+      const timestamp2 = cache2.scannedAt
+      expect(timestamp1).toBe(timestamp2)
+    })
 
-      // Cache should be invalidated
-      expect(cache2.scannedAt).not.toBe(cache1.scannedAt)
+    it('should work when cache file is corrupted', async () => {
+      const cachePath = path.join(testDir, '.air-plugin-cache.json')
+
+      // Create invalid cache
+      await fs.writeFile(cachePath, '{ invalid json')
+
+      // Sync with --no-cache should succeed (bypasses corrupted cache)
+      const { exitCode } = await runCLI(['sync', '--no-cache'], testDir)
+      expect(exitCode).toBe(0)
+
+      // Cache file remains corrupted (--no-cache doesn't write cache)
+      const cacheContent = await fs.readFile(cachePath, 'utf8')
+      expect(cacheContent).toBe('{ invalid json')
     })
   })
 
-  describe('Cache resilience', () => {
-    it('should rebuild cache if .aircache.json is deleted', async () => {
-      const cachePath = path.join(testDir, '.aircache.json')
+  describe('Cache with malformed files', () => {
+    it('should handle corrupted cache file gracefully', async () => {
+      const cachePath = path.join(testDir, '.air-plugin-cache.json')
 
-      // First scan - creates cache
-      await runCLI(['list'], testDir)
-      expect(await fileExists(cachePath)).toBe(true)
+      // Create valid cache first
+      await runCLI(['sync'], testDir)
 
-      // Delete cache
-      await fs.unlink(cachePath)
-      expect(await fileExists(cachePath)).toBe(false)
+      // Corrupt the cache
+      await fs.writeFile(cachePath, '{ "invalid": json }')
 
-      // Second scan - should rebuild cache
-      await runCLI(['list'], testDir)
-      expect(await fileExists(cachePath)).toBe(true)
+      // Should fall back to full scan
+      const { exitCode } = await runCLI(['sync'], testDir)
+      expect(exitCode).toBe(0)
 
-      // Verify cache is valid
+      // Cache should be recreated
       const cache = await readJsonFile(cachePath)
-      expect(cache.npmProviders).toHaveLength(1)
+      expect(cache.providers).toBeDefined()
     })
 
-    it('should rebuild cache if .aircache.json is corrupted', async () => {
-      const cachePath = path.join(testDir, '.aircache.json')
+    it('should handle missing package-lock.json', async () => {
+      const packageLockPath = path.join(testDir, 'package-lock.json')
 
-      // First scan - creates cache
-      await runCLI(['list'], testDir)
+      // Remove package-lock.json
+      await fs.unlink(packageLockPath)
 
-      // Corrupt cache
-      await fs.writeFile(cachePath, 'invalid json{{{')
+      // Should still work (packageLockMTime will be 0)
+      const { exitCode } = await runCLI(['sync'], testDir)
+      expect(exitCode).toBe(0)
 
-      // Second scan - should rebuild cache
-      await runCLI(['list'], testDir)
-
-      // Verify cache is valid
+      const cachePath = path.join(testDir, '.air-plugin-cache.json')
       const cache = await readJsonFile(cachePath)
-      expect(cache).toBeTruthy()
-      expect(cache.npmProviders).toBeTruthy()
+      expect(cache.packageLockMTime).toBe(0)
     })
   })
 
-  describe('Performance verification', () => {
-    it('should be faster on cache hit vs cache miss', async () => {
-      // First run - cache miss
+  describe('Cache performance', () => {
+    it('should be faster on subsequent syncs with cache', async () => {
+      // First sync (no cache)
       const start1 = Date.now()
-      await runCLI(['list'], testDir)
+      await runCLI(['sync'], testDir)
       const duration1 = Date.now() - start1
 
-      // Second run - cache hit
+      // Second sync (with cache)
       const start2 = Date.now()
-      await runCLI(['list'], testDir)
+      await runCLI(['sync'], testDir)
       const duration2 = Date.now() - start2
 
-      // Cache hit should be faster (or at least not slower)
-      // Note: This is a soft check as timing can vary
-      expect(duration2).toBeLessThanOrEqual(duration1 * 2)
+      // Second sync should be faster (or at least not significantly slower)
+      // Using a generous multiplier to avoid flaky tests
+      expect(duration2).toBeLessThan(duration1 * 2)
     })
   })
 })

@@ -1,196 +1,362 @@
-import { cmdView } from '_lib/commands/view'
-import * as cache from '_lib/storage/cache'
-import * as registry from '_lib/storage/registry'
-import { INTEGRATION_TYPES } from '_lib/types'
+import fs from 'fs/promises'
+import os from 'os'
+import path from 'path'
 
-jest.mock('_lib/scanner')
-jest.mock('_lib/storage/cache')
-jest.mock('_lib/storage/registry')
+import { viewCommand } from '_lib/commands/view'
+import { ClaudePluginConfig } from '_lib/storage/claude-config'
+import { updateSettings } from '_lib/storage/claude-settings'
+
+import { createPackageJson, createTestPackage } from '../test-lib'
 
 describe('view command', () => {
-  let consoleLogSpy
-  let consoleErrorSpy
-  let processExitSpy
+  let tempDir
+  let claudeDir
+  let settingsPath
 
-  const mockProviders = [
-    {
-      libraryName  : 'test-lib',
-      version      : '1.0.0',
-      path         : '/path/to/test-lib',
-      integrations : [
-        {
-          name           : 'Integration1',
-          summary        : 'First integration',
-          types          : [INTEGRATION_TYPES.GENERIC],
-          installedTypes : [INTEGRATION_TYPES.GENERIC],
-        },
-        {
-          name           : 'Integration2',
-          summary        : 'Second integration',
-          types          : [INTEGRATION_TYPES.CLAUDE_SKILL],
-          installedTypes : [],
-        },
-      ],
-    },
-    {
-      libraryName  : 'other-lib',
-      version      : '2.0.0',
-      path         : '/path/to/other-lib',
-      integrations : [],
-    },
-  ]
-
-  beforeEach(() => {
-    consoleLogSpy = jest.spyOn(console, 'log').mockImplementation()
-    consoleErrorSpy = jest.spyOn(console, 'error').mockImplementation()
-    processExitSpy = jest.spyOn(process, 'exit').mockImplementation()
-
-    cache.loadProvidersWithCache.mockResolvedValue({
-      npmProviders    : mockProviders,
-      remoteProviders : [],
-    })
-    registry.loadInstallationStatus.mockResolvedValue(mockProviders)
+  beforeEach(async () => {
+    tempDir = await fs.mkdtemp(path.join(os.tmpdir(), 'air-view-test-'))
+    claudeDir = path.join(tempDir, '.claude')
+    await fs.mkdir(claudeDir, { recursive : true })
+    settingsPath = path.join(claudeDir, 'settings.json')
   })
 
-  afterEach(() => {
-    consoleLogSpy.mockRestore()
-    consoleErrorSpy.mockRestore()
-    processExitSpy.mockRestore()
-    jest.clearAllMocks()
+  afterEach(async () => {
+    await fs.rm(tempDir, { recursive : true, force : true })
   })
 
-  describe('viewing library', () => {
-    it('should display library details', async () => {
-      await cmdView('test-lib')
-
-      const output = consoleLogSpy.mock.calls.map((call) => call[0]).join('\n')
-      expect(output).toContain('Library : test-lib (v1.0.0)')
-      expect(output).toContain('Path    : /path/to/test-lib')
-      expect(output).toContain('Integrations:')
-    })
-
-    it('should list integrations in library', async () => {
-      await cmdView('test-lib')
-
-      const output = consoleLogSpy.mock.calls.map((call) => call[0]).join('\n')
-      expect(output).toContain('Integration1')
-      expect(output).toContain('First integration')
-      expect(output).toContain('Integration2')
-      expect(output).toContain('Second integration')
-    })
-
-    it('should mark installed integrations', async () => {
-      await cmdView('test-lib')
-
-      const output = consoleLogSpy.mock.calls.map((call) => call[0]).join('\n')
-      expect(output).toContain('Integration1 [installed]')
-      expect(output).not.toContain('Integration2 [installed]')
-    })
-
-    it('should show (none) for library with no integrations', async () => {
-      await cmdView('other-lib')
-
-      const output = consoleLogSpy.mock.calls.map((call) => call[0]).join('\n')
-      expect(output).toContain('(none)')
-    })
-
-    it('should error for non-existent library', async () => {
-      await cmdView('nonexistent-lib')
-
-      expect(consoleErrorSpy).toHaveBeenCalledWith("Error: Library 'nonexistent-lib' not found")
-      expect(processExitSpy).toHaveBeenCalledWith(1)
-    })
-  })
-
-  describe('viewing integration', () => {
-    it('should display integration details', async () => {
-      await cmdView('test-lib/Integration1')
-
-      const output = consoleLogSpy.mock.calls.map((call) => call[0]).join('\n')
-      expect(output).toContain('Library      : test-lib (v1.0.0)')
-      expect(output).toContain('Integration  : Integration1')
-      expect(output).toContain('Summary      : First integration')
-      expect(output).toContain('Types        : [genericIntegration]')
-      expect(output).toContain('Installed    : [genericIntegration]')
-    })
-
-    it('should display not installed integration', async () => {
-      await cmdView('test-lib/Integration2')
-
-      const output = consoleLogSpy.mock.calls.map((call) => call[0]).join('\n')
-      expect(output).toContain('Integration  : Integration2')
-      expect(output).toContain('Installed    : (none)')
-    })
-
-    it('should error for non-existent integration', async () => {
-      await cmdView('test-lib/NonExistent')
-
-      expect(consoleErrorSpy).toHaveBeenCalledWith("Error: Integration 'NonExistent' not found in library 'test-lib'")
-      expect(processExitSpy).toHaveBeenCalledWith(1)
-    })
-
-    it('should error when library does not exist', async () => {
-      await cmdView('nonexistent/Integration')
-
-      expect(consoleErrorSpy).toHaveBeenCalledWith("Error: Library 'nonexistent' not found")
-      expect(processExitSpy).toHaveBeenCalledWith(1)
-    })
-
-    it('should format multiple types correctly', async () => {
-      const providersWithDual = [
-        {
-          libraryName  : 'dual-lib',
-          version      : '1.0.0',
-          path         : '/path',
-          integrations : [
-            {
-              name           : 'Dual',
-              summary        : 'Dual type',
-              types          : [INTEGRATION_TYPES.GENERIC, INTEGRATION_TYPES.CLAUDE_SKILL],
-              installedTypes : [INTEGRATION_TYPES.GENERIC],
-            },
-          ],
-        },
-      ]
-
-      cache.loadProvidersWithCache.mockResolvedValue({
-        npmProviders    : providersWithDual,
-        remoteProviders : [],
+  describe('viewProjectPlugins', () => {
+    it('should display plugins for project', async () => {
+      await createTestPackage(tempDir, 'test-lib', {
+        name        : 'test-plugin',
+        version     : '1.0.0',
+        description : 'Test plugin',
+        skillPath   : '.claude-plugin/skill',
       })
-      registry.loadInstallationStatus.mockResolvedValue(providersWithDual)
+      await createPackageJson(tempDir, ['test-lib'])
 
-      await cmdView('dual-lib/Dual')
+      // Capture console output
+      const logs = []
+      // eslint-disable-next-line no-console
+      const originalLog = console.log
+      // eslint-disable-next-line no-console
+      console.log = (...args) => logs.push(args.join(' '))
 
-      const output = consoleLogSpy.mock.calls.map((call) => call[0]).join('\n')
-      expect(output).toContain('Types        : [genericIntegration, claudeSkill]')
-      expect(output).toContain('Installed    : [genericIntegration]')
+      const config = ClaudePluginConfig.createForTest(tempDir)
+      await viewCommand({ path : tempDir, config })
+
+      // eslint-disable-next-line no-console
+      console.log = originalLog
+
+      const output = logs.join('\n')
+
+      expect(output).toContain('test-plugin')
+      expect(output).toContain('• Not installed')
+      expect(output).toContain('Test plugin')
+      expect(output).toContain('Summary: 0 enabled, 0 disabled, 1 available')
+    })
+
+    it('should show enabled plugin status', async () => {
+      await createTestPackage(tempDir, 'enabled-lib', {
+        name        : 'enabled-plugin',
+        version     : '1.0.0',
+        description : 'Enabled plugin',
+        skillPath   : '.claude-plugin/skill',
+      })
+      await createPackageJson(tempDir, ['enabled-lib'])
+
+      // Mark plugin as enabled
+      await updateSettings(settingsPath, [
+        {
+          packageName       : 'enabled-lib',
+          path              : path.join(tempDir, 'node_modules', 'enabled-lib'),
+          version           : '1.0.0',
+          pluginDeclaration : {
+            name        : 'enabled-plugin',
+            version     : '1.0.0',
+            description : 'Enabled plugin',
+            skillPath   : '.claude-plugin/skill',
+          },
+        },
+      ])
+
+      const logs = []
+      // eslint-disable-next-line no-console
+      const originalLog = console.log
+      // eslint-disable-next-line no-console
+      console.log = (...args) => logs.push(args.join(' '))
+
+      const config = ClaudePluginConfig.createForTest(tempDir)
+      await viewCommand({ path : tempDir, config })
+
+      // eslint-disable-next-line no-console
+      console.log = originalLog
+
+      const output = logs.join('\n')
+
+      expect(output).toContain('✓ Enabled')
+      expect(output).toContain('Summary: 1 enabled, 0 disabled, 0 available')
+    })
+
+    it('should show disabled plugin status', async () => {
+      await createTestPackage(tempDir, 'disabled-lib', {
+        name        : 'disabled-plugin',
+        version     : '1.0.0',
+        description : 'Disabled plugin',
+        skillPath   : '.claude-plugin/skill',
+      })
+      await createPackageJson(tempDir, ['disabled-lib'])
+
+      // Create settings with disabled plugin
+      await fs.writeFile(
+        settingsPath,
+        JSON.stringify({
+          plugins : {
+            enabled      : [],
+            disabled     : ['disabled-plugin'],
+            marketplaces : {},
+          },
+        }),
+        'utf8'
+      )
+
+      const logs = []
+      // eslint-disable-next-line no-console
+      const originalLog = console.log
+      // eslint-disable-next-line no-console
+      console.log = (...args) => logs.push(args.join(' '))
+
+      const config = ClaudePluginConfig.createForTest(tempDir)
+      await viewCommand({ path : tempDir, config })
+
+      // eslint-disable-next-line no-console
+      console.log = originalLog
+
+      const output = logs.join('\n')
+
+      expect(output).toContain('⊗ Disabled (by user)')
+      expect(output).toContain('Summary: 0 enabled, 1 disabled, 0 available')
+    })
+
+    it('should handle no plugins found', async () => {
+      const logs = []
+      // eslint-disable-next-line no-console
+      const originalLog = console.log
+      // eslint-disable-next-line no-console
+      console.log = (...args) => logs.push(args.join(' '))
+
+      const config = ClaudePluginConfig.createForTest(tempDir)
+      await viewCommand({ path : tempDir, config })
+
+      // eslint-disable-next-line no-console
+      console.log = originalLog
+
+      const output = logs.join('\n')
+
+      expect(output).toContain('No Claude Code plugins found in dependencies.')
+    })
+
+    it('should handle multiple plugins', async () => {
+      await createTestPackage(tempDir, 'lib-1', {
+        name        : 'plugin-1',
+        version     : '1.0.0',
+        description : 'First plugin',
+        skillPath   : '.claude-plugin/skill',
+      })
+
+      await createTestPackage(tempDir, 'lib-2', {
+        name        : 'plugin-2',
+        version     : '2.0.0',
+        description : 'Second plugin',
+        skillPath   : '.claude-plugin/skill',
+      })
+      await createPackageJson(tempDir, ['lib-1', 'lib-2'])
+
+      const logs = []
+      // eslint-disable-next-line no-console
+      const originalLog = console.log
+      // eslint-disable-next-line no-console
+      console.log = (...args) => logs.push(args.join(' '))
+
+      const config = ClaudePluginConfig.createForTest(tempDir)
+      await viewCommand({ path : tempDir, config })
+
+      // eslint-disable-next-line no-console
+      console.log = originalLog
+
+      const output = logs.join('\n')
+
+      expect(output).toContain('plugin-1')
+      expect(output).toContain('plugin-2')
+      expect(output).toContain('Summary: 0 enabled, 0 disabled, 2 available')
+    })
+
+    it('should show sync warning for not installed plugins', async () => {
+      await createTestPackage(tempDir, 'new-lib', {
+        name        : 'new-plugin',
+        version     : '1.0.0',
+        description : 'New plugin',
+        skillPath   : '.claude-plugin/skill',
+      })
+      await createPackageJson(tempDir, ['new-lib'])
+
+      const logs = []
+      // eslint-disable-next-line no-console
+      const originalLog = console.log
+      // eslint-disable-next-line no-console
+      console.log = (...args) => logs.push(args.join(' '))
+
+      const config = ClaudePluginConfig.createForTest(tempDir)
+      await viewCommand({ path : tempDir, config })
+
+      // eslint-disable-next-line no-console
+      console.log = originalLog
+
+      const output = logs.join('\n')
+
+      expect(output).toContain('⚠️  Run `air sync` to enable new plugins, then restart Claude Code')
+    })
+  })
+
+  describe('viewAllPlugins', () => {
+    it('should display all plugins in settings', async () => {
+      // Create settings with plugins
+      await fs.writeFile(
+        settingsPath,
+        JSON.stringify({
+          plugins : {
+            enabled      : ['plugin-a', 'plugin-b'],
+            disabled     : ['plugin-c'],
+            marketplaces : {
+              'lib-a-marketplace' : {
+                source : {
+                  type : 'directory',
+                  path : '/path/to/lib-a',
+                },
+                plugins : {
+                  'plugin-a' : {
+                    version   : '1.0.0',
+                    skillPath : '.claude-plugin/skill',
+                  },
+                },
+              },
+              'lib-b-marketplace' : {
+                source : {
+                  type : 'directory',
+                  path : '/path/to/lib-b',
+                },
+                plugins : {
+                  'plugin-b' : {
+                    version   : '2.0.0',
+                    skillPath : '.claude-plugin/skill',
+                  },
+                },
+              },
+              'lib-c-marketplace' : {
+                source : {
+                  type : 'directory',
+                  path : '/path/to/lib-c',
+                },
+                plugins : {
+                  'plugin-c' : {
+                    version   : '3.0.0',
+                    skillPath : '.claude-plugin/skill',
+                  },
+                },
+              },
+            },
+          },
+        }),
+        'utf8'
+      )
+
+      const logs = []
+      // eslint-disable-next-line no-console
+      const originalLog = console.log
+      // eslint-disable-next-line no-console
+      console.log = (...args) => logs.push(args.join(' '))
+
+      const config = ClaudePluginConfig.createForTest(tempDir)
+      await viewCommand({ all : true, config })
+
+      // eslint-disable-next-line no-console
+      console.log = originalLog
+
+      const output = logs.join('\n')
+
+      expect(output).toContain('plugin-a')
+      expect(output).toContain('plugin-b')
+      expect(output).toContain('plugin-c')
+      expect(output).toContain('✓ Enabled')
+      expect(output).toContain('⊗ Disabled (by user)')
+      expect(output).toContain('Summary: 2 enabled, 1 disabled')
+    })
+
+    it('should handle no plugins configured', async () => {
+      const logs = []
+      // eslint-disable-next-line no-console
+      const originalLog = console.log
+      // eslint-disable-next-line no-console
+      console.log = (...args) => logs.push(args.join(' '))
+
+      const config = ClaudePluginConfig.createForTest(tempDir)
+      await viewCommand({ all : true, config })
+
+      // eslint-disable-next-line no-console
+      console.log = originalLog
+
+      const output = logs.join('\n')
+
+      expect(output).toContain('No plugins configured.')
+    })
+
+    it('should show (not found) for plugins without marketplace entry', async () => {
+      // Create settings with plugin but no marketplace
+      await fs.writeFile(
+        settingsPath,
+        JSON.stringify({
+          plugins : {
+            enabled      : ['orphan-plugin'],
+            disabled     : [],
+            marketplaces : {},
+          },
+        }),
+        'utf8'
+      )
+
+      const logs = []
+      // eslint-disable-next-line no-console
+      const originalLog = console.log
+      // eslint-disable-next-line no-console
+      console.log = (...args) => logs.push(args.join(' '))
+
+      const config = ClaudePluginConfig.createForTest(tempDir)
+      await viewCommand({ all : true, config })
+
+      // eslint-disable-next-line no-console
+      console.log = originalLog
+
+      const output = logs.join('\n')
+
+      expect(output).toContain('orphan-plugin')
+      expect(output).toContain('(not found)')
     })
   })
 
   describe('error handling', () => {
-    it('should error when no argument provided', async () => {
-      await cmdView(undefined)
+    it('should handle cache read errors gracefully', async () => {
+      const errorSpy = jest.spyOn(console, 'error').mockImplementation()
+      const exitSpy = jest.spyOn(process, 'exit').mockImplementation()
 
-      expect(consoleErrorSpy).toHaveBeenCalledWith('Error: Please specify a library or library/integration')
-      expect(processExitSpy).toHaveBeenCalledWith(1)
-    })
+      // Create invalid package.json to trigger error
+      await fs.writeFile(path.join(tempDir, 'package.json'), '{invalid json}', 'utf8')
 
-    it('should handle cache errors', async () => {
-      cache.loadProvidersWithCache.mockRejectedValue(new Error('Cache error'))
+      const config = ClaudePluginConfig.createForTest(tempDir)
+      await viewCommand({ path : tempDir, config })
 
-      await cmdView('test-lib')
+      expect(exitSpy).toHaveBeenCalledWith(1)
 
-      expect(consoleErrorSpy).toHaveBeenCalledWith('Error viewing details:', 'Cache error')
-      expect(processExitSpy).toHaveBeenCalledWith(1)
-    })
-
-    it('should handle registry errors', async () => {
-      registry.loadInstallationStatus.mockRejectedValue(new Error('Registry error'))
-
-      await cmdView('test-lib')
-
-      expect(consoleErrorSpy).toHaveBeenCalledWith('Error viewing details:', 'Registry error')
-      expect(processExitSpy).toHaveBeenCalledWith(1)
+      errorSpy.mockRestore()
+      exitSpy.mockRestore()
     })
   })
 })

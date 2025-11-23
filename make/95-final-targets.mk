@@ -20,6 +20,9 @@ lint-fix: $(LINT_FIX_TARGETS)
 
 PHONY_TARGETS+=lint lint-fix
 
+.PHONY: transpile-test-files
+transpile-test-files: $(SDLC_ALL_JS_FILES_BUILT)
+
 test: $(TEST_TARGETS)
 
 PHONY_TARGETS+= test
