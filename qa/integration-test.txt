@@ -1,0 +1,2 @@
+Integration test git rev: 2ec264a717fdfc45c333c8e48d3db260139a1be4
+No tests found, exiting with code 0
