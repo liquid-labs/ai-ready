@@ -5,7 +5,7 @@ import { cmdList } from '../lib/commands/list'
 import { cmdRemove } from '../lib/commands/remove'
 import { addSource, listSources, removeSource, repairSource, updateSources } from '../lib/commands/sources'
 import { cmdVerify } from '../lib/commands/verify'
-import { cmdView } from '../lib/commands/view'
+import { viewCommand } from '../lib/commands/view'
 
 const run = () => {
   program.name('air').description('AIR (AI Ready) integration management CLI').version('0.1.0')
@@ -36,9 +36,12 @@ const run = () => {
     .action(cmdRemove)
 
   program
-    .command('view <libraryIntegration?>')
-    .description('View details about a library or integration')
-    .action(cmdView)
+    .command('view [path]')
+    .description('Show plugin status for current project or all plugins')
+    .option('-a, --all', 'Show all plugins in Claude Code settings')
+    .action(async (path, options) => {
+      await viewCommand({ path, all : options.all })
+    })
 
   program
     .command('verify')
