@@ -4,6 +4,7 @@ import { cmdInstall } from '../lib/commands/install'
 import { cmdList } from '../lib/commands/list'
 import { cmdRemove } from '../lib/commands/remove'
 import { addSource, listSources, removeSource, repairSource, updateSources } from '../lib/commands/sources'
+import { syncCommand } from '../lib/commands/sync'
 import { cmdVerify } from '../lib/commands/verify'
 import { viewCommand } from '../lib/commands/view'
 
@@ -41,6 +42,15 @@ const run = () => {
     .option('-a, --all', 'Show all plugins in Claude Code settings')
     .action(async (path, options) => {
       await viewCommand({ path, all : options.all })
+    })
+
+  program
+    .command('sync [path]')
+    .description('Discover and enable plugins from dependencies')
+    .option('-q, --quiet', 'Suppress output (for hooks)')
+    .option('--no-cache', 'Skip cache, force fresh scan')
+    .action(async (path, options) => {
+      await syncCommand({ path, quiet : options.quiet, noCache : !options.cache })
     })
 
   program
