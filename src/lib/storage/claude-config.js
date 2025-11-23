@@ -8,10 +8,11 @@ export class ClaudePluginConfig {
   /**
    * Creates a new ClaudePluginConfig
    * @param {object} [options] - Configuration options
-   * @param {string} [options.pluginsDir] - Override the plugins directory (defaults to $HOME/.claude/plugins)
+   * @param {string} [options.claudeDir] - Override the Claude directory (defaults to $HOME/.claude)
    */
   constructor(options = {}) {
-    this.pluginsDir = options.pluginsDir || path.join(os.homedir(), '.claude', 'plugins')
+    this.claudeDir = options.claudeDir || path.join(os.homedir(), '.claude')
+    this.pluginsDir = path.join(this.claudeDir, 'plugins')
   }
 
   /**
@@ -31,6 +32,14 @@ export class ClaudePluginConfig {
   }
 
   /**
+   * Gets the path to settings.json
+   * @returns {string} Absolute path to settings.json
+   */
+  get settingsPath() {
+    return path.join(this.claudeDir, 'settings.json')
+  }
+
+  /**
    * Creates a default configuration (uses global ~/.claude/plugins)
    * @returns {ClaudePluginConfig} Default configuration
    */
@@ -45,7 +54,7 @@ export class ClaudePluginConfig {
    */
   static createForTest(testDir) {
     return new ClaudePluginConfig({
-      pluginsDir : path.join(testDir, '.claude', 'plugins'),
+      claudeDir : path.join(testDir, '.claude'),
     })
   }
 }
