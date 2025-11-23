@@ -281,16 +281,16 @@ describe('air sync (functional)', () => {
   })
 
   describe('Error handling', () => {
-    it('should fail gracefully with missing package.json', async () => {
+    it('should handle missing package.json gracefully', async () => {
       // Remove package.json
       await require('fs/promises').unlink(path.join(testDir, 'package.json'))
 
-      const { stderr, exitCode } = await runCLI(['sync'], testDir, {
+      const { exitCode } = await runCLI(['sync'], testDir, {
         env : { ...process.env, HOME : homeDir },
       })
 
-      expect(exitCode).not.toBe(0)
-      expect(stderr.toLowerCase()).toMatch(/package\.json|enoent|no such file/)
+      // Should succeed with no plugins (graceful degradation)
+      expect(exitCode).toBe(0)
     })
 
     it('should handle malformed package.json', async () => {

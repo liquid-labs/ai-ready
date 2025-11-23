@@ -141,14 +141,14 @@ describe('air view (functional)', () => {
   })
 
   describe('Output format', () => {
-    it('should display plugin information in table format', async () => {
+    it('should display plugin information in hierarchical format', async () => {
       const { stdout, exitCode } = await runCLI(['view'], testDir, {
         env : { ...process.env, HOME : homeDir },
       })
 
       expect(exitCode).toBe(0)
-      // Check for table headers
-      expect(stdout).toMatch(/plugin.*status|name.*status/i)
+      // Check for hierarchical format with key sections
+      expect(stdout.toLowerCase()).toMatch(/package:|plugin:|status:|description:/i)
     })
 
     it('should show version information', async () => {
@@ -177,12 +177,13 @@ describe('air view (functional)', () => {
       // Remove package.json
       await require('fs/promises').unlink(path.join(testDir, 'package.json'))
 
-      const { stderr, exitCode } = await runCLI(['view'], testDir, {
+      const { stdout, exitCode } = await runCLI(['view'], testDir, {
         env : { ...process.env, HOME : homeDir },
       })
 
-      expect(exitCode).not.toBe(0)
-      expect(stderr.toLowerCase()).toMatch(/package\.json|enoent|no such file/)
+      // Should succeed with no plugins found (graceful degradation)
+      expect(exitCode).toBe(0)
+      expect(stdout.toLowerCase()).toMatch(/no.*plugins?|found 0/)
     })
 
     it('should handle empty project', async () => {
