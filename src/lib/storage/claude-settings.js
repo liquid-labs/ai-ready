@@ -8,6 +8,19 @@ import { PLUGIN_STATUSES } from '../types'
  */
 
 /**
+ * Convert package name to marketplace name
+ * Handles scoped packages: @scope/package -> scope-package-marketplace
+ * @param {string} packageName - npm package name
+ * @returns {string} Marketplace name
+ */
+function packageNameToMarketplaceName(packageName) {
+  // Remove @ prefix, replace / with -, and convert to lowercase
+  const normalized = packageName.replace(/^@/, '').replace(/\//g, '-').toLowerCase()
+
+  return `${normalized}-marketplace`
+}
+
+/**
  * Read Claude Code settings.json
  * @param {string} settingsPath - Path to settings.json
  * @returns {Promise<ClaudeSettings>} Settings object
@@ -63,6 +76,58 @@ export async function readSettings(settingsPath) {
 }
 
 /**
+ * Check if settings file exists
+ * @param {string} settingsPath - Path to settings.json
+ * @returns {Promise<boolean>} True if file exists, false otherwise
+ */
+async function checkSettingsExists(settingsPath) {
+  try {
+    await fs.access(settingsPath)
+
+    return true
+  }
+  catch {
+    return false
+  }
+}
+
+/**
+ * Build marketplace entry for provider
+ * @param {PluginProvider} provider - Plugin provider
+ * @returns {object} Marketplace entry
+ */
+function buildMarketplaceEntry(provider) {
+  return {
+    source : {
+      type : 'directory',
+      path : provider.path,
+    },
+    plugins : {
+      [provider.pluginDeclaration.name] : {
+        version   : provider.pluginDeclaration.version,
+        skillPath : provider.pluginDeclaration.skillPath,
+      },
+    },
+  }
+}
+
+/**
+ * Check if marketplace entry needs updating
+ * @param {object} existingMarketplace - Current marketplace entry
+ * @param {object} newMarketplace - New marketplace entry
+ * @param {string} pluginName - Plugin name
+ * @returns {boolean} True if marketplace needs updating
+ */
+function shouldUpdateMarketplace(existingMarketplace, newMarketplace, pluginName) {
+  return (
+    !existingMarketplace
+    || existingMarketplace.source.path !== newMarketplace.source.path
+    || existingMarketplace.plugins[pluginName]?.version !== newMarketplace.plugins[pluginName].version
+    || existingMarketplace.plugins[pluginName]?.skillPath !== newMarketplace.plugins[pluginName].skillPath
+  )
+}
+
+/**
  * Update settings with discovered providers (non-destructive merge)
  * @param {string} settingsPath - Path to settings.json
  * @param {PluginProvider[]} providers - Discovered providers
@@ -71,45 +136,37 @@ export async function readSettings(settingsPath) {
 export async function updateSettings(settingsPath, providers) {
   const settings = await readSettings(settingsPath)
   const changes = { added : [], updated : [] }
+  const settingsFileExists = await checkSettingsExists(settingsPath)
+  let marketplacesUpdated = false
 
   for (const provider of providers) {
     const pluginName = provider.pluginDeclaration.name
-    const marketplaceName = `${provider.packageName}-marketplace`
+    const marketplaceName = packageNameToMarketplaceName(provider.packageName)
+    const pluginKey = `${pluginName}@${marketplaceName}`
 
-    // Skip if plugin is explicitly disabled
-    if (settings.plugins.disabled.includes(pluginName)) {
+    const existingMarketplace = settings.plugins.marketplaces[marketplaceName]
+    const newMarketplace = buildMarketplaceEntry(provider)
+
+    if (shouldUpdateMarketplace(existingMarketplace, newMarketplace, pluginName)) {
+      settings.plugins.marketplaces[marketplaceName] = newMarketplace
+      marketplacesUpdated = true
+    }
+
+    if (settings.plugins.disabled.includes(pluginKey)) {
       continue
     }
 
-    // Check if plugin is already enabled
-    const isEnabled = settings.plugins.enabled.includes(pluginName)
-
+    const isEnabled = settings.plugins.enabled.includes(pluginKey)
     if (!isEnabled) {
-      // Add to enabled list
-      settings.plugins.enabled.push(pluginName)
+      settings.plugins.enabled.push(pluginKey)
       changes.added.push(pluginName)
     }
     else {
       changes.updated.push(pluginName)
     }
-
-    // Update marketplace entry (always update path/version)
-    settings.plugins.marketplaces[marketplaceName] = {
-      source : {
-        type : 'directory',
-        path : provider.path,
-      },
-      plugins : {
-        [pluginName] : {
-          version   : provider.pluginDeclaration.version,
-          skillPath : provider.pluginDeclaration.skillPath,
-        },
-      },
-    }
   }
 
-  // Only write if there were changes
-  if (changes.added.length > 0 || changes.updated.length > 0) {
+  if (changes.added.length > 0 || changes.updated.length > 0 || marketplacesUpdated || !settingsFileExists) {
     await writeSettings(settingsPath, settings)
   }
 
@@ -178,15 +235,19 @@ async function createBackup(settingsPath) {
 /**
  * Get plugin state from settings
  * @param {string} pluginName - Plugin name
+ * @param {string} packageName - Package name (for constructing plugin key)
  * @param {ClaudeSettings} settings - Settings object
  * @returns {string} Status: 'enabled' | 'disabled' | 'not-installed'
  */
-export function getPluginState(pluginName, settings) {
-  if (settings.plugins.enabled.includes(pluginName)) {
+export function getPluginState(pluginName, packageName, settings) {
+  const marketplaceName = packageNameToMarketplaceName(packageName)
+  const pluginKey = `${pluginName}@${marketplaceName}`
+
+  if (settings.plugins.enabled.includes(pluginKey)) {
     return PLUGIN_STATUSES.ENABLED
   }
 
-  if (settings.plugins.disabled.includes(pluginName)) {
+  if (settings.plugins.disabled.includes(pluginKey)) {
     return PLUGIN_STATUSES.DISABLED
   }
 
@@ -202,7 +263,7 @@ export function getPluginState(pluginName, settings) {
 export function getPluginStates(providers, settings) {
   return providers.map((provider) => ({
     name        : provider.pluginDeclaration.name,
-    status      : getPluginState(provider.pluginDeclaration.name, settings),
+    status      : getPluginState(provider.pluginDeclaration.name, provider.packageName, settings),
     source      : provider.path,
     version     : provider.pluginDeclaration.version,
     description : provider.pluginDeclaration.description,

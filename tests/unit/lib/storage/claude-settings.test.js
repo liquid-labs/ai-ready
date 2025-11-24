@@ -131,7 +131,7 @@ describe('claude-settings', () => {
 
       const settings = await readSettings(settingsPath)
 
-      expect(settings.plugins.enabled).toContain('test-plugin')
+      expect(settings.plugins.enabled).toContain('test-plugin@test-package-marketplace')
       expect(settings.plugins.marketplaces['test-package-marketplace']).toBeDefined()
     })
 
@@ -140,7 +140,7 @@ describe('claude-settings', () => {
       const existingSettings = {
         plugins : {
           enabled      : [],
-          disabled     : ['test-plugin'],
+          disabled     : ['test-plugin@test-package-marketplace'],
           marketplaces : {},
         },
       }
@@ -167,15 +167,15 @@ describe('claude-settings', () => {
 
       const settings = await readSettings(settingsPath)
 
-      expect(settings.plugins.enabled).not.toContain('test-plugin')
-      expect(settings.plugins.disabled).toContain('test-plugin')
+      expect(settings.plugins.enabled).not.toContain('test-plugin@test-package-marketplace')
+      expect(settings.plugins.disabled).toContain('test-plugin@test-package-marketplace')
     })
 
     it('should update marketplace entry for existing plugin', async () => {
       // Set up existing settings
       const existingSettings = {
         plugins : {
-          enabled      : ['test-plugin'],
+          enabled      : ['test-plugin@test-package-marketplace'],
           disabled     : [],
           marketplaces : {
             'test-package-marketplace' : {
@@ -252,18 +252,31 @@ describe('claude-settings', () => {
 
       const settings = await readSettings(settingsPath)
 
-      expect(settings.plugins.enabled).toEqual(['plugin-a', 'plugin-b'])
+      expect(settings.plugins.enabled).toEqual(['plugin-a@package-a-marketplace', 'plugin-b@package-b-marketplace'])
       expect(settings.plugins.marketplaces['package-a-marketplace']).toBeDefined()
       expect(settings.plugins.marketplaces['package-b-marketplace']).toBeDefined()
     })
 
     it('should not write settings if no changes', async () => {
-      // Set up existing settings
+      // Set up existing settings with marketplace entry already present
       const existingSettings = {
         plugins : {
           enabled      : [],
-          disabled     : ['test-plugin'],
-          marketplaces : {},
+          disabled     : ['test-plugin@test-package-marketplace'],
+          marketplaces : {
+            'test-package-marketplace' : {
+              source : {
+                type : 'directory',
+                path : '/path/to/test-package',
+              },
+              plugins : {
+                'test-plugin' : {
+                  version   : '1.0.0',
+                  skillPath : '.claude-plugin/skill',
+                },
+              },
+            },
+          },
         },
       }
       await fs.writeFile(settingsPath, JSON.stringify(existingSettings), 'utf8')
@@ -373,25 +386,25 @@ describe('claude-settings', () => {
     it('should return enabled for enabled plugin', () => {
       const settings = {
         plugins : {
-          enabled      : ['test-plugin'],
+          enabled      : ['test-plugin@test-package-marketplace'],
           disabled     : [],
           marketplaces : {},
         },
       }
 
-      expect(getPluginState('test-plugin', settings)).toBe(PLUGIN_STATUSES.ENABLED)
+      expect(getPluginState('test-plugin', 'test-package', settings)).toBe(PLUGIN_STATUSES.ENABLED)
     })
 
     it('should return disabled for disabled plugin', () => {
       const settings = {
         plugins : {
           enabled      : [],
-          disabled     : ['test-plugin'],
+          disabled     : ['test-plugin@test-package-marketplace'],
           marketplaces : {},
         },
       }
 
-      expect(getPluginState('test-plugin', settings)).toBe(PLUGIN_STATUSES.DISABLED)
+      expect(getPluginState('test-plugin', 'test-package', settings)).toBe(PLUGIN_STATUSES.DISABLED)
     })
 
     it('should return not-installed for unknown plugin', () => {
@@ -403,7 +416,7 @@ describe('claude-settings', () => {
         },
       }
 
-      expect(getPluginState('unknown-plugin', settings)).toBe(PLUGIN_STATUSES.NOT_INSTALLED)
+      expect(getPluginState('unknown-plugin', 'unknown-package', settings)).toBe(PLUGIN_STATUSES.NOT_INSTALLED)
     })
   })
 
@@ -436,8 +449,8 @@ describe('claude-settings', () => {
 
       const settings = {
         plugins : {
-          enabled      : ['plugin-a'],
-          disabled     : ['plugin-b'],
+          enabled      : ['plugin-a@package-a-marketplace'],
+          disabled     : ['plugin-b@package-b-marketplace'],
           marketplaces : {},
         },
       }

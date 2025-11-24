@@ -32,12 +32,13 @@ export async function syncCommand(options = {}) {
       console.log(`Found ${providers.length} plugin${providers.length === 1 ? '' : 's'}\n`)
     }
 
+    // Update settings (non-destructive merge)
+    // Even if no providers, we create/ensure settings file exists
+    const changes = await updateSettings(config.settingsPath, providers)
+
     if (providers.length === 0) {
       return
     }
-
-    // Update settings (non-destructive merge)
-    const changes = await updateSettings(config.settingsPath, providers)
 
     // Report changes
     if (!quiet) {

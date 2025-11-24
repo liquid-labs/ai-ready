@@ -1,15 +1,16 @@
-# AI-Ready Testing Infrastructure
+# AI-Ready Testing Infrastructure (v2.0.0)
 
 This directory contains comprehensive tests for the `ai-ready` CLI tool, organized into three test levels:
 
 ## Test Levels
 
-### 1. Unit Tests (`src/**/*.test.js`)
-- **Location**: Co-located with source files in `src/`
+### 1. Unit Tests (`tests/unit/lib/**/*.test.js`)
+- **Location**: `tests/unit/lib/` (mirroring src structure)
 - **Purpose**: Test individual modules and functions in isolation
 - **Run with**: `make test`
-- **Coverage**: Core modules (scanner, storage, parsers, commands)
+- **Coverage**: Core modules (scanner, storage, parsers, commands, types)
 - **Speed**: Fast (<2 seconds)
+- **Count**: ~120 tests across 7 test files
 
 ### 2. Functional Tests (`tests/functional/`)
 - **Location**: `tests/functional/`
@@ -17,54 +18,75 @@ This directory contains comprehensive tests for the `ai-ready` CLI tool, organiz
 - **Run with**: `make functional-test`
 - **Build process**: Transpiled via Babel (`tests/functional/` → `test-staging/tests/functional/`)
 - **What's tested**:
-  - CLI command parsing and execution
-  - Install/remove workflows
-  - List and view commands
-  - Error handling
+  - CLI command parsing and execution (`air sync`, `air view`)
+  - Plugin discovery and enablement workflows
+  - Settings file updates
+  - Error handling (missing files, invalid JSON, etc.)
   - UX output (messages, warnings, table formatting)
 - **Speed**: Medium (~10-30 seconds)
-- **Isolation**: Uses temp directories and mock Claude plugin directories
+- **Isolation**: Uses temp directories and isolated `$HOME/.claude/` directories
+- **Count**: ~41 tests across 2 test files
 
 ### 3. Integration Tests (`tests/integration/`)
 - **Location**: `tests/integration/`
-- **Purpose**: Test in production-like environments with real file system operations
+- **Purpose**: Test end-to-end workflows in production-like environments
 - **Run with**:
-  - `make integration-test` - Run Jest tests locally
-  - `make integration-test-docker` - Run in Docker container
+  - `make integration-test` - Run Jest tests locally (fast feedback)
+  - `make integration-test-docker` - Run in Docker container (full isolation)
 - **Build process**: Transpiled via Babel (`tests/integration/` → `test-staging/tests/integration/`)
 - **What's tested**:
-  - Real npm install → air install workflows
-  - Global `$HOME/.claude/plugins/` interaction
-  - Cache invalidation on package.json/package-lock.json changes
-  - State persistence across CLI invocations
-- **Speed**: Slow (~30-60 seconds for Jest, ~2-5 minutes for Docker)
-- **Isolation**: Full environment isolation in Docker
+  - Complete sync workflows with settings verification
+  - Cross-command state persistence
+  - Multi-project scenarios
+  - Settings file recovery from corruption
+  - Scoped package (@scope/package) handling
+  - Plugin version updates
+  - Filesystem edge cases (spaces, symlinks, etc.)
+  - Concurrent sync operations
+  - Package add/remove simulation
+- **Speed**: Slow (~30-90 seconds for Jest, ~2-5 minutes for Docker)
+- **Isolation**: Full environment isolation with mocked `$HOME`
+- **Count**: ~100+ tests across 10 test files
 
 ## Directory Structure
 
 ```
 tests/
-├── README.md                           # This file
-├── fixtures/                           # Test data
-│   └── test-air-package/              # Fixture npm package with AIR integrations
-│       ├── package.json
-│       └── ai-ready/integrations/
-│           ├── DualTypeIntegration/   # Both skill + generic
-│           ├── SkillOnly/             # Claude Skill only
-│           └── GenericOnly/           # Generic integration only
-├── functional/                        # CLI-level tests (fast)
-│   ├── helpers.js                     # Test utilities
-│   ├── cli-install.test.js
-│   ├── cli-remove.test.js
-│   ├── cli-list.test.js
-│   ├── cli-view.test.js
-│   └── cli-output.test.js            # UX verification (separate file)
-└── integration/                       # Docker-based tests (slow)
-    ├── Dockerfile
-    ├── integration-test.sh            # Host script: build + run Docker
-    ├── run-integration-tests.sh       # Container script: run scenarios
-    ├── integration-install-remove.test.js
-    └── integration-cache.test.js
+├── README.md                                # This file
+├── fixtures/                                # Test data and fixtures
+│   └── test-air-package/                   # Sample package with plugins
+├── unit/lib/                                # Unit tests
+│   ├── commands/
+│   │   ├── sync.test.js                    # Sync command tests
+│   │   └── view.test.js                    # View command tests
+│   ├── parsers/
+│   │   └── marketplace-json.test.js        # Plugin declaration parser
+│   ├── storage/
+│   │   └── claude-settings.test.js         # Settings manager (464 lines)
+│   ├── utils/
+│   │   └── parse-library-integration.test.js
+│   ├── scanner.test.js                     # Dependency scanner
+│   ├── types.test.js                       # Type validation
+│   └── test-lib.js                         # Unit test helpers
+├── functional/                              # CLI-level tests
+│   ├── helpers.js                           # CLI execution utilities
+│   ├── sync.test.js                         # CLI sync command (21 tests)
+│   └── view.test.js                         # CLI view command (20 tests)
+└── integration/                             # End-to-end integration tests
+    ├── test-helpers.js                      # Integration test utilities
+    ├── Dockerfile                           # Docker test environment
+    ├── integration-test.sh                  # Host-side Docker runner
+    ├── run-integration-tests.sh             # Container-side bash scenarios
+    ├── sync-workflow.test.js                # Basic sync workflows
+    ├── settings-persistence.test.js         # Cross-command state
+    ├── multi-project.test.js                # Multiple project scenarios
+    ├── settings-recovery.test.js            # Corruption & recovery
+    ├── scoped-packages.test.js              # @scope/package support
+    ├── plugin-updates.test.js               # Version updates
+    ├── multiple-plugins.test.js             # Multiple plugins per package
+    ├── filesystem-paths.test.js             # Path edge cases
+    ├── concurrent-sync.test.js              # Race condition tests
+    └── npm-workflow.test.js                 # Package add/remove simulation
 ```
 
 ## Test Build Process
@@ -100,65 +122,129 @@ npx jest tests/functional/cli-install.test.js
 npx jest tests/integration/integration-cache.test.js --testTimeout=30000
 ```
 
-## Test Fixture Package
+## Integration Test Scenarios Covered
 
-The fixture package (`tests/fixtures/test-air-package/`) provides three integrations:
+### 1. Sync Workflow (`sync-workflow.test.js`)
+- ✓ Discover and enable plugins from dependencies
+- ✓ Create settings file if missing
+- ✓ Handle projects with no plugins
+- ✓ Idempotent behavior (no duplicates on repeated sync)
+- ✓ Update marketplace entries when plugin content changes
+- ✓ Valid settings structure creation
+- ✓ Quiet mode output suppression
+- ✓ Error handling (missing package.json, missing node_modules)
 
-1. **DualTypeIntegration** - Both Claude Skill and generic integration
-   - Skill: `DualTypeSkill`
-   - Generic: `DualTypeGeneric`
-   - Tests: Dual-type workflows, selective installation with `--skill`/`--generic` flags
+### 2. Settings Persistence (`settings-persistence.test.js`)
+- ✓ State persists between sync and view commands
+- ✓ Settings maintained across multiple sync invocations
+- ✓ Never re-enable plugins that user has disabled
+- ✓ Respect disabled plugins across multiple sync runs
+- ✓ Allow re-enabling previously disabled plugins
+- ✓ Preserve manually added settings sections
+- ✓ Preserve manually added marketplaces
+- ✓ Update project marketplaces without affecting others
+- ✓ Display correct status after manual disable (view command)
 
-2. **SkillOnly** - Claude Skill without generic component
-   - Skill: `SkillOnlyIntegration`
-   - Tests: Skill-only installation, plugin registry behavior
+### 3. Multi-Project (`multi-project.test.js`)
+- ✓ Enable plugins from multiple projects in shared settings
+- ✓ Handle overlapping plugin names from different projects
+- ✓ Maintain separate settings when using different HOME directories
+- ✓ Show only project plugins with default view command
+- ✓ Handle projects with both unique and shared dependencies
+- ✓ Update shared plugin when syncing from different projects
 
-3. **GenericOnly** - Generic integration without skill component
-   - Generic: `GenericOnlyIntegration`
-   - Tests: Generic-only installation, markdown table updates
+### 4. Settings Recovery (`settings-recovery.test.js`)
+- ✓ Handle invalid JSON and create backup
+- ✓ Create fresh settings when file is empty
+- ✓ Create settings.json if file does not exist
+- ✓ Create .claude directory if it does not exist
+- ✓ Handle settings without plugins section
+- ✓ Handle settings with malformed plugins structure
+- ✓ Handle read-only settings file gracefully
+- ✓ Handle read-only .claude directory gracefully
+- ✓ Preserve valid sections when recovering from corruption
 
-## Test Scenarios Covered
+### 5. Scoped Packages (`scoped-packages.test.js`)
+- ✓ Discover and enable plugin from scoped package
+- ✓ Handle multiple scoped packages from different orgs
+- ✓ Handle scoped and non-scoped packages together
+- ✓ Use correct marketplace name format for scoped packages
+- ✓ Handle complex scoped package names with hyphens
+- ✓ Resolve correct file paths for scoped packages
+- ✓ Verify skill directory exists in scoped package
+- ✓ Display scoped packages correctly in view output
+- ✓ Handle missing scoped package gracefully
+- ✓ Handle scoped package without plugin declaration
 
-### Basic Install/Remove
-- ✓ Install Claude Skill → verify plugin registry
-- ✓ Install generic integration → verify markdown table
-- ✓ Remove skill → verify plugin removed
-- ✓ Remove generic → verify table updated
+### 6. Plugin Updates (`plugin-updates.test.js`)
+- ✓ Update marketplace when plugin version changes
+- ✓ Handle major version upgrades
+- ✓ Handle downgrades (version rollback)
+- ✓ Update skillPath when plugin structure changes
+- ✓ Update description when changed
+- ✓ Handle plugin name change within same package
+- ✓ Keep plugin enabled through version updates
+- ✓ Keep plugin disabled through version updates
 
-### Dual-Type Integrations
-- ✓ Install both types simultaneously
-- ✓ Install skill only with `--skill` flag
-- ✓ Install generic only with `--generic` flag
-- ✓ Remove one type, keep other
+### 7. Multiple Plugins (`multiple-plugins.test.js`)
+- ✓ Handle marketplace.json with multiple plugin entries
+- ✓ Handle package with plugins in different directories
+- ✓ Handle different packages with same plugin name
+- ✓ Handle multiple packages from same organization
+- ✓ Handle projects with varied plugin counts per package
+- ✓ Handle empty plugin name gracefully
 
-### Cache Invalidation
-- ✓ Create cache on first scan
-- ✓ Use cache on subsequent scans
-- ✓ Invalidate when `package.json` changes
-- ✓ Invalidate when `package-lock.json` changes
-- ✓ Rebuild if cache deleted or corrupted
+### 8. Filesystem Paths (`filesystem-paths.test.js`)
+- ✓ Handle project directory with spaces
+- ✓ Handle HOME directory with spaces
+- ✓ Handle skill path with spaces
+- ✓ Handle paths with hyphens and underscores
+- ✓ Handle paths with dots
+- ✓ Handle symlinked node_modules directory
+- ✓ Handle symlinked package directory
+- ✓ Store absolute paths in settings
+- ✓ Handle deeply nested project paths
+- ✓ Handle deeply nested skill paths
+- ✓ Handle package names with mixed case
 
-### Error Handling
-- ✓ Install non-existent integration
-- ✓ Install already-installed integration
-- ✓ Remove non-installed integration
-- ✓ Invalid integration name format
-- ✓ Type mismatch (--skill on generic-only, etc.)
+### 9. Concurrent Sync (`concurrent-sync.test.js`)
+- ✓ Handle two concurrent sync operations without corruption
+- ✓ Handle multiple concurrent syncs from different projects
+- ✓ Handle rapid successive syncs
+- ✓ Not corrupt settings during concurrent writes
+- ✓ Handle concurrent view operations during sync
+- ✓ Handle backup file creation during concurrent syncs
+- ✓ Handle many concurrent syncs without resource exhaustion
+- ✓ Handle interleaved sync and view operations
+- ✓ Maintain data consistency across concurrent operations
 
-### UX Verification (cli-output.test.js)
-- ✓ Success messages
-- ✓ Restart warnings for Claude Skills
-- ✓ Error messages and formatting
-- ✓ Table output formatting
-- ✓ Progress indicators
-- ✓ Help and version output
+### 10. npm Workflow (`npm-workflow.test.js`)
+- ✓ Discover new plugin after adding to dependencies
+- ✓ Handle adding multiple plugins at once
+- ✓ Handle adding scoped plugin
+- ✓ Handle plugin removal gracefully
+- ✓ Handle removing all plugins
+- ✓ Handle partial removal (some plugins remain)
+- ✓ Update plugin when version changes in package.json
+- ✓ Handle updating multiple plugins simultaneously
+- ✓ Handle add, update, and remove in sequence
+- ✓ Handle switching between different plugin sets
+
+### Docker Scenarios (`run-integration-tests.sh`)
+- ✓ Basic sync workflow in isolated container
+- ✓ View command functionality
+- ✓ Settings persistence (user choices respected)
+- ✓ Scoped package support
+- ✓ Idempotent behavior (no duplicates)
+- ✓ Plugin version updates
+- ✓ Empty project handling
 
 ## Writing New Tests
 
 ### Functional Test Pattern
 ```javascript
 import { describe, it, expect, beforeEach, afterEach } from '@jest/globals'
-import { setupTestEnv, setupClaudePluginDir, runCLI } from './helpers.js'
+import { setupTestEnv, setupClaudePluginDir, runCLI } from './helpers'
 
 describe('My feature', () => {
   let testDir, cleanup
@@ -210,9 +296,38 @@ describe('Integration: My feature', () => {
 })
 ```
 
+## Test Helpers
+
+### Integration Test Helpers (`tests/integration/test-helpers.js`)
+
+The integration test helpers provide utilities for setting up complex test scenarios:
+
+- `runCLI(args, cwd, options)` - Execute bundled CLI with environment isolation
+- `setupTestProject(testDir, options)` - Create test project with plugins
+- `createTestPackage(baseDir, packageName, pluginDeclaration)` - Create individual plugin package
+- `setupMultiProjectEnv(projects[])` - Create multiple test projects
+- `corruptSettingsFile(path, corruptionType)` - Generate invalid JSON for recovery tests
+- `verifySettingsStructure(settings, expected)` - Deep assertion helper for settings validation
+- `readJsonFile(filePath)` - Safe JSON file reading
+- `fileExists(filePath)` - Check file existence
+- `sleep(ms)` - Timing control for async tests
+
 ## CI/CD Integration
 
-### GitHub Actions (Recommended)
+### GitHub Actions Workflow (`.github/workflows/test.yml`)
+
+The project includes a comprehensive CI/CD workflow with matrix testing across Node versions:
+
+**Jobs:**
+1. **Lint and Build** - Code quality and build verification
+2. **Unit Tests** - Matrix across Node 18.x, 20.x, 22.x on Ubuntu and macOS
+3. **Functional Tests** - CLI-level tests across all Node versions and OSes
+4. **Integration Tests** - End-to-end Jest tests across all environments
+5. **Docker Integration Tests** - Full isolation tests in Ubuntu container
+6. **Test Summary** - Aggregate results and reporting
+7. **All Tests Passed Gate** - Final verification step
+
+**Running in CI:**
 ```yaml
 - name: Run all tests
   run: make test-all
@@ -223,10 +338,11 @@ describe('Integration: My feature', () => {
 
 ### Test Reports
 All test runs generate reports in `qa/`:
-- `qa/unit-test.txt` - Unit test results
+- `qa/unit-test.txt` - Unit test results + coverage
 - `qa/functional-test.txt` - Functional test results
 - `qa/integration-test.txt` - Integration test results
-- `qa/coverage/` - Code coverage reports
+- `qa/integration-test-docker.txt` - Docker test output
+- `qa/coverage/` - Code coverage HTML reports
 
 ## Debugging Tests
 
@@ -270,11 +386,30 @@ Cache invalidation tests rely on mtime changes. Ensure:
 - Tests include `sleep(1100)` between modifications (mtime has 1-second resolution)
 - File system supports mtime tracking
 
+## Test Coverage Summary
+
+### Current Coverage (v2.0.0)
+- **Unit Tests**: ~120 tests covering scanner, settings manager, commands, parsers, types
+- **Functional Tests**: ~41 tests covering CLI commands and user workflows
+- **Integration Tests**: ~100+ tests covering 10 comprehensive scenarios
+- **Docker Tests**: 7 bash scenarios for full environment validation
+- **Total**: ~260+ tests across all levels
+
+### Quality Gates
+- All tests must pass before merge
+- Linting must pass (ESLint via `make lint`)
+- Build must succeed (`make build`)
+- Coverage reports generated for unit tests
+- Matrix testing across Node 18.x, 20.x, 22.x
+- Cross-platform testing (Ubuntu, macOS)
+
 ## Future Enhancements
 
 Potential additions to the test suite:
-- Remote repository integration tests (`air sources` commands)
-- Performance benchmarks
-- Cross-platform tests (macOS, Linux, Windows)
-- Multiple Node.js version testing
-- Real npm package testing (once published)
+- Performance benchmarks for large projects (1000+ dependencies)
+- Windows compatibility testing (currently Ubuntu/macOS only)
+- Real npm registry testing (tarball installs, actual npm publish flow)
+- Load testing for concurrent operations
+- Fuzzing for marketplace.json parser
+- Visual regression testing for CLI output formatting
+- Integration with real Claude Code installation

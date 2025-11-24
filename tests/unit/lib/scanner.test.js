@@ -10,7 +10,9 @@ describe('scanner', () => {
   let tempDir
 
   beforeEach(async () => {
-    tempDir = await fs.mkdtemp(path.join(os.tmpdir(), 'air-scanner-test-'))
+    const tempDirRaw = await fs.mkdtemp(path.join(os.tmpdir(), 'air-scanner-test-'))
+    // Resolve symlinks to get canonical path (e.g., /var -> /private/var on macOS)
+    tempDir = await fs.realpath(tempDirRaw)
   })
 
   afterEach(async () => {
