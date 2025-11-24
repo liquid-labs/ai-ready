@@ -76,6 +76,58 @@ export async function readSettings(settingsPath) {
 }
 
 /**
+ * Check if settings file exists
+ * @param {string} settingsPath - Path to settings.json
+ * @returns {Promise<boolean>} True if file exists, false otherwise
+ */
+async function checkSettingsExists(settingsPath) {
+  try {
+    await fs.access(settingsPath)
+
+    return true
+  }
+  catch {
+    return false
+  }
+}
+
+/**
+ * Build marketplace entry for provider
+ * @param {PluginProvider} provider - Plugin provider
+ * @returns {object} Marketplace entry
+ */
+function buildMarketplaceEntry(provider) {
+  return {
+    source : {
+      type : 'directory',
+      path : provider.path,
+    },
+    plugins : {
+      [provider.pluginDeclaration.name] : {
+        version   : provider.pluginDeclaration.version,
+        skillPath : provider.pluginDeclaration.skillPath,
+      },
+    },
+  }
+}
+
+/**
+ * Check if marketplace entry needs updating
+ * @param {object} existingMarketplace - Current marketplace entry
+ * @param {object} newMarketplace - New marketplace entry
+ * @param {string} pluginName - Plugin name
+ * @returns {boolean} True if marketplace needs updating
+ */
+function shouldUpdateMarketplace(existingMarketplace, newMarketplace, pluginName) {
+  return (
+    !existingMarketplace
+    || existingMarketplace.source.path !== newMarketplace.source.path
+    || existingMarketplace.plugins[pluginName]?.version !== newMarketplace.plugins[pluginName].version
+    || existingMarketplace.plugins[pluginName]?.skillPath !== newMarketplace.plugins[pluginName].skillPath
+  )
+}
+
+/**
  * Update settings with discovered providers (non-destructive merge)
  * @param {string} settingsPath - Path to settings.json
  * @param {PluginProvider[]} providers - Discovered providers
@@ -84,60 +136,28 @@ export async function readSettings(settingsPath) {
 export async function updateSettings(settingsPath, providers) {
   const settings = await readSettings(settingsPath)
   const changes = { added : [], updated : [] }
-
-  // Check if settings file exists
-  let settingsFileExists = false
-  try {
-    await fs.access(settingsPath)
-    settingsFileExists = true
-  }
-  catch {
-    settingsFileExists = false
-  }
-
+  const settingsFileExists = await checkSettingsExists(settingsPath)
   let marketplacesUpdated = false
 
   for (const provider of providers) {
     const pluginName = provider.pluginDeclaration.name
     const marketplaceName = packageNameToMarketplaceName(provider.packageName)
-    const pluginKey = `${pluginName}@${marketplaceName}` // Full plugin key format
+    const pluginKey = `${pluginName}@${marketplaceName}`
 
-    // Check if marketplace entry needs updating
     const existingMarketplace = settings.plugins.marketplaces[marketplaceName]
-    const newMarketplace = {
-      source : {
-        type : 'directory',
-        path : provider.path,
-      },
-      plugins : {
-        [pluginName] : {
-          version   : provider.pluginDeclaration.version,
-          skillPath : provider.pluginDeclaration.skillPath,
-        },
-      },
-    }
+    const newMarketplace = buildMarketplaceEntry(provider)
 
-    // Only update if marketplace entry changed
-    if (
-      !existingMarketplace
-      || existingMarketplace.source.path !== newMarketplace.source.path
-      || existingMarketplace.plugins[pluginName]?.version !== newMarketplace.plugins[pluginName].version
-      || existingMarketplace.plugins[pluginName]?.skillPath !== newMarketplace.plugins[pluginName].skillPath
-    ) {
+    if (shouldUpdateMarketplace(existingMarketplace, newMarketplace, pluginName)) {
       settings.plugins.marketplaces[marketplaceName] = newMarketplace
       marketplacesUpdated = true
     }
 
-    // Don't enable disabled plugins, but do track them
     if (settings.plugins.disabled.includes(pluginKey)) {
       continue
     }
 
-    // Check if plugin is already enabled
     const isEnabled = settings.plugins.enabled.includes(pluginKey)
-
     if (!isEnabled) {
-      // Add to enabled list
       settings.plugins.enabled.push(pluginKey)
       changes.added.push(pluginName)
     }
@@ -146,8 +166,6 @@ export async function updateSettings(settingsPath, providers) {
     }
   }
 
-  // Write if there were changes OR if marketplaces were updated OR if settings file doesn't exist
-  // (ensure settings file is always created, even for empty projects)
   if (changes.added.length > 0 || changes.updated.length > 0 || marketplacesUpdated || !settingsFileExists) {
     await writeSettings(settingsPath, settings)
   }

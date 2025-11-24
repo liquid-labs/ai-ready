@@ -118,10 +118,11 @@ describe('Integration: Settings Persistence', () => {
 
       await fs.writeFile(settingsPath, JSON.stringify(settings, null, 2))
 
-      // Run sync 3 more times
-      for (let i = 0; i < 3; i++) {
+      // Run sync 3 more times sequentially
+      await [0, 1, 2].reduce(async (previousPromise) => {
+        await previousPromise
         await runCLI(['sync'], projectDir, { env : { HOME : projectDir } })
-      }
+      }, Promise.resolve())
 
       // Verify plugins still disabled
       const finalSettings = await readJsonFile(settingsPath)

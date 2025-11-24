@@ -329,8 +329,11 @@ describe('Integration: Plugin Updates', () => {
 
       expect(settings.plugins.enabled).toContain('StablePlugin@stable-plugin-marketplace')
 
-      // Update through multiple versions
-      for (const version of ['1.1.0', '1.2.0', '2.0.0', '2.1.0']) {
+      // Update through multiple versions sequentially
+      const versions = ['1.1.0', '1.2.0', '2.0.0', '2.1.0']
+      await versions.reduce(async (previousPromise, version) => {
+        await previousPromise
+
         await createTestPackage(projectDir, 'stable-plugin', {
           name        : 'StablePlugin',
           version,
@@ -344,7 +347,7 @@ describe('Integration: Plugin Updates', () => {
 
         // Should remain enabled
         expect(settings.plugins.enabled).toContain('StablePlugin@stable-plugin-marketplace')
-      }
+      }, Promise.resolve())
     })
 
     it('should keep plugin disabled through version updates', async () => {
