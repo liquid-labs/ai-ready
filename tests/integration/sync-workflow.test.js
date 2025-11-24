@@ -209,7 +209,7 @@ describe('Integration: Sync Workflow', () => {
 
       expect(verification.valid).toBe(true)
       if (!verification.valid) {
-        console.error('Validation errors:', verification.errors)
+        process.stderr.write(`Validation errors: ${JSON.stringify(verification.errors, null, 2)}\n`)
       }
     })
   })

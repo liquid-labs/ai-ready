@@ -54,7 +54,6 @@ describe('Integration: Settings Persistence', () => {
 
       const settingsPath = path.join(projectDir, '.claude/settings.json')
       const settings1 = await readJsonFile(settingsPath)
-      const timestamp1 = (await fs.stat(settingsPath)).mtime
 
       // Second sync (after small delay)
       await new Promise((resolve) => setTimeout(resolve, 100))

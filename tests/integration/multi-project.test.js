@@ -7,7 +7,7 @@ import fs from 'fs/promises'
 import os from 'os'
 import path from 'path'
 
-import { createTestPackage, readJsonFile, runCLI, setupMultiProjectEnv } from './test-helpers'
+import { readJsonFile, runCLI, setupMultiProjectEnv } from './test-helpers'
 
 describe('Integration: Multi-Project', () => {
   let testDir
@@ -36,7 +36,7 @@ describe('Integration: Multi-Project', () => {
       await fs.mkdir(projectA, { recursive : true })
       await fs.mkdir(projectB, { recursive : true })
 
-      const { projects } = await setupMultiProjectEnv([
+      await setupMultiProjectEnv([
         {
           name    : 'project-a',
           dir     : projectA,

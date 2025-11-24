@@ -7,7 +7,7 @@ import fs from 'fs/promises'
 import os from 'os'
 import path from 'path'
 
-import { createTestPackage, readJsonFile, runCLI, setupTestProject } from './test-helpers'
+import { createTestPackage, readJsonFile, runCLI } from './test-helpers'
 
 describe('Integration: Scoped Packages', () => {
   let testDir
