@@ -242,40 +242,42 @@ describe('Integration: Multiple Plugins', () => {
       await fs.writeFile(path.join(projectDir, 'package.json'), JSON.stringify(packageJson, null, 2))
 
       // Create three plugins from same org
-      for (const [pkg, pluginName] of [
-        ['@myorg/core-plugin', 'CorePlugin'],
-        ['@myorg/utils-plugin', 'UtilsPlugin'],
-        ['@myorg/ext-plugin', 'ExtPlugin'],
-      ]) {
-        const packagePath = path.join(projectDir, `node_modules/${pkg}`)
-        await fs.mkdir(packagePath, { recursive : true })
+      await Promise.all(
+        [
+          ['@myorg/core-plugin', 'CorePlugin'],
+          ['@myorg/utils-plugin', 'UtilsPlugin'],
+          ['@myorg/ext-plugin', 'ExtPlugin'],
+        ].map(async ([pkg, pluginName]) => {
+          const packagePath = path.join(projectDir, `node_modules/${pkg}`)
+          await fs.mkdir(packagePath, { recursive : true })
 
-        await fs.writeFile(
-          path.join(packagePath, 'package.json'),
-          JSON.stringify({ name : pkg, version : '1.0.0' }, null, 2)
-        )
-
-        const pluginDir = path.join(packagePath, '.claude-plugin')
-        await fs.mkdir(pluginDir, { recursive : true })
-
-        await fs.writeFile(
-          path.join(pluginDir, 'marketplace.json'),
-          JSON.stringify(
-            {
-              name        : pluginName,
-              version     : '1.0.0',
-              description : `${pluginName} from ${pkg}`,
-              skillPath   : '.claude-plugin/skill',
-            },
-            null,
-            2
+          await fs.writeFile(
+            path.join(packagePath, 'package.json'),
+            JSON.stringify({ name : pkg, version : '1.0.0' }, null, 2)
           )
-        )
 
-        const skillPath = path.join(packagePath, '.claude-plugin/skill')
-        await fs.mkdir(skillPath, { recursive : true })
-        await fs.writeFile(path.join(skillPath, 'SKILL.md'), `# ${pluginName}`)
-      }
+          const pluginDir = path.join(packagePath, '.claude-plugin')
+          await fs.mkdir(pluginDir, { recursive : true })
+
+          await fs.writeFile(
+            path.join(pluginDir, 'marketplace.json'),
+            JSON.stringify(
+              {
+                name        : pluginName,
+                version     : '1.0.0',
+                description : `${pluginName} from ${pkg}`,
+                skillPath   : '.claude-plugin/skill',
+              },
+              null,
+              2
+            )
+          )
+
+          const skillPath = path.join(packagePath, '.claude-plugin/skill')
+          await fs.mkdir(skillPath, { recursive : true })
+          await fs.writeFile(path.join(skillPath, 'SKILL.md'), `# ${pluginName}`)
+        })
+      )
 
       const result = await runCLI(['sync'], projectDir, { env : { HOME : projectDir } })
       expect(result.exitCode).toBe(0)
@@ -311,39 +313,41 @@ describe('Integration: Multiple Plugins', () => {
       await fs.writeFile(path.join(projectDir, 'package.json'), JSON.stringify(packageJson, null, 2))
 
       // Create two packages, each with one plugin
-      for (const [pkg, pluginName] of [
-        ['single-plugin', 'SinglePlugin'],
-        ['another-single', 'AnotherPlugin'],
-      ]) {
-        const packagePath = path.join(projectDir, `node_modules/${pkg}`)
-        await fs.mkdir(packagePath, { recursive : true })
+      await Promise.all(
+        [
+          ['single-plugin', 'SinglePlugin'],
+          ['another-single', 'AnotherPlugin'],
+        ].map(async ([pkg, pluginName]) => {
+          const packagePath = path.join(projectDir, `node_modules/${pkg}`)
+          await fs.mkdir(packagePath, { recursive : true })
 
-        await fs.writeFile(
-          path.join(packagePath, 'package.json'),
-          JSON.stringify({ name : pkg, version : '1.0.0' }, null, 2)
-        )
-
-        const pluginDir = path.join(packagePath, '.claude-plugin')
-        await fs.mkdir(pluginDir, { recursive : true })
-
-        await fs.writeFile(
-          path.join(pluginDir, 'marketplace.json'),
-          JSON.stringify(
-            {
-              name        : pluginName,
-              version     : '1.0.0',
-              description : pluginName,
-              skillPath   : '.claude-plugin/skill',
-            },
-            null,
-            2
+          await fs.writeFile(
+            path.join(packagePath, 'package.json'),
+            JSON.stringify({ name : pkg, version : '1.0.0' }, null, 2)
           )
-        )
 
-        const skillPath = path.join(packagePath, '.claude-plugin/skill')
-        await fs.mkdir(skillPath, { recursive : true })
-        await fs.writeFile(path.join(skillPath, 'SKILL.md'), `# ${pluginName}`)
-      }
+          const pluginDir = path.join(packagePath, '.claude-plugin')
+          await fs.mkdir(pluginDir, { recursive : true })
+
+          await fs.writeFile(
+            path.join(pluginDir, 'marketplace.json'),
+            JSON.stringify(
+              {
+                name        : pluginName,
+                version     : '1.0.0',
+                description : pluginName,
+                skillPath   : '.claude-plugin/skill',
+              },
+              null,
+              2
+            )
+          )
+
+          const skillPath = path.join(packagePath, '.claude-plugin/skill')
+          await fs.mkdir(skillPath, { recursive : true })
+          await fs.writeFile(path.join(skillPath, 'SKILL.md'), `# ${pluginName}`)
+        })
+      )
 
       const result = await runCLI(['sync'], projectDir, { env : { HOME : projectDir } })
       expect(result.exitCode).toBe(0)
