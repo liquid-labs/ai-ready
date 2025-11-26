@@ -127,6 +127,27 @@ export async function setupTestProject(testDir, options = {}) {
 }
 
 /**
+ * Create a package.json file with specified dependencies
+ * @param {string} baseDir - Base directory
+ * @param {string[]} dependencies - List of dependency package names
+ * @returns {Promise<void>}
+ */
+export async function createPackageJson(baseDir, dependencies = []) {
+  const deps = {}
+  for (const dep of dependencies) {
+    deps[dep] = '1.0.0'
+  }
+
+  const packageJson = {
+    name         : 'test-project',
+    version      : '1.0.0',
+    dependencies : deps,
+  }
+
+  await fs.writeFile(path.join(baseDir, 'package.json'), JSON.stringify(packageJson, null, 2))
+}
+
+/**
  * Create a test package with .claude-plugin/marketplace.json
  * @param {string} baseDir - Base directory
  * @param {string} packageName - Package name

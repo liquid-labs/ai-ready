@@ -7,58 +7,6 @@ import { parseMarketplaceJson } from './parsers/marketplace-json'
  * @import { PluginProvider } from './types.js'
  */
 
-// ===========================================================================
-// TEMPORARY: Old exports kept for backward compatibility during migration
-// These will be removed in Phase 5
-// ===========================================================================
-
-/**
- * Temporary stub for backward compatibility
- * @deprecated Use scanDependencies() instead
- * @returns {Promise<object>} Empty scan results
- */
-// eslint-disable-next-line require-await
-export async function scanAll() {
-  return {
-    npmProviders    : [],
-    remoteProviders : [],
-  }
-}
-
-/**
- * Temporary stub for backward compatibility
- * @deprecated Use scanDependencies() instead
- * @returns {Promise<Array>} Empty array
- */
-// eslint-disable-next-line require-await
-export async function scanNpmProviders() {
-  return []
-}
-
-/**
- * Temporary stub for backward compatibility
- * @deprecated Use scanDependencies() instead
- * @returns {Promise<Array>} Empty array
- */
-// eslint-disable-next-line require-await
-export async function scanRemoteProviders() {
-  return []
-}
-
-/**
- * Temporary stub for backward compatibility
- * @deprecated Use scanDependencies() instead
- * @returns {Promise<Array>} Empty array
- */
-// eslint-disable-next-line require-await
-export async function scanForProviders() {
-  return []
-}
-
-// ===========================================================================
-// New scanner implementation (v2.0.0)
-// ===========================================================================
-
 /**
  * Scan direct dependencies for packages with .claude-plugin/marketplace.json
  * Only scans packages listed in dependencies and devDependencies in package.json

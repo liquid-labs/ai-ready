@@ -8,7 +8,11 @@ SDLC_BABEL_CONFIG:=$(shell npm explore @liquid-labs/sdlc-resource-babel-and-roll
 SDLC_ROLLUP:=npx rollup
 SDLC_ROLLUP_CONFIG:=$(shell npm explore @liquid-labs/sdlc-resource-babel-and-rollup -- pwd)/dist/rollup/rollup.config.mjs
 
-SDLC_JEST:=NODE_OPTIONS="$$NODE_OPTIONS --no-webstorage" npx jest
+# Node 
+# REVIEW (2025-11-26): In v25.0.0, Node switched to using the 'webstorage' API by default. This causes a conflict with
+# something in the test (Jest?). If this becomes a non-issue in the future this special casing can be removed.
+SDLC_NODE_MAJOR_VERSION:=$(shell echo $$(node --version) | sed -Ee 's/^v([0-9]+).*/\1/')
+SDLC_JEST:=$(shell if [ "$(SDLC_NODE_MAJOR_VERSION)" -ge "25" ]; then echo NODE_OPTIONS="'$$NODE_OPTIONS --no-webstorage' "; fi)npx jest
 SDLC_JEST_CONFIG:=$(shell npm explore @liquid-labs/sdlc-resource-jest -- pwd)/dist/jest.config.js
 
 SDLC_ESLINT:=npx fandl

@@ -15,7 +15,7 @@ LINT_IGNORE_PATTERNS:=--ignore-pattern '$(DIST)/**/*'\
 --ignore-pattern '$(TEST_STAGING)/**/*'\
 --ignore-pattern '$(DOC)/**/*'
 
-$(SDLC_LINT_REPORT) $(SDLC_LINT_PASS_MARKER): $(SDLC_ALL_JS_FILES_SRC)
+$(SDLC_LINT_REPORT) $(SDLC_LINT_PASS_MARKER): $(SDLC_ALL_JS_FILES_BUILT)
 	mkdir -p $(dir $@)
 	echo -n 'Test git rev: ' > $(SDLC_LINT_REPORT)
 	git rev-parse HEAD >> $(SDLC_LINT_REPORT)
