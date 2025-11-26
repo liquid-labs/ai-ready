@@ -32,7 +32,14 @@
       "Bash(find:*)",
       "Bash(git add:*)",
       "Bash(git commit:*)",
-      "Bash(npm uninstall:*)"
+      "Bash(npm uninstall:*)",
+      "Bash(git help:*)",
+      "Bash(npm help:*)",
+      "Bash(az --help:*)",
+      "Bash(git --help:*)",
+      "Bash(npm --version:*)",
+      "Bash(npm ls:*)",
+      "Bash(docker inspect:*)"
     ],
     "deny": [],
     "ask": []
