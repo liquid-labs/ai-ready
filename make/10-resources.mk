@@ -10,7 +10,7 @@ SDLC_ROLLUP_CONFIG:=$(shell npm explore @liquid-labs/sdlc-resource-babel-and-rol
 
 # Node 
 SDLC_NODE_MAJOR_VERSION:=$(shell echo $$(node --version) | sed -Ee 's/^v([0-9]+).*/\1/')
-SDLC_JEST:=$(shell if [ "$(SDLC_NODE_MAJOR_VERSION)" -ge "25" ]; then echo NODE_OPTIONS="'$$NODE_OPTIONS --no-webstorage'"; fi) npx jest; else npx jest; fi)
+SDLC_JEST:=$(shell if [ "$(SDLC_NODE_MAJOR_VERSION)" -ge "25" ]; then echo NODE_OPTIONS="'$$NODE_OPTIONS --no-webstorage' "; fi)npx jest
 SDLC_JEST_CONFIG:=$(shell npm explore @liquid-labs/sdlc-resource-jest -- pwd)/dist/jest.config.js
 
 SDLC_ESLINT:=npx fandl
