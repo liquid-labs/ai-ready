@@ -2,13 +2,13 @@ import fs from 'fs/promises'
 import os from 'os'
 import path from 'path'
 
-import { viewCommand } from '_lib/commands/view'
+import { pluginsViewCommand } from '_lib/commands/plugins-view'
 import { ClaudePluginConfig } from '_lib/storage/claude-config'
 import { updateSettings } from '_lib/storage/claude-settings'
 
 import { createPackageJson, createTestPackage } from '../test-lib'
 
-describe('view command', () => {
+describe('plugins view command', () => {
   let tempDir
   let claudeDir
   let settingsPath
@@ -42,7 +42,7 @@ describe('view command', () => {
       console.log = (...args) => logs.push(args.join(' '))
 
       const config = ClaudePluginConfig.createForTest(tempDir)
-      await viewCommand({ path : tempDir, config })
+      await pluginsViewCommand({ path : tempDir, config })
 
       // eslint-disable-next-line no-console
       console.log = originalLog
@@ -86,7 +86,7 @@ describe('view command', () => {
       console.log = (...args) => logs.push(args.join(' '))
 
       const config = ClaudePluginConfig.createForTest(tempDir)
-      await viewCommand({ path : tempDir, config })
+      await pluginsViewCommand({ path : tempDir, config })
 
       // eslint-disable-next-line no-console
       console.log = originalLog
@@ -126,7 +126,7 @@ describe('view command', () => {
       console.log = (...args) => logs.push(args.join(' '))
 
       const config = ClaudePluginConfig.createForTest(tempDir)
-      await viewCommand({ path : tempDir, config })
+      await pluginsViewCommand({ path : tempDir, config })
 
       // eslint-disable-next-line no-console
       console.log = originalLog
@@ -145,7 +145,7 @@ describe('view command', () => {
       console.log = (...args) => logs.push(args.join(' '))
 
       const config = ClaudePluginConfig.createForTest(tempDir)
-      await viewCommand({ path : tempDir, config })
+      await pluginsViewCommand({ path : tempDir, config })
 
       // eslint-disable-next-line no-console
       console.log = originalLog
@@ -178,7 +178,7 @@ describe('view command', () => {
       console.log = (...args) => logs.push(args.join(' '))
 
       const config = ClaudePluginConfig.createForTest(tempDir)
-      await viewCommand({ path : tempDir, config })
+      await pluginsViewCommand({ path : tempDir, config })
 
       // eslint-disable-next-line no-console
       console.log = originalLog
@@ -206,7 +206,7 @@ describe('view command', () => {
       console.log = (...args) => logs.push(args.join(' '))
 
       const config = ClaudePluginConfig.createForTest(tempDir)
-      await viewCommand({ path : tempDir, config })
+      await pluginsViewCommand({ path : tempDir, config })
 
       // eslint-disable-next-line no-console
       console.log = originalLog
@@ -276,7 +276,7 @@ describe('view command', () => {
       console.log = (...args) => logs.push(args.join(' '))
 
       const config = ClaudePluginConfig.createForTest(tempDir)
-      await viewCommand({ all : true, config })
+      await pluginsViewCommand({ all : true, config })
 
       // eslint-disable-next-line no-console
       console.log = originalLog
@@ -299,7 +299,7 @@ describe('view command', () => {
       console.log = (...args) => logs.push(args.join(' '))
 
       const config = ClaudePluginConfig.createForTest(tempDir)
-      await viewCommand({ all : true, config })
+      await pluginsViewCommand({ all : true, config })
 
       // eslint-disable-next-line no-console
       console.log = originalLog
@@ -330,7 +330,7 @@ describe('view command', () => {
       console.log = (...args) => logs.push(args.join(' '))
 
       const config = ClaudePluginConfig.createForTest(tempDir)
-      await viewCommand({ all : true, config })
+      await pluginsViewCommand({ all : true, config })
 
       // eslint-disable-next-line no-console
       console.log = originalLog
@@ -351,7 +351,7 @@ describe('view command', () => {
       await fs.writeFile(path.join(tempDir, 'package.json'), '{invalid json}', 'utf8')
 
       const config = ClaudePluginConfig.createForTest(tempDir)
-      await viewCommand({ path : tempDir, config })
+      await pluginsViewCommand({ path : tempDir, config })
 
       expect(exitSpy).toHaveBeenCalledWith(1)
 

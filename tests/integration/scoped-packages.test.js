@@ -315,7 +315,7 @@ describe('Integration: Scoped Packages', () => {
       await runCLI(['sync'], projectDir, { env : { HOME : projectDir } })
 
       // Run view
-      const viewResult = await runCLI(['view'], projectDir, { env : { HOME : projectDir } })
+      const viewResult = await runCLI(['plugins', 'view'], projectDir, { env : { HOME : projectDir } })
 
       expect(viewResult.exitCode).toBe(0)
       expect(viewResult.stdout).toContain('ViewTestPlugin')

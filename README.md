@@ -21,59 +21,59 @@ npm install -g ai-ready
 
 ## Commands
 
-### `air view [path]`
+### Plugin Management
+
+#### `air plugins view [path]`
 
 Show plugins discovered in the current project (or specified path).
 
 ```bash
-air view
-air view /path/to/project
+air plugins view
+air plugins view /path/to/project
 ```
 
-### `air view --all`
+#### `air plugins view --all`
 
 Show all plugins configured in Claude Code (not just current project).
 
 ```bash
-air view --all
+air plugins view --all
 ```
 
-### `air sync [path]`
+#### `air plugins sync [path]`
 
 Discover and enable plugins from dependencies.
 
 ```bash
-air sync
-air sync --quiet  # For use in hooks
+air plugins sync
+air plugins sync --quiet  # For use in hooks
 ```
 
-## Session Start Hook
+#### `air sync` (shortcut)
 
-For automatic plugin discovery, configure Claude Code to run `air sync` on session start:
-
-1. Create hook script `$HOME/.claude/hooks/session-start.sh`:
+Alias for `air plugins sync`. Provided for convenience and backward compatibility.
 
 ```bash
-#!/bin/bash
-cd "$CLAUDE_PROJECT_DIR" || exit 0
+air sync                  # Same as 'air plugins sync'
 air sync --quiet
 ```
 
-2. Make it executable:
+## Automate Plugin Loading
+
+Run `air sync` (or equivalently `air plugins sync`) to scan your project's dependencies for Claude Code plugins and automatically enable them:
 
 ```bash
-chmod +x $HOME/.claude/hooks/session-start.sh
+air sync  # == air plugins sync
 ```
 
-3. Configure Claude Code (add to `$HOME/.claude/settings.json`):
+This command:
+- Scans `node_modules` for packages containing `.claude-plugin/marketplace.json`
+- Updates `~/.claude/settings.json` to register discovered plugins
+- Respects user choices (won't re-enable plugins you've disabled)
 
-```json
-{
-  "hooks": {
-    "sessionStart": "$HOME/.claude/hooks/session-start.sh"
-  }
-}
-```
+**Development workflow**: After running `npm install` to add new dependencies, run `air sync` and restart Claude Code. Any plugins bundled in your new dependencies will be automatically available.
+
+For fully automatic discovery, configure Claude Code to run `air sync --quiet` on session start via a hook. See the [Claude Code hooks documentation](https://docs.anthropic.com/en/docs/claude-code/hooks) for details.
 
 ## For Library Authors
 
@@ -112,7 +112,7 @@ npm install @anthropic/sdk-helper
 air sync
 
 # View enabled plugins
-air view
+air plugins view
 
 # Restart Claude Code to load the new plugin
 ```

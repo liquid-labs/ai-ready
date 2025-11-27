@@ -39,7 +39,10 @@
       "Bash(git --help:*)",
       "Bash(npm --version:*)",
       "Bash(npm ls:*)",
-      "Bash(docker inspect:*)"
+      "Bash(docker inspect:*)",
+      "Bash(git -C /Users/zane/playground/ai-ready mv:*)",
+      "Bash(npm run:*)",
+      "Bash(NODE_OPTIONS=' --no-webstorage' npx jest:*)"
     ],
     "deny": [],
     "ask": []

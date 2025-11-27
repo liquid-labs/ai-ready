@@ -8,14 +8,14 @@ import { updateSettings } from '../storage/claude-settings'
  */
 
 /**
- * Sync command: Discover and enable plugins from dependencies
+ * Plugins sync command: Discover and enable plugins from dependencies
  * @param {object} options - Command options
  * @param {string} [options.path] - Project path (default: cwd)
  * @param {boolean} [options.quiet] - Suppress output (for hooks)
  * @param {ClaudePluginConfig} [options.config] - Config instance (for testing)
  * @returns {Promise<void>}
  */
-export async function syncCommand(options = {}) {
+export async function pluginsSyncCommand(options = {}) {
   const baseDir = options.path || process.cwd()
   const config = options.config || ClaudePluginConfig.createDefault()
   const quiet = options.quiet || false

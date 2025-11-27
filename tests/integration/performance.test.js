@@ -70,10 +70,7 @@ describe('Performance tests', () => {
       // eslint-disable-next-line no-await-in-loop
       await fs.mkdir(pkgPath, { recursive : true })
       // eslint-disable-next-line no-await-in-loop
-      await fs.writeFile(
-        path.join(pkgPath, 'package.json'),
-        JSON.stringify({ name : `regular-${i}`, version : '1.0.0' })
-      )
+      await fs.writeFile(path.join(pkgPath, 'package.json'), JSON.stringify({ name : `regular-${i}`, version : '1.0.0' }))
     }
 
     // Create 10 packages with plugins
