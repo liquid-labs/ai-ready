@@ -56,8 +56,8 @@ Scanner → Settings Manager → Commands
    - Creates marketplace entries for each plugin provider
 
 3. **Commands** (`src/lib/commands/*.js`)
-   - **view**: Display plugin status (project or all)
-   - **sync**: Discover and enable plugins automatically
+   - **plugins-view**: Display plugin status (project or all)
+   - **plugins-sync**: Discover and enable plugins automatically
 
 ### Plugin Provider System
 
@@ -246,11 +246,11 @@ try {
 - **Settings location**: `$HOME/.claude/settings.json`
 
 ### Command Behavior
-- **view**:
+- **`air plugins view`** (or `air plugins view [path]`):
   - Without `--all`: Shows plugins from current project's dependencies
   - With `--all`: Shows all plugins in Claude Code settings
   - Output: Table with status (enabled/disabled/not-installed)
-- **sync**:
+- **`air plugins sync`** (or `air sync` shortcut):
   - Scans dependencies → Updates settings → Enables new plugins
   - Respects disabled plugins (won't re-enable)
   - `--quiet` flag: Suppresses output (for hooks)
@@ -266,8 +266,8 @@ try {
 - `src/cli/air.mjs` - Command routing (Commander.js)
 
 ### Commands
-- `src/lib/commands/view.js` - Display plugin status
-- `src/lib/commands/sync.js` - Discover and enable plugins
+- `src/lib/commands/plugins-view.js` - Display plugin status
+- `src/lib/commands/plugins-sync.js` - Discover and enable plugins
 
 ### Core Modules
 - `src/lib/scanner.js` - Plugin discovery logic
