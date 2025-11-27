@@ -132,8 +132,8 @@ echo "Testing plugin status display..."
 echo ""
 
 # Run view command
-echo "Running: air view"
-VIEW_OUTPUT=$(node "$AIR_CLI" view)
+echo "Running: air plugins view"
+VIEW_OUTPUT=$(node "$AIR_CLI" plugins view)
 echo "$VIEW_OUTPUT"
 echo ""
 
