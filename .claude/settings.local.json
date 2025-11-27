@@ -42,7 +42,8 @@
       "Bash(docker inspect:*)",
       "Bash(git -C /Users/zane/playground/ai-ready mv:*)",
       "Bash(npm run:*)",
-      "Bash(NODE_OPTIONS=' --no-webstorage' npx jest:*)"
+      "Bash(NODE_OPTIONS=' --no-webstorage' npx jest:*)",
+      "WebFetch(domain:ajv.js.org)"
     ],
     "deny": [],
     "ask": []

@@ -5,28 +5,55 @@
   "description": "Schema for .claude-plugin/marketplace.json files used by ai-ready for plugin discovery",
   "type": "object",
   "required": ["name", "version", "description", "skillPath"],
+  "errorMessage": {
+    "type": "must be an object",
+    "required": {
+      "name": "Missing required field: \"name\"",
+      "version": "Missing required field: \"version\"",
+      "description": "Missing required field: \"description\"",
+      "skillPath": "Missing required field: \"skillPath\""
+    }
+  },
   "properties": {
     "name": {
       "type": "string",
       "minLength": 1,
-      "pattern": "^[a-z0-9]+(-[a-z0-9]+)*$",
-      "description": "Plugin identifier in kebab-case"
+      "pattern": "^[a-zA-Z][a-zA-Z0-9_-]*$",
+      "description": "Plugin identifier (letters, numbers, hyphens, underscores)",
+      "errorMessage": {
+        "type": "Field \"name\" must be a string",
+        "minLength": "Field \"name\" must not be empty",
+        "pattern": "Field \"name\" must start with a letter and contain only letters, numbers, hyphens, or underscores"
+      }
     },
     "version": {
       "type": "string",
       "minLength": 1,
-      "description": "Plugin version (semver recommended)"
+      "description": "Plugin version (semver recommended)",
+      "errorMessage": {
+        "type": "Field \"version\" must be a string",
+        "minLength": "Field \"version\" must not be empty"
+      }
     },
     "description": {
       "type": "string",
       "minLength": 1,
-      "description": "Brief description of what the plugin does"
+      "description": "Brief description of what the plugin does",
+      "errorMessage": {
+        "type": "Field \"description\" must be a string",
+        "minLength": "Field \"description\" must not be empty"
+      }
     },
     "skillPath": {
       "type": "string",
       "minLength": 1,
       "pattern": "^(?!\\.\\.)(?!/)(?!.*\\.\\./)[^\\0]+$",
-      "description": "Relative path to skill directory (must not escape package root)"
+      "description": "Relative path to skill directory (must not escape package root)",
+      "errorMessage": {
+        "type": "Field \"skillPath\" must be a string",
+        "minLength": "Field \"skillPath\" must not be empty",
+        "pattern": "Field \"skillPath\" must be a relative path within the package (no \"..\" or absolute paths)"
+      }
     },
     "author": {
       "oneOf": [
@@ -40,7 +67,8 @@
           }
         }
       ],
-      "description": "Plugin author information"
+      "description": "Plugin author information",
+      "errorMessage": "Field \"author\" must be a string or an object with name/email/url"
     },
     "license": {
       "type": "string",
@@ -49,7 +77,10 @@
     "homepage": {
       "type": "string",
       "format": "uri",
-      "description": "URL to plugin documentation"
+      "description": "URL to plugin documentation",
+      "errorMessage": {
+        "format": "Field \"homepage\" must be a valid URL"
+      }
     },
     "repository": {
       "oneOf": [

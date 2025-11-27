@@ -58,8 +58,17 @@ describe('marketplace-validator', () => {
         expect(result.valid).toBe(true)
       })
 
-      it('should accept kebab-case names with numbers', () => {
-        const validNames = ['plugin-1', 'my-plugin-v2', 'test123', 'a1-b2-c3']
+      it('should accept various valid name formats', () => {
+        const validNames = [
+          'plugin-1', // kebab-case with number
+          'my-plugin-v2', // kebab-case
+          'test123', // lowercase with numbers
+          'a1-b2-c3', // mixed
+          'MyPlugin', // PascalCase
+          'myPlugin', // camelCase
+          'my_plugin', // snake_case
+          'My-Plugin', // mixed case with hyphen
+        ]
 
         for (const name of validNames) {
           const data = {
@@ -158,14 +167,12 @@ describe('marketplace-validator', () => {
     })
 
     describe('invalid field values', () => {
-      it('should reject invalid name format (not kebab-case)', () => {
+      it('should reject invalid name format', () => {
         const invalidNames = [
-          'MyPlugin', // uppercase
-          'my_plugin', // underscore
-          'my plugin', // space
-          'My-Plugin', // uppercase with hyphen
           '-my-plugin', // leading hyphen
-          'my-plugin-', // trailing hyphen
+          '1plugin', // starts with number
+          'my plugin', // space
+          'plugin@name', // special character
         ]
 
         for (const name of invalidNames) {
@@ -300,7 +307,7 @@ describe('marketplace-validator', () => {
 
       it('should provide helpful message for invalid name format', () => {
         const data = {
-          name        : 'Invalid_Name',
+          name        : '-invalid-name',
           version     : '1.0.0',
           description : 'Test',
           skillPath   : 'skill',
@@ -310,8 +317,8 @@ describe('marketplace-validator', () => {
         const nameError = result.errors.find((e) => e.field === 'name')
 
         expect(nameError).toBeDefined()
-        expect(nameError.message).toContain('kebab-case')
-        expect(nameError.message).toContain('Invalid_Name')
+        expect(nameError.message).toContain('start with a letter')
+        expect(nameError.message).toContain('-invalid-name')
       })
 
       it('should provide helpful message for invalid skillPath', () => {
@@ -331,7 +338,7 @@ describe('marketplace-validator', () => {
 
       it('should include the invalid value in error', () => {
         const data = {
-          name        : 'BadName',
+          name        : '@invalid',
           version     : '1.0.0',
           description : 'Test',
           skillPath   : 'skill',
@@ -340,7 +347,7 @@ describe('marketplace-validator', () => {
         const result = validateMarketplaceSchema(data)
         const nameError = result.errors.find((e) => e.field === 'name')
 
-        expect(nameError.value).toBe('BadName')
+        expect(nameError.value).toBe('@invalid')
       })
     })
   })
@@ -377,9 +384,9 @@ describe('marketplace-validator', () => {
   describe('getMissingFields', () => {
     it('should extract missing field names from required errors', () => {
       const errors = [
-        { field : 'name', keyword : 'required' },
-        { field : 'version', keyword : 'required' },
-        { field : 'skillPath', keyword : 'pattern' },
+        { field : 'name', message : 'Missing required field: "name"', keyword : 'required' },
+        { field : 'version', message : 'Missing required field: "version"', keyword : 'required' },
+        { field : 'skillPath', message : 'Field "skillPath" has invalid format', keyword : 'pattern' },
       ]
 
       const missing = getMissingFields(errors)
@@ -391,9 +398,9 @@ describe('marketplace-validator', () => {
   describe('getInvalidFields', () => {
     it('should extract fields with non-required errors', () => {
       const errors = [
-        { field : 'name', keyword : 'required' },
-        { field : 'skillPath', keyword : 'pattern' },
-        { field : 'version', keyword : 'type' },
+        { field : 'name', message : 'Missing required field: "name"', keyword : 'required' },
+        { field : 'skillPath', message : 'Field "skillPath" has invalid format', keyword : 'pattern' },
+        { field : 'version', message : 'Field "version" must be string', keyword : 'type' },
       ]
 
       const invalid = getInvalidFields(errors)

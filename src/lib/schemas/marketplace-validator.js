@@ -1,5 +1,6 @@
 import Ajv from 'ajv'
 import addFormats from 'ajv-formats'
+import ajvErrors from 'ajv-errors'
 
 import marketplaceSchema from './claude-marketplace-schema.json'
 
@@ -20,12 +21,15 @@ import marketplaceSchema from './claude-marketplace-schema.json'
 // Create ajv instance with all errors mode for comprehensive validation
 const ajv = new Ajv({
   allErrors : true, // Report all errors, not just the first
-  verbose   : true, // Include schema and data in errors
   strict    : false, // Allow additional properties by default
+  verbose   : true, // Include data in errors for better debugging
 })
 
 // Add format validators (email, uri, etc.)
 addFormats(ajv)
+
+// Add custom error messages support
+ajvErrors(ajv)
 
 // Compile the schema
 const validate = ajv.compile(marketplaceSchema)
@@ -49,23 +53,60 @@ export function validateMarketplaceSchema(data) {
 
 /**
  * Format ajv errors into user-friendly messages
- * @param {import('ajv').ErrorObject[]} ajvErrors - Raw ajv errors
+ * @param {import('ajv').ErrorObject[]} errors - Raw ajv errors
  * @returns {ValidationError[]} Formatted errors
  */
-function formatErrors(ajvErrors) {
-  if (!ajvErrors) return []
+function formatErrors(errors) {
+  if (!errors) return []
 
-  return ajvErrors.map((error) => {
+  return errors.map((error) => {
     const field = getFieldName(error)
-    const message = formatErrorMessage(error)
+    let message = error.message
+
+    // Get the original keyword and data (ajv-errors wraps errors)
+    const originalKeyword = getOriginalKeyword(error)
+    const originalData = getOriginalData(error)
+
+    // Append actual value for pattern/format errors for better debugging
+    if (['pattern', 'format'].includes(originalKeyword) && originalData !== undefined) {
+      message += `. Got: "${originalData}"`
+    }
 
     return {
       field,
       message,
-      keyword : error.keyword,
-      value   : error.data,
+      keyword : originalKeyword,
+      value   : originalData,
     }
   })
+}
+
+/**
+ * Get the original keyword from an ajv error (unwrapping ajv-errors wrapper)
+ * @param {import('ajv').ErrorObject} error - ajv error object
+ * @returns {string} Original keyword
+ */
+function getOriginalKeyword(error) {
+  // ajv-errors wraps original errors with keyword 'errorMessage'
+  if (error.keyword === 'errorMessage' && error.params?.errors?.[0]) {
+    return error.params.errors[0].keyword
+  }
+
+  return error.keyword
+}
+
+/**
+ * Get the original data from an ajv error (unwrapping ajv-errors wrapper)
+ * @param {import('ajv').ErrorObject} error - ajv error object
+ * @returns {*} Original data value
+ */
+function getOriginalData(error) {
+  // ajv-errors wraps original errors with keyword 'errorMessage'
+  if (error.keyword === 'errorMessage' && error.params?.errors?.[0]) {
+    return error.params.errors[0].data
+  }
+
+  return error.data
 }
 
 /**
@@ -74,8 +115,23 @@ function formatErrors(ajvErrors) {
  * @returns {string} Field name or path
  */
 function getFieldName(error) {
-  // For 'required' errors, the missing property is in params
-  if (error.keyword === 'required') {
+  // For 'errorMessage' keyword (from ajv-errors), check the wrapped error
+  if (error.keyword === 'errorMessage' && error.params?.errors?.[0]) {
+    const originalError = error.params.errors[0]
+
+    // Required errors have the missing property in params
+    if (originalError.keyword === 'required' && originalError.params?.missingProperty) {
+      return originalError.params.missingProperty
+    }
+
+    // Other errors have the field in instancePath
+    if (originalError.instancePath) {
+      return originalError.instancePath.replace(/^\//, '').replace(/\//g, '.')
+    }
+  }
+
+  // For direct 'required' errors (not wrapped)
+  if (error.keyword === 'required' && error.params?.missingProperty) {
     return error.params.missingProperty
   }
 
@@ -86,49 +142,6 @@ function getFieldName(error) {
   }
 
   return '(root)'
-}
-
-/**
- * Format error message based on error type
- * @param {import('ajv').ErrorObject} error - ajv error object
- * @returns {string} Human-readable error message
- */
-function formatErrorMessage(error) {
-  const field = getFieldName(error)
-
-  switch (error.keyword) {
-    case 'required':
-      return `Missing required field: "${field}"`
-
-    case 'type':
-      return `Field "${field}" must be ${error.params.type}, got ${typeof error.data}`
-
-    case 'minLength':
-      return `Field "${field}" must not be empty`
-
-    case 'pattern': {
-      if (field === 'name') {
-        return `Field "name" must be kebab-case (lowercase letters, numbers, and hyphens only). Got: "${error.data}"`
-      }
-      if (field === 'skillPath') {
-        return `Field "skillPath" must be a relative path within the package (no ".." or absolute paths). Got: "${error.data}"`
-      }
-
-      return `Field "${field}" has invalid format: "${error.data}"`
-    }
-
-    case 'format':
-      return `Field "${field}" must be a valid ${error.params.format}. Got: "${error.data}"`
-
-    case 'oneOf':
-      return `Field "${field}" must match one of the allowed formats`
-
-    case 'additionalProperties':
-      return `Unknown field: "${error.params.additionalProperty}"`
-
-    default:
-      return error.message || `Validation failed for "${field}"`
-  }
 }
 
 /**
@@ -156,7 +169,9 @@ export function formatValidationSummary(errors) {
  * @returns {string[]} List of missing field names
  */
 export function getMissingFields(errors) {
-  return errors.filter((e) => e.keyword === 'required').map((e) => e.field)
+  return errors
+    .filter((e) => e.message?.startsWith('Missing required field'))
+    .map((e) => e.field)
 }
 
 /**
@@ -165,5 +180,7 @@ export function getMissingFields(errors) {
  * @returns {string[]} List of invalid field names
  */
 export function getInvalidFields(errors) {
-  return errors.filter((e) => e.keyword !== 'required').map((e) => e.field)
+  return errors
+    .filter((e) => !e.message?.startsWith('Missing required field'))
+    .map((e) => e.field)
 }
