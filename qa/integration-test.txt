@@ -1,0 +1,18 @@
+Integration test git rev: ff843132308171db80706b93939807a90c939648
+PASS tests/integration/settings-persistence.test.js
+PASS tests/integration/npm-workflow.test.js
+PASS tests/integration/plugin-updates.test.js
+PASS tests/integration/multi-project.test.js
+PASS tests/integration/concurrent-sync.test.js
+PASS tests/integration/settings-recovery.test.js
+PASS tests/integration/sync-workflow.test.js
+PASS tests/integration/filesystem-paths.test.js
+PASS tests/integration/scoped-packages.test.js
+PASS tests/integration/performance.test.js
+PASS tests/integration/multiple-plugins.test.js
+
+Test Suites: 11 passed, 11 total
+Tests:       94 passed, 94 total
+Snapshots:   0 total
+Time:        5.141 s
+Ran all test suites.
