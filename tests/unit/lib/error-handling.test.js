@@ -5,6 +5,7 @@ import path from 'path'
 import { parseMarketplaceJson } from '_lib/parsers/marketplace-json'
 import { scanDependencies } from '_lib/scanner'
 import { readSettings, updateSettings } from '_lib/storage/claude-settings'
+
 import { createPackageJson, createTestPackage } from './test-lib'
 
 /**
@@ -292,10 +293,7 @@ describe('Error handling', () => {
     })
 
     it('should handle package.json with no dependencies field', async () => {
-      await fs.writeFile(
-        path.join(tempDir, 'package.json'),
-        JSON.stringify({ name : 'test', version : '1.0.0' })
-      )
+      await fs.writeFile(path.join(tempDir, 'package.json'), JSON.stringify({ name : 'test', version : '1.0.0' }))
 
       const providers = await scanDependencies(tempDir)
       expect(providers).toEqual([])

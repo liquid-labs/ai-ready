@@ -298,16 +298,21 @@ async function setupSingleProject(project) {
     fs.writeFile(path.join(dir, 'package.json'), JSON.stringify({ name, version : '1.0.0', dependencies }, null, 2)),
     fs.writeFile(
       path.join(dir, 'package-lock.json'),
-      JSON.stringify({
-        name,
-        version         : '1.0.0',
-        lockfileVersion : 3,
-        requires        : true,
-        packages        : { '' : { name, version : '1.0.0', dependencies } },
-      }, null, 2)
+      JSON.stringify(
+        {
+          name,
+          version         : '1.0.0',
+          lockfileVersion : 3,
+          requires        : true,
+          packages        : { '' : { name, version : '1.0.0', dependencies } },
+        },
+        null,
+        2
+      )
     ),
-    fs.mkdir(claudeDir, { recursive : true }).then(() =>
-      fs.writeFile(settingsPath, JSON.stringify(createInitialSettings(), null, 2))),
+    fs
+      .mkdir(claudeDir, { recursive : true })
+      .then(() => fs.writeFile(settingsPath, JSON.stringify(createInitialSettings(), null, 2))),
     ...plugins.map((plugin) => createTestPackage(dir, plugin.packageName, plugin.declaration)),
   ])
 

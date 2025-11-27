@@ -107,4 +107,3 @@ export function isValidPluginState(state) {
     && typeof state.description === 'string'
   )
 }
-

@@ -1,9 +1,4 @@
-import {
-  MARKETPLACE_JSON_SCHEMA,
-  PLUGIN_STATUSES,
-  isValidPluginProvider,
-  isValidPluginState
-} from '_lib/types'
+import { MARKETPLACE_JSON_SCHEMA, PLUGIN_STATUSES, isValidPluginProvider, isValidPluginState } from '_lib/types'
 
 describe('types', () => {
   describe('PLUGIN_STATUSES', () => {
@@ -157,5 +152,4 @@ describe('types', () => {
       expect(isValidPluginState(state)).toBe(false)
     })
   })
-
 })
