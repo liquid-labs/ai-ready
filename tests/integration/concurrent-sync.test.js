@@ -160,7 +160,7 @@ describe('Integration: Concurrent Sync', () => {
       // Run sync and view concurrently
       const [syncResult, viewResult] = await Promise.all([
         runCLI(['sync'], projectDir, { env : { HOME : projectDir } }),
-        runCLI(['view'], projectDir, { env : { HOME : projectDir } }),
+        runCLI(['plugins', 'view'], projectDir, { env : { HOME : projectDir } }),
       ])
 
       // Both should complete (though one might fail if settings don't exist yet)
@@ -243,7 +243,7 @@ describe('Integration: Concurrent Sync', () => {
           operations.push(runCLI(['sync'], projectDir, { env : { HOME : projectDir } }))
         }
         else {
-          operations.push(runCLI(['view'], projectDir, { env : { HOME : projectDir } }))
+          operations.push(runCLI(['plugins', 'view'], projectDir, { env : { HOME : projectDir } }))
         }
       }
 

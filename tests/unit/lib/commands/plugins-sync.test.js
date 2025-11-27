@@ -2,13 +2,13 @@ import fs from 'fs/promises'
 import os from 'os'
 import path from 'path'
 
-import { syncCommand } from '_lib/commands/sync'
+import { pluginsSyncCommand } from '_lib/commands/plugins-sync'
 import { ClaudePluginConfig } from '_lib/storage/claude-config'
 import { readSettings } from '_lib/storage/claude-settings'
 
 import { createPackageJson, createTestPackage } from '../test-lib'
 
-describe('sync command', () => {
+describe('plugins sync command', () => {
   let tempDir
   let claudeDir
   let settingsPath
@@ -24,7 +24,7 @@ describe('sync command', () => {
     await fs.rm(tempDir, { recursive : true, force : true })
   })
 
-  describe('syncCommand', () => {
+  describe('pluginsSyncCommand', () => {
     it('should enable newly discovered plugins', async () => {
       await createTestPackage(tempDir, 'test-lib', {
         name        : 'test-plugin',
@@ -35,7 +35,7 @@ describe('sync command', () => {
       await createPackageJson(tempDir, ['test-lib'])
 
       const config = ClaudePluginConfig.createForTest(tempDir)
-      await syncCommand({ path : tempDir, quiet : true, config })
+      await pluginsSyncCommand({ path : tempDir, quiet : true, config })
 
       const settings = await readSettings(settingsPath)
       expect(settings.plugins.enabled).toContain('test-plugin@test-lib-marketplace')
@@ -66,7 +66,7 @@ describe('sync command', () => {
       await createPackageJson(tempDir, ['test-lib'])
 
       const config = ClaudePluginConfig.createForTest(tempDir)
-      await syncCommand({ path : tempDir, quiet : true, config })
+      await pluginsSyncCommand({ path : tempDir, quiet : true, config })
 
       const settings = await readSettings(settingsPath)
       expect(settings.plugins.enabled).not.toContain('test-plugin@test-lib-marketplace')
@@ -75,7 +75,7 @@ describe('sync command', () => {
 
     it('should handle no plugins found', async () => {
       const config = ClaudePluginConfig.createForTest(tempDir)
-      await syncCommand({ path : tempDir, quiet : true, config })
+      await pluginsSyncCommand({ path : tempDir, quiet : true, config })
 
       // Should not crash, just do nothing
       // Settings file might not exist if no plugins found
@@ -106,7 +106,7 @@ describe('sync command', () => {
       await createPackageJson(tempDir, ['lib-1', 'lib-2'])
 
       const config = ClaudePluginConfig.createForTest(tempDir)
-      await syncCommand({ path : tempDir, quiet : true, config })
+      await pluginsSyncCommand({ path : tempDir, quiet : true, config })
 
       const settings = await readSettings(settingsPath)
       expect(settings.plugins.enabled).toContain('plugin-1@lib-1-marketplace')
@@ -126,7 +126,7 @@ describe('sync command', () => {
       await createPackageJson(tempDir, ['test-lib'])
 
       const config = ClaudePluginConfig.createForTest(tempDir)
-      await syncCommand({ path : tempDir, quiet : true, config })
+      await pluginsSyncCommand({ path : tempDir, quiet : true, config })
 
       let settings = await readSettings(settingsPath)
       expect(settings.plugins.marketplaces['test-lib-marketplace'].plugins['test-plugin'].version).toBe('1.0.0')
@@ -140,7 +140,7 @@ describe('sync command', () => {
       })
 
       // Sync again with noCache to force rescan
-      await syncCommand({ path : tempDir, quiet : true, noCache : true, config })
+      await pluginsSyncCommand({ path : tempDir, quiet : true, noCache : true, config })
 
       settings = await readSettings(settingsPath)
       expect(settings.plugins.marketplaces['test-lib-marketplace'].plugins['test-plugin'].version).toBe('2.0.0')
@@ -162,7 +162,7 @@ describe('sync command', () => {
       console.log = (...args) => logs.push(args.join(' '))
 
       const config = ClaudePluginConfig.createForTest(tempDir)
-      await syncCommand({ path : tempDir, quiet : true, config })
+      await pluginsSyncCommand({ path : tempDir, quiet : true, config })
 
       // eslint-disable-next-line no-console
       console.log = originalLog
@@ -186,7 +186,7 @@ describe('sync command', () => {
       console.log = (...args) => logs.push(args.join(' '))
 
       const config = ClaudePluginConfig.createForTest(tempDir)
-      await syncCommand({ path : tempDir, quiet : false, config })
+      await pluginsSyncCommand({ path : tempDir, quiet : false, config })
 
       // eslint-disable-next-line no-console
       console.log = originalLog
@@ -211,10 +211,10 @@ describe('sync command', () => {
       const config = ClaudePluginConfig.createForTest(tempDir)
 
       // First sync creates cache
-      await syncCommand({ path : tempDir, quiet : true, config })
+      await pluginsSyncCommand({ path : tempDir, quiet : true, config })
 
       // Second sync with noCache should still work
-      await syncCommand({ path : tempDir, quiet : true, noCache : true, config })
+      await pluginsSyncCommand({ path : tempDir, quiet : true, noCache : true, config })
 
       const settings = await readSettings(settingsPath)
       expect(settings.plugins.enabled).toContain('test-plugin@test-lib-marketplace')

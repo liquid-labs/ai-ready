@@ -272,14 +272,14 @@ describe('Integration: Multi-Project', () => {
       await runCLI(['sync'], projectB, { env : { HOME : sharedHome } })
 
       // View from project A (without --all flag)
-      const viewResultA = await runCLI(['view'], projectA, { env : { HOME : sharedHome } })
+      const viewResultA = await runCLI(['plugins', 'view'], projectA, { env : { HOME : sharedHome } })
       expect(viewResultA.exitCode).toBe(0)
       expect(viewResultA.stdout).toContain('ViewPluginA')
       // Should not contain plugins from other projects in default view
       // (depends on implementation - may show all or just project-specific)
 
       // View with --all flag should show everything
-      const viewAllResult = await runCLI(['view', '--all'], projectA, { env : { HOME : sharedHome } })
+      const viewAllResult = await runCLI(['plugins', 'view', '--all'], projectA, { env : { HOME : sharedHome } })
       expect(viewAllResult.exitCode).toBe(0)
       expect(viewAllResult.stdout).toContain('ViewPluginA')
       expect(viewAllResult.stdout).toContain('ViewPluginB')

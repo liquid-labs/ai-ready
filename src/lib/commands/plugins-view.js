@@ -9,14 +9,14 @@ import { PLUGIN_STATUSES } from '../types'
  */
 
 /**
- * View command: Show plugin status for current project or all plugins
+ * Plugins view command: Show plugin status for current project or all plugins
  * @param {object} options - Command options
  * @param {string} [options.path] - Project path (default: cwd)
  * @param {boolean} [options.all] - Show all plugins in settings
  * @param {ClaudePluginConfig} [options.config] - Config instance (for testing)
  * @returns {Promise<void>}
  */
-export async function viewCommand(options = {}) {
+export async function pluginsViewCommand(options = {}) {
   const baseDir = options.path || process.cwd()
   const config = options.config || ClaudePluginConfig.createDefault()
 

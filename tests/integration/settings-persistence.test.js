@@ -36,7 +36,7 @@ describe('Integration: Settings Persistence', () => {
       expect(syncResult.exitCode).toBe(0)
 
       // Run view to check status
-      const viewResult = await runCLI(['view'], projectDir, { env : { HOME : projectDir } })
+      const viewResult = await runCLI(['plugins', 'view'], projectDir, { env : { HOME : projectDir } })
       expect(viewResult.exitCode).toBe(0)
       expect(viewResult.stdout).toContain('TestPlugin')
       expect(viewResult.stdout).toContain('enabled')
@@ -289,7 +289,7 @@ describe('Integration: Settings Persistence', () => {
       await fs.writeFile(settingsPath, JSON.stringify(settings, null, 2))
 
       // Run view
-      const viewResult = await runCLI(['view'], projectDir, { env : { HOME : projectDir } })
+      const viewResult = await runCLI(['plugins', 'view'], projectDir, { env : { HOME : projectDir } })
 
       expect(viewResult.exitCode).toBe(0)
       expect(viewResult.stdout).toContain('TestPlugin')

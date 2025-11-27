@@ -1,11 +1,11 @@
 /**
- * Functional tests for 'air sync' command (v2.0.0)
+ * Functional tests for 'air plugins sync' command (v2.0.0)
  */
 import path from 'path'
 
 import { createTestPackage, fileExists, readJsonFile, runCLI, setupClaudeSettings, setupTestEnv } from './helpers'
 
-describe('air sync (functional)', () => {
+describe('air plugins sync (functional)', () => {
   let testDir
   let cleanup
   let homeDir

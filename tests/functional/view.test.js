@@ -1,11 +1,11 @@
 /**
- * Functional tests for 'air view' command (v2.0.0)
+ * Functional tests for 'air plugins view' command (v2.0.0)
  */
 import path from 'path'
 
 import { createTestPackage, readJsonFile, runCLI, setupClaudeSettings, setupTestEnv } from './helpers'
 
-describe('air view (functional)', () => {
+describe('air plugins view (functional)', () => {
   let testDir
   let cleanup
   let homeDir
@@ -41,7 +41,7 @@ describe('air view (functional)', () => {
 
   describe('Basic view functionality', () => {
     it('should display plugins from current project', async () => {
-      const { stdout, exitCode } = await runCLI(['view'], testDir, {
+      const { stdout, exitCode } = await runCLI(['plugins', 'view'], testDir, {
         env : { ...process.env, HOME : homeDir },
       })
 
@@ -51,7 +51,7 @@ describe('air view (functional)', () => {
     })
 
     it('should show plugin status as not-installed initially', async () => {
-      const { stdout, exitCode } = await runCLI(['view'], testDir, {
+      const { stdout, exitCode } = await runCLI(['plugins', 'view'], testDir, {
         env : { ...process.env, HOME : homeDir },
       })
 
@@ -60,7 +60,7 @@ describe('air view (functional)', () => {
     })
 
     it('should handle scoped packages', async () => {
-      const { stdout, exitCode } = await runCLI(['view'], testDir, {
+      const { stdout, exitCode } = await runCLI(['plugins', 'view'], testDir, {
         env : { ...process.env, HOME : homeDir },
       })
 
@@ -77,7 +77,7 @@ describe('air view (functional)', () => {
         env : { ...process.env, HOME : homeDir },
       })
 
-      const { stdout, exitCode } = await runCLI(['view', '--all'], testDir, {
+      const { stdout, exitCode } = await runCLI(['plugins', 'view', '--all'], testDir, {
         env : { ...process.env, HOME : homeDir },
       })
 
@@ -93,7 +93,7 @@ describe('air view (functional)', () => {
       })
 
       // Run from different directory
-      const { exitCode } = await runCLI(['view', '--all'], '/', {
+      const { exitCode } = await runCLI(['plugins', 'view', '--all'], '/', {
         env : { ...process.env, HOME : homeDir },
       })
 
@@ -109,7 +109,7 @@ describe('air view (functional)', () => {
         env : { ...process.env, HOME : homeDir },
       })
 
-      const { stdout, exitCode } = await runCLI(['view'], testDir, {
+      const { stdout, exitCode } = await runCLI(['plugins', 'view'], testDir, {
         env : { ...process.env, HOME : homeDir },
       })
 
@@ -131,7 +131,7 @@ describe('air view (functional)', () => {
       settings.plugins.disabled = [pluginKey]
       await require('fs/promises').writeFile(settingsPath, JSON.stringify(settings, null, 2))
 
-      const { stdout, exitCode } = await runCLI(['view'], testDir, {
+      const { stdout, exitCode } = await runCLI(['plugins', 'view'], testDir, {
         env : { ...process.env, HOME : homeDir },
       })
 
@@ -142,7 +142,7 @@ describe('air view (functional)', () => {
 
   describe('Output format', () => {
     it('should display plugin information in hierarchical format', async () => {
-      const { stdout, exitCode } = await runCLI(['view'], testDir, {
+      const { stdout, exitCode } = await runCLI(['plugins', 'view'], testDir, {
         env : { ...process.env, HOME : homeDir },
       })
 
@@ -152,7 +152,7 @@ describe('air view (functional)', () => {
     })
 
     it('should show version information', async () => {
-      const { stdout, exitCode } = await runCLI(['view'], testDir, {
+      const { stdout, exitCode } = await runCLI(['plugins', 'view'], testDir, {
         env : { ...process.env, HOME : homeDir },
       })
 
@@ -162,7 +162,7 @@ describe('air view (functional)', () => {
     })
 
     it('should show description', async () => {
-      const { stdout, exitCode } = await runCLI(['view'], testDir, {
+      const { stdout, exitCode } = await runCLI(['plugins', 'view'], testDir, {
         env : { ...process.env, HOME : homeDir },
       })
 
@@ -177,7 +177,7 @@ describe('air view (functional)', () => {
       // Remove package.json
       await require('fs/promises').unlink(path.join(testDir, 'package.json'))
 
-      const { stdout, exitCode } = await runCLI(['view'], testDir, {
+      const { stdout, exitCode } = await runCLI(['plugins', 'view'], testDir, {
         env : { ...process.env, HOME : homeDir },
       })
 
@@ -190,7 +190,7 @@ describe('air view (functional)', () => {
       // Create new empty project
       const emptyEnv = await setupTestEnv({ dependencies : [] })
 
-      const { stdout, exitCode } = await runCLI(['view'], emptyEnv.testDir, {
+      const { stdout, exitCode } = await runCLI(['plugins', 'view'], emptyEnv.testDir, {
         env : { ...process.env, HOME : homeDir },
       })
 
@@ -203,7 +203,7 @@ describe('air view (functional)', () => {
 
   describe('Path parameter', () => {
     it('should view plugins from specified path', async () => {
-      const { stdout, exitCode } = await runCLI(['view', testDir], '/', {
+      const { stdout, exitCode } = await runCLI(['plugins', 'view', testDir], '/', {
         env : { ...process.env, HOME : homeDir },
       })
 
@@ -212,7 +212,7 @@ describe('air view (functional)', () => {
     })
 
     it('should handle invalid path gracefully', async () => {
-      const { exitCode, stdout } = await runCLI(['view', '/nonexistent/path'], '/', {
+      const { exitCode, stdout } = await runCLI(['plugins', 'view', '/nonexistent/path'], '/', {
         env : { ...process.env, HOME : homeDir },
       })
 
