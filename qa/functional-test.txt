@@ -1,9 +1,0 @@
-Functional test git rev: ff843132308171db80706b93939807a90c939648
-PASS tests/functional/view.test.js
-PASS tests/functional/sync.test.js
-
-Test Suites: 2 passed, 2 total
-Tests:       28 passed, 28 total
-Snapshots:   0 total
-Time:        1.153 s, estimated 2 s
-Ran all test suites.
