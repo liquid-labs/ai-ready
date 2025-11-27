@@ -1,7 +1,10 @@
 import fs from 'fs/promises'
-import path from 'path'
 
-import { MARKETPLACE_JSON_SCHEMA } from '../types'
+import { formatValidationSummary, validateMarketplaceSchema } from '../schemas/marketplace-validator'
+
+/**
+ * @typedef {import('../schemas/marketplace-validator').ValidationResult} ValidationResult
+ */
 
 /**
  * Parse and validate a marketplace.json file
@@ -13,12 +16,13 @@ export async function parseMarketplaceJson(filePath) {
     const content = await fs.readFile(filePath, 'utf8')
     const data = JSON.parse(content)
 
-    if (validateMarketplaceJson(data)) {
+    const result = validateMarketplaceSchema(data)
+    if (result.valid) {
       return data
     }
 
     // eslint-disable-next-line no-console
-    console.warn(`Invalid marketplace.json at ${filePath}: missing required fields`)
+    console.warn(`Invalid marketplace.json at ${filePath}:\n${formatValidationSummary(result.errors)}`)
 
     return null
   }
@@ -39,29 +43,10 @@ export async function parseMarketplaceJson(filePath) {
 }
 
 /**
- * Validate marketplace.json structure
+ * Validate marketplace.json data and return detailed result
  * @param {object} data - Parsed JSON data
- * @returns {boolean} True if valid
+ * @returns {ValidationResult} Validation result with errors
  */
 export function validateMarketplaceJson(data) {
-  if (!data || typeof data !== 'object') {
-    return false
-  }
-
-  // Check required fields
-  for (const field of MARKETPLACE_JSON_SCHEMA.requiredFields) {
-    if (!data[field] || typeof data[field] !== 'string') {
-      return false
-    }
-  }
-
-  // Validate skillPath doesn't escape package directory
-  if (data.skillPath.includes('..') || path.isAbsolute(data.skillPath)) {
-    // eslint-disable-next-line no-console
-    console.warn('Invalid skillPath: must be relative and within package')
-
-    return false
-  }
-
-  return true
+  return validateMarketplaceSchema(data)
 }

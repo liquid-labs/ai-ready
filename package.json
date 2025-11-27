@@ -33,6 +33,8 @@
   "homepage": "https://github.com/liquid-labs/ai-ready#readme",
   "dependencies": {
     "@folder/xdg": "^4.0.1",
+    "ajv": "^8.17.1",
+    "ajv-formats": "^3.0.1",
     "check-disk-space": "^3.4.0",
     "commander": "^14.0.2",
     "find-plus": "^2.0.0",

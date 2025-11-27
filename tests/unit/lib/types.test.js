@@ -1,4 +1,4 @@
-import { MARKETPLACE_JSON_SCHEMA, PLUGIN_STATUSES, isValidPluginProvider, isValidPluginState } from '_lib/types'
+import { PLUGIN_STATUSES, isValidPluginProvider, isValidPluginState } from '_lib/types'
 
 describe('types', () => {
   describe('PLUGIN_STATUSES', () => {
@@ -6,16 +6,6 @@ describe('types', () => {
       expect(PLUGIN_STATUSES.ENABLED).toBe('enabled')
       expect(PLUGIN_STATUSES.DISABLED).toBe('disabled')
       expect(PLUGIN_STATUSES.NOT_INSTALLED).toBe('not-installed')
-    })
-  })
-
-  describe('MARKETPLACE_JSON_SCHEMA', () => {
-    it('should define required fields', () => {
-      expect(MARKETPLACE_JSON_SCHEMA.requiredFields).toEqual(['name', 'version', 'description', 'skillPath'])
-    })
-
-    it('should define optional fields', () => {
-      expect(MARKETPLACE_JSON_SCHEMA.optionalFields).toEqual(['author', 'license', 'homepage'])
     })
   })
 

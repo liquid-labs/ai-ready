@@ -63,14 +63,6 @@ export const PLUGIN_STATUSES = {
 }
 
 /**
- * Marketplace JSON schema validation
- */
-export const MARKETPLACE_JSON_SCHEMA = {
-  requiredFields : ['name', 'version', 'description', 'skillPath'],
-  optionalFields : ['author', 'license', 'homepage'],
-}
-
-/**
  * Validates a PluginProvider object
  * @param {PluginProvider} provider - The PluginProvider to validate
  * @returns {boolean} - True if valid

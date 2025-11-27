@@ -1,0 +1,78 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://ai-ready.dev/schemas/claude-marketplace.json",
+  "title": "Claude Plugin Marketplace Declaration",
+  "description": "Schema for .claude-plugin/marketplace.json files used by ai-ready for plugin discovery",
+  "type": "object",
+  "required": ["name", "version", "description", "skillPath"],
+  "properties": {
+    "name": {
+      "type": "string",
+      "minLength": 1,
+      "pattern": "^[a-z0-9]+(-[a-z0-9]+)*$",
+      "description": "Plugin identifier in kebab-case"
+    },
+    "version": {
+      "type": "string",
+      "minLength": 1,
+      "description": "Plugin version (semver recommended)"
+    },
+    "description": {
+      "type": "string",
+      "minLength": 1,
+      "description": "Brief description of what the plugin does"
+    },
+    "skillPath": {
+      "type": "string",
+      "minLength": 1,
+      "pattern": "^(?!\\.\\.)(?!/)(?!.*\\.\\./)[^\\0]+$",
+      "description": "Relative path to skill directory (must not escape package root)"
+    },
+    "author": {
+      "oneOf": [
+        { "type": "string" },
+        {
+          "type": "object",
+          "properties": {
+            "name": { "type": "string" },
+            "email": { "type": "string", "format": "email" },
+            "url": { "type": "string", "format": "uri" }
+          }
+        }
+      ],
+      "description": "Plugin author information"
+    },
+    "license": {
+      "type": "string",
+      "description": "SPDX license identifier"
+    },
+    "homepage": {
+      "type": "string",
+      "format": "uri",
+      "description": "URL to plugin documentation"
+    },
+    "repository": {
+      "oneOf": [
+        { "type": "string" },
+        {
+          "type": "object",
+          "properties": {
+            "type": { "type": "string" },
+            "url": { "type": "string" }
+          }
+        }
+      ],
+      "description": "Source code repository"
+    },
+    "keywords": {
+      "type": "array",
+      "items": { "type": "string" },
+      "description": "Discovery tags for the plugin"
+    },
+    "category": {
+      "type": "string",
+      "description": "Plugin category"
+    }
+  },
+  "additionalProperties": true
+}

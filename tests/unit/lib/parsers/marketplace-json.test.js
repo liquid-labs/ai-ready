@@ -23,7 +23,7 @@ describe('marketplace-json parser', () => {
         description : 'Test plugin',
         skillPath   : '.claude-plugin/skill',
       }
-      expect(validateMarketplaceJson(valid)).toBe(true)
+      expect(validateMarketplaceJson(valid).valid).toBe(true)
     })
 
     it('should accept declaration with optional fields', () => {
@@ -36,12 +36,12 @@ describe('marketplace-json parser', () => {
         license     : 'MIT',
         homepage    : 'https://example.com',
       }
-      expect(validateMarketplaceJson(valid)).toBe(true)
+      expect(validateMarketplaceJson(valid).valid).toBe(true)
     })
 
     it('should reject missing required fields', () => {
       const invalid = { name : 'my-plugin' }
-      expect(validateMarketplaceJson(invalid)).toBe(false)
+      expect(validateMarketplaceJson(invalid).valid).toBe(false)
     })
 
     it('should reject missing name', () => {
@@ -50,7 +50,7 @@ describe('marketplace-json parser', () => {
         description : 'Test',
         skillPath   : '.claude-plugin/skill',
       }
-      expect(validateMarketplaceJson(invalid)).toBe(false)
+      expect(validateMarketplaceJson(invalid).valid).toBe(false)
     })
 
     it('should reject empty name', () => {
@@ -60,7 +60,7 @@ describe('marketplace-json parser', () => {
         description : 'Test',
         skillPath   : '.claude-plugin/skill',
       }
-      expect(validateMarketplaceJson(invalid)).toBe(false)
+      expect(validateMarketplaceJson(invalid).valid).toBe(false)
     })
 
     it('should reject missing version', () => {
@@ -69,7 +69,7 @@ describe('marketplace-json parser', () => {
         description : 'Test',
         skillPath   : '.claude-plugin/skill',
       }
-      expect(validateMarketplaceJson(invalid)).toBe(false)
+      expect(validateMarketplaceJson(invalid).valid).toBe(false)
     })
 
     it('should reject missing description', () => {
@@ -78,7 +78,7 @@ describe('marketplace-json parser', () => {
         version   : '1.0.0',
         skillPath : '.claude-plugin/skill',
       }
-      expect(validateMarketplaceJson(invalid)).toBe(false)
+      expect(validateMarketplaceJson(invalid).valid).toBe(false)
     })
 
     it('should reject missing skillPath', () => {
@@ -87,7 +87,7 @@ describe('marketplace-json parser', () => {
         version     : '1.0.0',
         description : 'Test',
       }
-      expect(validateMarketplaceJson(invalid)).toBe(false)
+      expect(validateMarketplaceJson(invalid).valid).toBe(false)
     })
 
     it('should reject path traversal in skillPath', () => {
@@ -97,7 +97,7 @@ describe('marketplace-json parser', () => {
         description : 'Test',
         skillPath   : '../../../etc/passwd',
       }
-      expect(validateMarketplaceJson(invalid)).toBe(false)
+      expect(validateMarketplaceJson(invalid).valid).toBe(false)
     })
 
     it('should reject absolute path in skillPath', () => {
@@ -107,21 +107,21 @@ describe('marketplace-json parser', () => {
         description : 'Test',
         skillPath   : '/absolute/path',
       }
-      expect(validateMarketplaceJson(invalid)).toBe(false)
+      expect(validateMarketplaceJson(invalid).valid).toBe(false)
     })
 
     it('should reject null', () => {
-      expect(validateMarketplaceJson(null)).toBe(false)
+      expect(validateMarketplaceJson(null).valid).toBe(false)
     })
 
     it('should reject undefined', () => {
-      expect(validateMarketplaceJson(undefined)).toBe(false)
+      expect(validateMarketplaceJson(undefined).valid).toBe(false)
     })
 
     it('should reject non-object', () => {
-      expect(validateMarketplaceJson('string')).toBe(false)
-      expect(validateMarketplaceJson(123)).toBe(false)
-      expect(validateMarketplaceJson([])).toBe(false)
+      expect(validateMarketplaceJson('string').valid).toBe(false)
+      expect(validateMarketplaceJson(123).valid).toBe(false)
+      expect(validateMarketplaceJson([]).valid).toBe(false)
     })
   })
 

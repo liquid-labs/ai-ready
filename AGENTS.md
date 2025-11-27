@@ -257,7 +257,7 @@ try {
 
 ### Validation Layers
 1. **Type validation** (`types.js`) - Structure checks via `isValidPluginProvider()`, `isValidPluginState()`
-2. **Schema validation** - marketplace.json against `MARKETPLACE_JSON_SCHEMA`
+2. **Schema validation** (`schemas/marketplace-validator.js`) - marketplace.json against JSON Schema using ajv
 3. **Business validation** (commands) - Dependency presence, file existence
 
 ## Key Files Reference
