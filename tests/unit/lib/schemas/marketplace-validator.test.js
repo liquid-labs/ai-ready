@@ -205,93 +205,75 @@ describe('marketplace-validator', () => {
     })
 
     describe('invalid field values', () => {
-      it('should reject invalid marketplace name format', () => {
-        const invalidNames = [
-          '-my-marketplace', // leading hyphen
-          '1marketplace', // starts with number
-          'my marketplace', // space
-          'marketplace@name', // special character
-          'MyMarketplace', // uppercase
-        ]
+      it.each([
+        { name : '-my-marketplace', reason : 'leading hyphen' },
+        { name : '1marketplace', reason : 'starts with number' },
+        { name : 'my marketplace', reason : 'contains space' },
+        { name : 'marketplace@name', reason : 'special character' },
+        { name : 'MyMarketplace', reason : 'uppercase letters' },
+      ])('should reject invalid name "$name" ($reason)', ({ name }) => {
+        const data = {
+          name,
+          owner   : { name : 'Test' },
+          plugins : [{ name : 'plugin', source : './plugin' }],
+        }
 
-        for (const name of invalidNames) {
-          const data = {
-            name,
+        const result = validateMarketplaceSchema(data)
+        expect(result.valid).toBe(false)
+        expect(getInvalidFields(result.errors)).toContain('name')
+      })
+
+      it.each([
+        {
+          description : 'empty name',
+          data        : {
+            name    : '',
             owner   : { name : 'Test' },
             plugins : [{ name : 'plugin', source : './plugin' }],
-          }
-
-          const result = validateMarketplaceSchema(data)
-          expect(result.valid).toBe(false)
-
-          const invalidFields = getInvalidFields(result.errors)
-          expect(invalidFields).toContain('name')
-        }
-      })
-
-      it('should reject empty name', () => {
-        const data = {
-          name    : '',
-          owner   : { name : 'Test' },
-          plugins : [{ name : 'plugin', source : './plugin' }],
-        }
-
+          },
+          invalidField : 'name',
+        },
+        {
+          description : 'wrong type for name (number)',
+          data        : {
+            name    : 123,
+            owner   : { name : 'Test' },
+            plugins : [{ name : 'plugin', source : './plugin' }],
+          },
+          invalidField : 'name',
+        },
+        {
+          description : 'wrong type for owner (string)',
+          data        : {
+            name    : 'my-marketplace',
+            owner   : 'not-an-object',
+            plugins : [{ name : 'plugin', source : './plugin' }],
+          },
+          invalidField : 'owner',
+        },
+        {
+          description : 'wrong type for plugins (string)',
+          data        : {
+            name    : 'my-marketplace',
+            owner   : { name : 'Test' },
+            plugins : 'not-an-array',
+          },
+          invalidField : 'plugins',
+        },
+        {
+          description : 'invalid plugin name format',
+          data        : {
+            name    : 'my-marketplace',
+            owner   : { name : 'Test' },
+            plugins : [{ name : '-invalid-name', source : './plugin' }],
+          },
+          invalidField : 'plugins.0.name',
+        },
+      ])('should reject $description', ({ data, invalidField }) => {
         const result = validateMarketplaceSchema(data)
 
         expect(result.valid).toBe(false)
-        expect(getInvalidFields(result.errors)).toContain('name')
-      })
-
-      it('should reject invalid plugin name format', () => {
-        const data = {
-          name    : 'my-marketplace',
-          owner   : { name : 'Test' },
-          plugins : [{ name : '-invalid-name', source : './plugin' }],
-        }
-
-        const result = validateMarketplaceSchema(data)
-
-        expect(result.valid).toBe(false)
-        expect(getInvalidFields(result.errors)).toContain('plugins.0.name')
-      })
-
-      it('should reject wrong type for name', () => {
-        const data = {
-          name    : 123,
-          owner   : { name : 'Test' },
-          plugins : [{ name : 'plugin', source : './plugin' }],
-        }
-
-        const result = validateMarketplaceSchema(data)
-
-        expect(result.valid).toBe(false)
-        expect(getInvalidFields(result.errors)).toContain('name')
-      })
-
-      it('should reject wrong type for owner', () => {
-        const data = {
-          name    : 'my-marketplace',
-          owner   : 'not-an-object',
-          plugins : [{ name : 'plugin', source : './plugin' }],
-        }
-
-        const result = validateMarketplaceSchema(data)
-
-        expect(result.valid).toBe(false)
-        expect(getInvalidFields(result.errors)).toContain('owner')
-      })
-
-      it('should reject wrong type for plugins', () => {
-        const data = {
-          name    : 'my-marketplace',
-          owner   : { name : 'Test' },
-          plugins : 'not-an-array',
-        }
-
-        const result = validateMarketplaceSchema(data)
-
-        expect(result.valid).toBe(false)
-        expect(getInvalidFields(result.errors)).toContain('plugins')
+        expect(getInvalidFields(result.errors)).toContain(invalidField)
       })
     })
 
