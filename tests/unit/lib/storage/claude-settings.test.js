@@ -481,23 +481,20 @@ describe('claude-settings', () => {
         marketplace    : 'unknown-marketplace',
         expectedStatus : PLUGIN_STATUSES.NOT_INSTALLED,
       },
-    ])('should return $expectedStatus for $description', ({
-      enabled,
-      disabled,
-      pluginName = 'test-plugin',
-      marketplace = 'test-marketplace',
-      expectedStatus,
-    }) => {
-      const settings = {
-        plugins : {
-          enabled,
-          disabled,
-          marketplaces : {},
-        },
-      }
+    ])(
+      'should return $expectedStatus for $description',
+      ({ enabled, disabled, pluginName = 'test-plugin', marketplace = 'test-marketplace', expectedStatus }) => {
+        const settings = {
+          plugins : {
+            enabled,
+            disabled,
+            marketplaces : {},
+          },
+        }
 
-      expect(getPluginState(pluginName, marketplace, settings)).toBe(expectedStatus)
-    })
+        expect(getPluginState(pluginName, marketplace, settings)).toBe(expectedStatus)
+      }
+    )
   })
 
   describe('getPluginStates', () => {

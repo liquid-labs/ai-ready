@@ -192,8 +192,8 @@ describe('marketplace-validator', () => {
         },
       ])('should report $description', ({ plugins, expectedMessage }) => {
         const data = {
-          name    : 'my-marketplace',
-          owner   : { name : 'Test' },
+          name  : 'my-marketplace',
+          owner : { name : 'Test' },
           plugins,
         }
 

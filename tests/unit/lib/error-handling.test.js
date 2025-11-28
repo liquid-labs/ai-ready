@@ -8,6 +8,10 @@ import { readSettings, updateSettings } from '_lib/storage/claude-settings'
 
 import { createPackageJson, createTestPackage } from './test-lib'
 
+// many of the parameterized tests define an async function that just returns a Promise; the functions are then called
+// like 'await fn()' so we end up waiting on the returned Promise, which is fine.
+/* eslint-disable require-await */
+
 /**
  * Error handling tests
  * Verify graceful handling of various error scenarios
@@ -76,9 +80,10 @@ describe('Error handling', () => {
         description : 'missing node_modules returns empty providers',
         fn          : async () => {
           await createPackageJson(tempDir, ['some-package'])
+
           return scanDependencies(tempDir)
         },
-        expected    : [],
+        expected : [],
       },
     ])('should handle $description', async ({ fn, expected }) => {
       const result = await fn()
@@ -258,12 +263,10 @@ describe('Error handling', () => {
       },
       {
         description : 'package.json with no dependencies field',
-        setup       : async () => fs.writeFile(
-          path.join(tempDir, 'package.json'),
-          JSON.stringify({ name : 'test', version : '1.0.0' })
-        ),
-        fn          : async () => scanDependencies(tempDir),
-        expected    : [],
+        setup       : async () =>
+          fs.writeFile(path.join(tempDir, 'package.json'), JSON.stringify({ name : 'test', version : '1.0.0' })),
+        fn       : async () => scanDependencies(tempDir),
+        expected : [],
       },
     ])('should handle $description', async ({ setup, fn, expected }) => {
       await setup()

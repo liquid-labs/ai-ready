@@ -84,16 +84,18 @@ export async function createTestPackage(baseDir, packageName, marketplaceDeclara
   await fs.writeFile(path.join(pluginDir, 'marketplace.json'), JSON.stringify(marketplace, null, 2), 'utf8')
 
   // Create plugin directories for each plugin in the marketplace
-  for (const plugin of marketplace.plugins) {
-    const pluginSourcePath = typeof plugin.source === 'string' ? plugin.source : './plugin'
-    const pluginPath = path.join(packagePath, pluginSourcePath)
-    await fs.mkdir(pluginPath, { recursive : true })
-    await fs.writeFile(
-      path.join(pluginPath, 'SKILL.md'),
-      `# ${plugin.name}\n\n${plugin.description || 'Test plugin'}`,
-      'utf8'
-    )
-  }
+  await Promise.all(
+    marketplace.plugins.map(async (plugin) => {
+      const pluginSourcePath = typeof plugin.source === 'string' ? plugin.source : './plugin'
+      const pluginPath = path.join(packagePath, pluginSourcePath)
+      await fs.mkdir(pluginPath, { recursive : true })
+      await fs.writeFile(
+        path.join(pluginPath, 'SKILL.md'),
+        `# ${plugin.name}\n\n${plugin.description || 'Test plugin'}`,
+        'utf8'
+      )
+    })
+  )
 
   return packagePath
 }
