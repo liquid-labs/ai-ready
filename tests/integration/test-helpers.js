@@ -205,20 +205,22 @@ async function createTestPackage(baseDir, packageName, pluginConfig) {
   await fs.writeFile(path.join(pluginDir, 'marketplace.json'), JSON.stringify(marketplaceDeclaration, null, 2))
 
   // Create plugin directories with plugin.json for each plugin
-  for (const plugin of plugins) {
-    const pluginSourcePath = path.join(packagePath, plugin.source || './')
-    await fs.mkdir(pluginSourcePath, { recursive : true })
-    const pluginManifest = {
-      name        : plugin.name,
-      version     : plugin.version || '1.0.0',
-      description : plugin.description || 'Test plugin',
-    }
-    await fs.writeFile(path.join(pluginSourcePath, 'plugin.json'), JSON.stringify(pluginManifest, null, 2))
+  await Promise.all(
+    plugins.map(async (plugin) => {
+      const pluginSourcePath = path.join(packagePath, plugin.source || './')
+      await fs.mkdir(pluginSourcePath, { recursive : true })
+      const pluginManifest = {
+        name        : plugin.name,
+        version     : plugin.version || '1.0.0',
+        description : plugin.description || 'Test plugin',
+      }
+      await fs.writeFile(path.join(pluginSourcePath, 'plugin.json'), JSON.stringify(pluginManifest, null, 2))
 
-    // Create SKILL.md for skill-type plugins
-    const skillMdContent = `# ${plugin.name}\n\n${plugin.description || 'Test plugin'}\n`
-    await fs.writeFile(path.join(pluginSourcePath, 'SKILL.md'), skillMdContent)
-  }
+      // Create SKILL.md for skill-type plugins
+      const skillMdContent = `# ${plugin.name}\n\n${plugin.description || 'Test plugin'}\n`
+      await fs.writeFile(path.join(pluginSourcePath, 'SKILL.md'), skillMdContent)
+    })
+  )
 
   return packagePath
 }
