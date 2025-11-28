@@ -87,14 +87,19 @@ EOF
 
 cat > node_modules/test-plugin/.claude-plugin/marketplace.json <<EOF
 {
-  "name": "DockerTestPlugin",
-  "version": "1.0.0",
-  "description": "Docker test plugin",
-  "skillPath": ".claude-plugin/skill"
+  "name": "test-plugin-marketplace",
+  "owner": {},
+  "plugins": [
+    {
+      "name": "docker-test-plugin",
+      "source": ".",
+      "description": "Docker test plugin"
+    }
+  ]
 }
 EOF
 
-echo "# DockerTestPlugin" > node_modules/test-plugin/.claude-plugin/skill/SKILL.md
+echo "# docker-test-plugin" > node_modules/test-plugin/.claude-plugin/skill/SKILL.md
 
 # Run sync
 echo "Running: air sync"
@@ -110,7 +115,7 @@ fi
 echo "✔ Settings file created and valid JSON"
 
 # Verify plugin was enabled
-if [ "$(json_contains "$SETTINGS_FILE" "data.plugins.enabled" "DockerTestPlugin@test-plugin-marketplace")" = "true" ]; then
+if [ "$(json_contains "$SETTINGS_FILE" "data.plugins.enabled" "docker-test-plugin@test-plugin-marketplace")" = "true" ]; then
     echo "✔ Plugin enabled in settings"
 else
     echo "✗ Failed: Plugin not enabled"
@@ -137,7 +142,7 @@ VIEW_OUTPUT=$(node "$AIR_CLI" plugins view)
 echo "$VIEW_OUTPUT"
 echo ""
 
-if echo "$VIEW_OUTPUT" | grep -q "DockerTestPlugin"; then
+if echo "$VIEW_OUTPUT" | grep -q "docker-test-plugin"; then
     echo "✔ View command displays plugin"
 else
     echo "✗ Failed: Plugin not shown in view"
@@ -160,7 +165,7 @@ echo ""
 node -e "
 const fs = require('fs');
 const settings = JSON.parse(fs.readFileSync('$SETTINGS_FILE', 'utf8'));
-const pluginKey = 'DockerTestPlugin@test-plugin-marketplace';
+const pluginKey = 'docker-test-plugin@test-plugin-marketplace';
 settings.plugins.enabled = settings.plugins.enabled.filter(p => p !== pluginKey);
 settings.plugins.disabled.push(pluginKey);
 fs.writeFileSync('$SETTINGS_FILE', JSON.stringify(settings, null, 2));
@@ -174,7 +179,7 @@ node "$AIR_CLI" sync --quiet
 echo ""
 
 # Verify plugin remains disabled
-if [ "$(json_contains "$SETTINGS_FILE" "data.plugins.disabled" "DockerTestPlugin@test-plugin-marketplace")" = "true" ]; then
+if [ "$(json_contains "$SETTINGS_FILE" "data.plugins.disabled" "docker-test-plugin@test-plugin-marketplace")" = "true" ]; then
     echo "✔ Plugin remains disabled (user choice respected)"
 else
     echo "✗ Failed: Plugin was re-enabled (user choice not respected)"
@@ -182,7 +187,7 @@ else
     exit 1
 fi
 
-if [ "$(json_contains "$SETTINGS_FILE" "data.plugins.enabled" "DockerTestPlugin@test-plugin-marketplace")" = "false" ]; then
+if [ "$(json_contains "$SETTINGS_FILE" "data.plugins.enabled" "docker-test-plugin@test-plugin-marketplace")" = "false" ]; then
     echo "✔ Plugin not in enabled list"
 else
     echo "✗ Failed: Plugin incorrectly in enabled list"
@@ -216,20 +221,25 @@ EOF
 
 cat > "node_modules/@myorg/scoped-plugin/.claude-plugin/marketplace.json" <<EOF
 {
-  "name": "ScopedPlugin",
-  "version": "1.0.0",
-  "description": "Scoped test plugin",
-  "skillPath": ".claude-plugin/skill"
+  "name": "myorg-scoped-plugin-marketplace",
+  "owner": {},
+  "plugins": [
+    {
+      "name": "scoped-plugin",
+      "source": ".",
+      "description": "Scoped test plugin"
+    }
+  ]
 }
 EOF
 
-echo "# ScopedPlugin" > "node_modules/@myorg/scoped-plugin/.claude-plugin/skill/SKILL.md"
+echo "# scoped-plugin" > "node_modules/@myorg/scoped-plugin/.claude-plugin/skill/SKILL.md"
 
 # Re-enable the first plugin for this test
 node -e "
 const fs = require('fs');
 const settings = JSON.parse(fs.readFileSync('$SETTINGS_FILE', 'utf8'));
-const pluginKey = 'DockerTestPlugin@test-plugin-marketplace';
+const pluginKey = 'docker-test-plugin@test-plugin-marketplace';
 settings.plugins.disabled = settings.plugins.disabled.filter(p => p !== pluginKey);
 settings.plugins.enabled.push(pluginKey);
 fs.writeFileSync('$SETTINGS_FILE', JSON.stringify(settings, null, 2));
@@ -240,7 +250,7 @@ node "$AIR_CLI" sync --quiet
 echo ""
 
 # Verify scoped plugin enabled
-if [ "$(json_contains "$SETTINGS_FILE" "data.plugins.enabled" "ScopedPlugin@myorg-scoped-plugin-marketplace")" = "true" ]; then
+if [ "$(json_contains "$SETTINGS_FILE" "data.plugins.enabled" "scoped-plugin@myorg-scoped-plugin-marketplace")" = "true" ]; then
     echo "✔ Scoped plugin enabled"
 else
     echo "✗ Failed: Scoped plugin not enabled"
@@ -297,10 +307,19 @@ echo ""
 # Update plugin version
 cat > node_modules/test-plugin/.claude-plugin/marketplace.json <<EOF
 {
-  "name": "DockerTestPlugin",
-  "version": "2.0.0",
-  "description": "Updated Docker test plugin",
-  "skillPath": ".claude-plugin/skill"
+  "name": "test-plugin-marketplace",
+  "owner": {},
+  "metadata": {
+    "version": "2.0.0"
+  },
+  "plugins": [
+    {
+      "name": "docker-test-plugin",
+      "source": ".",
+      "description": "Updated Docker test plugin",
+      "version": "2.0.0"
+    }
+  ]
 }
 EOF
 
@@ -309,14 +328,14 @@ node "$AIR_CLI" sync --quiet
 echo ""
 
 # Verify version updated in marketplace
-if grep -q '"version":"2.0.0"' "$SETTINGS_FILE" | grep -q "DockerTestPlugin"; then
+if grep -q '"version":"2.0.0"' "$SETTINGS_FILE" | grep -q "docker-test-plugin"; then
     echo "✔ Plugin version updated to 2.0.0"
 else
     echo "⚠ Warning: Version update verification inconclusive (check manually)"
 fi
 
 # Verify plugin still enabled
-if [ "$(json_contains "$SETTINGS_FILE" "data.plugins.enabled" "DockerTestPlugin@test-plugin-marketplace")" = "true" ]; then
+if [ "$(json_contains "$SETTINGS_FILE" "data.plugins.enabled" "docker-test-plugin@test-plugin-marketplace")" = "true" ]; then
     echo "✔ Plugin remains enabled after update"
 else
     echo "✗ Failed: Plugin disabled after update"
