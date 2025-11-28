@@ -77,24 +77,69 @@ For fully automatic discovery, configure Claude Code to run `air sync --quiet` o
 
 ## For Library Authors
 
-To bundle a Claude Code plugin with your npm package:
+To bundle Claude Code plugins with your npm package:
 
 1. Create `.claude-plugin/marketplace.json`:
+
+```json
+{
+  "name": "my-library-marketplace",
+  "owner": {
+    "name": "Your Name or Organization"
+  },
+  "plugins": [
+    {
+      "name": "my-library-helper",
+      "source": "./plugins/helper",
+      "version": "1.0.0",
+      "description": "Helps developers use my-library APIs"
+    }
+  ]
+}
+```
+
+2. Add your plugin code to `.claude-plugin/plugins/helper/` (or wherever `source` points)
+
+3. Optionally add a `plugin.json` manifest in each plugin directory:
 
 ```json
 {
   "name": "my-library-helper",
   "version": "1.0.0",
   "description": "Helps developers use my-library APIs",
-  "skillPath": ".claude-plugin/skill"
+  "commands": "./commands/",
+  "agents": ["./agents/helper-agent.md"]
 }
 ```
 
-2. Add your plugin code to `.claude-plugin/skill/SKILL.md`
+4. Publish your package
 
-3. Publish your package
+Users who install your package will automatically get your plugins enabled via `air sync`.
 
-Users who install your package will automatically get your plugin enabled via `air sync`.
+### Marketplace Schema
+
+The `marketplace.json` file follows the [Claude Code Plugin Marketplace schema](https://code.claude.com/docs/en/plugin-marketplaces#marketplace-schema):
+
+| Field | Required | Description |
+|-------|----------|-------------|
+| `name` | Yes | Marketplace identifier (kebab-case) |
+| `owner` | Yes | Marketplace maintainer info (`{name, email?, url?}`) |
+| `plugins` | Yes | Array of plugin entries |
+| `metadata` | No | Optional description, version, pluginRoot |
+
+Each plugin entry in the `plugins` array:
+
+| Field | Required | Description |
+|-------|----------|-------------|
+| `name` | Yes | Plugin identifier (kebab-case) |
+| `source` | Yes | Relative path or source object |
+| `version` | No | Plugin version (semver) |
+| `description` | No | Brief plugin description |
+| `author` | No | Plugin author info |
+| `commands` | No | Custom command paths |
+| `agents` | No | Agent definition paths |
+| `hooks` | No | Hook configuration |
+| `mcpServers` | No | MCP server configuration |
 
 ## How It Works
 
@@ -136,4 +181,4 @@ npm run build
 
 ## License
 
-MIT
+Apache-2.0

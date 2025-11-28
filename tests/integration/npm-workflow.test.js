@@ -53,10 +53,10 @@ describe('Integration: npm Workflow Simulation', () => {
       await fs.writeFile(path.join(projectDir, 'package.json'), JSON.stringify(packageJson, null, 2))
 
       await createTestPackage(projectDir, 'new-plugin', {
-        name        : 'NewPlugin',
+        name        : 'new-plugin',
         version     : '1.0.0',
         description : 'Newly added plugin',
-        skillPath   : '.claude-plugin/skill',
+        source      : './',
       })
 
       // Sync again
@@ -65,7 +65,7 @@ describe('Integration: npm Workflow Simulation', () => {
       settings = await readJsonFile(settingsPath)
 
       // New plugin should be enabled
-      expect(settings.plugins.enabled).toContain('NewPlugin@new-plugin-marketplace')
+      expect(settings.plugins.enabled).toContain('new-plugin@new-plugin-marketplace')
       expect(settings.plugins.marketplaces['new-plugin-marketplace']).toBeDefined()
     })
 
@@ -94,24 +94,24 @@ describe('Integration: npm Workflow Simulation', () => {
       await fs.writeFile(path.join(projectDir, 'package.json'), JSON.stringify(packageJson, null, 2))
 
       await createTestPackage(projectDir, 'plugin-one', {
-        name        : 'PluginOne',
+        name        : 'plugin-one',
         version     : '1.0.0',
         description : 'First plugin',
-        skillPath   : '.claude-plugin/skill',
+        source      : './',
       })
 
       await createTestPackage(projectDir, 'plugin-two', {
-        name        : 'PluginTwo',
+        name        : 'plugin-two',
         version     : '1.0.0',
         description : 'Second plugin',
-        skillPath   : '.claude-plugin/skill',
+        source      : './',
       })
 
       await createTestPackage(projectDir, 'plugin-three', {
-        name        : 'PluginThree',
+        name        : 'plugin-three',
         version     : '1.0.0',
         description : 'Third plugin',
-        skillPath   : '.claude-plugin/skill',
+        source      : './',
       })
 
       // Sync
@@ -121,9 +121,9 @@ describe('Integration: npm Workflow Simulation', () => {
       const settings = await readJsonFile(settingsPath)
 
       // All three should be enabled
-      expect(settings.plugins.enabled).toContain('PluginOne@plugin-one-marketplace')
-      expect(settings.plugins.enabled).toContain('PluginTwo@plugin-two-marketplace')
-      expect(settings.plugins.enabled).toContain('PluginThree@plugin-three-marketplace')
+      expect(settings.plugins.enabled).toContain('plugin-one@plugin-one-marketplace')
+      expect(settings.plugins.enabled).toContain('plugin-two@plugin-two-marketplace')
+      expect(settings.plugins.enabled).toContain('plugin-three@plugin-three-marketplace')
       expect(settings.plugins.enabled.length).toBe(3)
     })
 
@@ -146,10 +146,10 @@ describe('Integration: npm Workflow Simulation', () => {
       await fs.writeFile(path.join(projectDir, 'package.json'), JSON.stringify(packageJson, null, 2))
 
       await createTestPackage(projectDir, '@mycompany/ai-plugin', {
-        name        : 'MyCompanyAI',
+        name        : 'ai-plugin',
         version     : '1.0.0',
         description : 'Company AI plugin',
-        skillPath   : '.claude-plugin/skill',
+        source      : './',
       })
 
       await runCLI(['sync'], projectDir, { env : { HOME : projectDir } })
@@ -157,7 +157,7 @@ describe('Integration: npm Workflow Simulation', () => {
       const settingsPath = path.join(projectDir, '.claude/settings.json')
       const settings = await readJsonFile(settingsPath)
 
-      expect(settings.plugins.enabled).toContain('MyCompanyAI@mycompany-ai-plugin-marketplace')
+      expect(settings.plugins.enabled).toContain('ai-plugin@mycompany-ai-plugin-marketplace')
     })
   })
 
@@ -177,10 +177,10 @@ describe('Integration: npm Workflow Simulation', () => {
       await fs.writeFile(path.join(projectDir, 'package.json'), JSON.stringify(packageJson, null, 2))
 
       await createTestPackage(projectDir, 'removable-plugin', {
-        name        : 'RemovablePlugin',
+        name        : 'removable-plugin',
         version     : '1.0.0',
         description : 'Plugin to be removed',
-        skillPath   : '.claude-plugin/skill',
+        source      : './',
       })
 
       // Initial sync
@@ -189,7 +189,7 @@ describe('Integration: npm Workflow Simulation', () => {
       const settingsPath = path.join(projectDir, '.claude/settings.json')
       let settings = await readJsonFile(settingsPath)
 
-      expect(settings.plugins.enabled).toContain('RemovablePlugin@removable-plugin-marketplace')
+      expect(settings.plugins.enabled).toContain('removable-plugin@removable-plugin-marketplace')
 
       // Simulate npm uninstall: remove from package.json and delete package
       delete packageJson.dependencies['removable-plugin']
@@ -233,17 +233,17 @@ describe('Integration: npm Workflow Simulation', () => {
       await fs.writeFile(path.join(projectDir, 'package.json'), JSON.stringify(packageJson, null, 2))
 
       await createTestPackage(projectDir, 'plugin-a', {
-        name        : 'PluginA',
+        name        : 'plugin-a',
         version     : '1.0.0',
         description : 'Plugin A',
-        skillPath   : '.claude-plugin/skill',
+        source      : './',
       })
 
       await createTestPackage(projectDir, 'plugin-b', {
-        name        : 'PluginB',
+        name        : 'plugin-b',
         version     : '1.0.0',
         description : 'Plugin B',
-        skillPath   : '.claude-plugin/skill',
+        source      : './',
       })
 
       await runCLI(['sync'], projectDir, { env : { HOME : projectDir } })
@@ -284,17 +284,17 @@ describe('Integration: npm Workflow Simulation', () => {
       await fs.writeFile(path.join(projectDir, 'package.json'), JSON.stringify(packageJson, null, 2))
 
       await createTestPackage(projectDir, 'keep-plugin', {
-        name        : 'KeepPlugin',
+        name        : 'keep-plugin',
         version     : '1.0.0',
         description : 'Plugin to keep',
-        skillPath   : '.claude-plugin/skill',
+        source      : './',
       })
 
       await createTestPackage(projectDir, 'remove-plugin', {
-        name        : 'RemovePlugin',
+        name        : 'remove-plugin',
         version     : '1.0.0',
         description : 'Plugin to remove',
-        skillPath   : '.claude-plugin/skill',
+        source      : './',
       })
 
       await runCLI(['sync'], projectDir, { env : { HOME : projectDir } })
@@ -302,8 +302,8 @@ describe('Integration: npm Workflow Simulation', () => {
       const settingsPath = path.join(projectDir, '.claude/settings.json')
       let settings = await readJsonFile(settingsPath)
 
-      expect(settings.plugins.enabled).toContain('KeepPlugin@keep-plugin-marketplace')
-      expect(settings.plugins.enabled).toContain('RemovePlugin@remove-plugin-marketplace')
+      expect(settings.plugins.enabled).toContain('keep-plugin@keep-plugin-marketplace')
+      expect(settings.plugins.enabled).toContain('remove-plugin@remove-plugin-marketplace')
 
       // Remove one plugin
       delete packageJson.dependencies['remove-plugin']
@@ -316,7 +316,7 @@ describe('Integration: npm Workflow Simulation', () => {
       settings = await readJsonFile(settingsPath)
 
       // Kept plugin should still be enabled
-      expect(settings.plugins.enabled).toContain('KeepPlugin@keep-plugin-marketplace')
+      expect(settings.plugins.enabled).toContain('keep-plugin@keep-plugin-marketplace')
       expect(settings.plugins.marketplaces['keep-plugin-marketplace']).toBeDefined()
     })
   })
@@ -336,10 +336,10 @@ describe('Integration: npm Workflow Simulation', () => {
       await fs.writeFile(path.join(projectDir, 'package.json'), JSON.stringify(packageJson, null, 2))
 
       await createTestPackage(projectDir, 'updating-plugin', {
-        name        : 'UpdatingPlugin',
+        name        : 'updating-plugin',
         version     : '1.0.0',
         description : 'V1',
-        skillPath   : '.claude-plugin/skill',
+        source      : './',
       })
 
       await runCLI(['sync'], projectDir, { env : { HOME : projectDir } })
@@ -347,25 +347,29 @@ describe('Integration: npm Workflow Simulation', () => {
       const settingsPath = path.join(projectDir, '.claude/settings.json')
       let settings = await readJsonFile(settingsPath)
 
-      expect(settings.plugins.marketplaces['updating-plugin-marketplace'].plugins.UpdatingPlugin.version).toBe('1.0.0')
+      expect(settings.plugins.marketplaces['updating-plugin-marketplace'].plugins['updating-plugin'].version).toBe(
+        '1.0.0'
+      )
 
       // Simulate npm update: change version and update package
       packageJson.dependencies['updating-plugin'] = '2.0.0'
       await fs.writeFile(path.join(projectDir, 'package.json'), JSON.stringify(packageJson, null, 2))
 
       await createTestPackage(projectDir, 'updating-plugin', {
-        name        : 'UpdatingPlugin',
+        name        : 'updating-plugin',
         version     : '2.0.0',
         description : 'V2',
-        skillPath   : '.claude-plugin/skill',
+        source      : './',
       })
 
       await runCLI(['sync'], projectDir, { env : { HOME : projectDir } })
 
       settings = await readJsonFile(settingsPath)
 
-      expect(settings.plugins.marketplaces['updating-plugin-marketplace'].plugins.UpdatingPlugin.version).toBe('2.0.0')
-      expect(settings.plugins.enabled).toContain('UpdatingPlugin@updating-plugin-marketplace')
+      expect(settings.plugins.marketplaces['updating-plugin-marketplace'].plugins['updating-plugin'].version).toBe(
+        '2.0.0'
+      )
+      expect(settings.plugins.enabled).toContain('updating-plugin@updating-plugin-marketplace')
     })
 
     it('should handle updating multiple plugins simultaneously', async () => {
@@ -383,17 +387,17 @@ describe('Integration: npm Workflow Simulation', () => {
       await fs.writeFile(path.join(projectDir, 'package.json'), JSON.stringify(packageJson, null, 2))
 
       await createTestPackage(projectDir, 'update-a', {
-        name        : 'UpdateA',
+        name        : 'update-a',
         version     : '1.0.0',
         description : 'A V1',
-        skillPath   : '.claude-plugin/skill',
+        source      : './',
       })
 
       await createTestPackage(projectDir, 'update-b', {
-        name        : 'UpdateB',
+        name        : 'update-b',
         version     : '1.0.0',
         description : 'B V1',
-        skillPath   : '.claude-plugin/skill',
+        source      : './',
       })
 
       await runCLI(['sync'], projectDir, { env : { HOME : projectDir } })
@@ -404,17 +408,17 @@ describe('Integration: npm Workflow Simulation', () => {
       await fs.writeFile(path.join(projectDir, 'package.json'), JSON.stringify(packageJson, null, 2))
 
       await createTestPackage(projectDir, 'update-a', {
-        name        : 'UpdateA',
+        name        : 'update-a',
         version     : '2.0.0',
         description : 'A V2',
-        skillPath   : '.claude-plugin/skill',
+        source      : './',
       })
 
       await createTestPackage(projectDir, 'update-b', {
-        name        : 'UpdateB',
+        name        : 'update-b',
         version     : '3.0.0',
         description : 'B V3',
-        skillPath   : '.claude-plugin/skill',
+        source      : './',
       })
 
       await runCLI(['sync'], projectDir, { env : { HOME : projectDir } })
@@ -422,8 +426,8 @@ describe('Integration: npm Workflow Simulation', () => {
       const settingsPath = path.join(projectDir, '.claude/settings.json')
       const settings = await readJsonFile(settingsPath)
 
-      expect(settings.plugins.marketplaces['update-a-marketplace'].plugins.UpdateA.version).toBe('2.0.0')
-      expect(settings.plugins.marketplaces['update-b-marketplace'].plugins.UpdateB.version).toBe('3.0.0')
+      expect(settings.plugins.marketplaces['update-a-marketplace'].plugins['update-a'].version).toBe('2.0.0')
+      expect(settings.plugins.marketplaces['update-b-marketplace'].plugins['update-b'].version).toBe('3.0.0')
     })
   })
 
@@ -448,17 +452,17 @@ describe('Integration: npm Workflow Simulation', () => {
       await fs.writeFile(path.join(projectDir, 'package.json'), JSON.stringify(packageJson, null, 2))
 
       await createTestPackage(projectDir, 'workflow-a', {
-        name        : 'WorkflowA',
+        name        : 'workflow-a',
         version     : '1.0.0',
         description : 'A V1',
-        skillPath   : '.claude-plugin/skill',
+        source      : './',
       })
 
       await createTestPackage(projectDir, 'workflow-b', {
-        name        : 'WorkflowB',
+        name        : 'workflow-b',
         version     : '1.0.0',
         description : 'B V1',
-        skillPath   : '.claude-plugin/skill',
+        source      : './',
       })
 
       await runCLI(['sync'], projectDir, { env : { HOME : projectDir } })
@@ -474,17 +478,17 @@ describe('Integration: npm Workflow Simulation', () => {
       await fs.writeFile(path.join(projectDir, 'package.json'), JSON.stringify(packageJson, null, 2))
 
       await createTestPackage(projectDir, 'workflow-a', {
-        name        : 'WorkflowA',
+        name        : 'workflow-a',
         version     : '2.0.0',
         description : 'A V2',
-        skillPath   : '.claude-plugin/skill',
+        source      : './',
       })
 
       await createTestPackage(projectDir, 'workflow-c', {
-        name        : 'WorkflowC',
+        name        : 'workflow-c',
         version     : '1.0.0',
         description : 'C V1',
-        skillPath   : '.claude-plugin/skill',
+        source      : './',
       })
 
       await runCLI(['sync'], projectDir, { env : { HOME : projectDir } })
@@ -492,7 +496,7 @@ describe('Integration: npm Workflow Simulation', () => {
       settings = await readJsonFile(settingsPath)
 
       expect(settings.plugins.enabled.length).toBe(3)
-      expect(settings.plugins.marketplaces['workflow-a-marketplace'].plugins.WorkflowA.version).toBe('2.0.0')
+      expect(settings.plugins.marketplaces['workflow-a-marketplace'].plugins['workflow-a'].version).toBe('2.0.0')
 
       // Step 3: Remove one
       delete packageJson.dependencies['workflow-b']
@@ -505,8 +509,8 @@ describe('Integration: npm Workflow Simulation', () => {
       settings = await readJsonFile(settingsPath)
 
       // A and C should still be enabled
-      expect(settings.plugins.enabled).toContain('WorkflowA@workflow-a-marketplace')
-      expect(settings.plugins.enabled).toContain('WorkflowC@workflow-c-marketplace')
+      expect(settings.plugins.enabled).toContain('workflow-a@workflow-a-marketplace')
+      expect(settings.plugins.enabled).toContain('workflow-c@workflow-c-marketplace')
     })
 
     it('should handle switching between different plugin sets', async () => {
@@ -523,10 +527,10 @@ describe('Integration: npm Workflow Simulation', () => {
       await fs.writeFile(path.join(projectDir, 'package.json'), JSON.stringify(packageJson, null, 2))
 
       await createTestPackage(projectDir, 'set1-plugin', {
-        name        : 'Set1Plugin',
+        name        : 'set1-plugin',
         version     : '1.0.0',
         description : 'Set 1',
-        skillPath   : '.claude-plugin/skill',
+        source      : './',
       })
 
       await runCLI(['sync'], projectDir, { env : { HOME : projectDir } })
@@ -539,10 +543,10 @@ describe('Integration: npm Workflow Simulation', () => {
       await fs.rm(path.join(projectDir, 'node_modules/set1-plugin'), { recursive : true, force : true })
 
       await createTestPackage(projectDir, 'set2-plugin', {
-        name        : 'Set2Plugin',
+        name        : 'set2-plugin',
         version     : '1.0.0',
         description : 'Set 2',
-        skillPath   : '.claude-plugin/skill',
+        source      : './',
       })
 
       await runCLI(['sync'], projectDir, { env : { HOME : projectDir } })
@@ -551,7 +555,7 @@ describe('Integration: npm Workflow Simulation', () => {
       const settings = await readJsonFile(settingsPath)
 
       // New plugin should be enabled
-      expect(settings.plugins.enabled).toContain('Set2Plugin@set2-plugin-marketplace')
+      expect(settings.plugins.enabled).toContain('set2-plugin@set2-plugin-marketplace')
 
       // Settings should be valid
       expect(settings.plugins).toBeDefined()

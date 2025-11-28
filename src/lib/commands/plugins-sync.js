@@ -4,8 +4,55 @@ import { ClaudePluginConfig } from '../storage/claude-config'
 import { updateSettings } from '../storage/claude-settings'
 
 /**
- * @import { PluginProvider } from '../types.js'
+ * @import { MarketplaceProvider } from '../types.js'
  */
+
+/**
+ * Find the provider that contains a plugin by name
+ * @param {MarketplaceProvider[]} providers - List of providers
+ * @param {string} pluginName - Name of the plugin to find
+ * @returns {MarketplaceProvider|undefined} The provider containing the plugin
+ */
+const findProviderForPlugin = (providers, pluginName) =>
+  providers.find((p) => p.marketplaceDeclaration.plugins.some((plugin) => plugin.name === pluginName))
+
+/**
+ * Log information about newly added plugins
+ * @param {string[]} addedPlugins - Names of added plugins
+ * @param {MarketplaceProvider[]} providers - List of providers
+ */
+const logAddedPlugins = (addedPlugins, providers) => {
+  console.log('New plugins discovered:')
+  for (const pluginName of addedPlugins) {
+    const provider = findProviderForPlugin(providers, pluginName)
+    if (provider) {
+      console.log(
+        `  • ${pluginName} (from ${provider.marketplaceDeclaration.name} in ${provider.packageName} v${provider.version})`
+      )
+    }
+  }
+  console.log()
+}
+
+/**
+ * Log sync results summary
+ * @param {object} changes - Changes object from updateSettings
+ * @param {string} settingsPath - Path to settings file
+ */
+const logSyncResults = (changes, settingsPath) => {
+  if (changes.added.length > 0 || changes.updated.length > 0) {
+    console.log(`Updated settings: ${settingsPath}`)
+    console.log(
+      `✓ ${changes.added.length} plugin${changes.added.length === 1 ? '' : 's'} added, ${changes.updated.length} updated\n`
+    )
+    if (changes.added.length > 0) {
+      console.log('  Restart Claude Code to load new plugins\n')
+    }
+  }
+  else {
+    console.log('All plugins already enabled.\n')
+  }
+}
 
 /**
  * Plugins sync command: Discover and enable plugins from dependencies
@@ -22,48 +69,29 @@ export async function pluginsSyncCommand(options = {}) {
 
   try {
     if (!quiet) {
-      console.log('Scanning dependencies for Claude Code plugins...')
+      console.log('Scanning dependencies for Claude Code plugin marketplaces...')
     }
 
-    // Scan dependencies
     const providers = await scanDependencies(baseDir)
+    const totalPlugins = providers.reduce((sum, p) => sum + p.marketplaceDeclaration.plugins.length, 0)
 
     if (!quiet) {
-      console.log(`Found ${providers.length} plugin${providers.length === 1 ? '' : 's'}\n`)
+      console.log(
+        `Found ${providers.length} marketplace${providers.length === 1 ? '' : 's'} with ${totalPlugins} plugin${totalPlugins === 1 ? '' : 's'}\n`
+      )
     }
 
-    // Update settings (non-destructive merge)
-    // Even if no providers, we create/ensure settings file exists
     const changes = await updateSettings(config.settingsPath, providers)
 
     if (providers.length === 0) {
       return
     }
 
-    // Report changes
     if (!quiet) {
       if (changes.added.length > 0) {
-        console.log('New plugins discovered:')
-        for (const pluginName of changes.added) {
-          const provider = providers.find((p) => p.pluginDeclaration.name === pluginName)
-          console.log(`  • ${pluginName} (from ${provider.packageName} v${provider.version})`)
-        }
-        console.log()
+        logAddedPlugins(changes.added, providers)
       }
-
-      if (changes.added.length > 0 || changes.updated.length > 0) {
-        console.log(`Updated settings: ${config.settingsPath}`)
-        console.log(
-          `✓ ${changes.added.length} plugin${changes.added.length === 1 ? '' : 's'} added, ${changes.updated.length} updated\n`
-        )
-
-        if (changes.added.length > 0) {
-          console.log('⚠️  Restart Claude Code to load new plugins\n')
-        }
-      }
-      else {
-        console.log('All plugins already enabled.\n')
-      }
+      logSyncResults(changes, config.settingsPath)
     }
   }
   catch (error) {

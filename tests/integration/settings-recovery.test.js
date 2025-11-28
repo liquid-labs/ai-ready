@@ -103,7 +103,7 @@ describe('Integration: Settings Recovery', () => {
 
       const settings = await readJsonFile(settingsPath)
       expect(settings.plugins).toBeDefined()
-      expect(settings.plugins.enabled).toContain('TestPlugin@test-plugin-marketplace')
+      expect(settings.plugins.enabled).toContain('test-plugin@test-plugin-marketplace')
     })
 
     it('should create .claude directory if it does not exist', async () => {

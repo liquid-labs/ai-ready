@@ -19,19 +19,19 @@ describe('air plugins sync (functional)', () => {
     // Setup Claude settings
     await setupClaudeSettings(homeDir)
 
-    // Create test plugins
+    // Create test plugins (names must be kebab-case per schema)
     await createTestPackage(testDir, 'test-plugin', {
-      name        : 'TestPlugin',
+      name        : 'test-plugin',
       version     : '1.0.0',
       description : 'A test plugin for functional testing',
-      skillPath   : '.claude-plugin/skill',
+      source      : './',
     })
 
     await createTestPackage(testDir, '@scoped/plugin', {
-      name        : 'ScopedPlugin',
+      name        : 'scoped-plugin',
       version     : '2.0.0',
       description : 'A scoped test plugin',
-      skillPath   : '.claude-plugin/skill',
+      source      : './',
     })
   })
 
@@ -52,8 +52,8 @@ describe('air plugins sync (functional)', () => {
       expect(await fileExists(settingsPath)).toBe(true)
 
       const settings = await readJsonFile(settingsPath)
-      expect(settings.plugins.enabled).toContain('TestPlugin@test-plugin-marketplace')
-      expect(settings.plugins.enabled).toContain('ScopedPlugin@scoped-plugin-marketplace')
+      expect(settings.plugins.enabled).toContain('test-plugin@test-plugin-marketplace')
+      expect(settings.plugins.enabled).toContain('scoped-plugin@plugin-marketplace')
     })
 
     it('should create marketplace entries', async () => {
@@ -65,14 +65,14 @@ describe('air plugins sync (functional)', () => {
       const settings = await readJsonFile(settingsPath)
 
       expect(settings.plugins.marketplaces['test-plugin-marketplace']).toBeDefined()
-      expect(settings.plugins.marketplaces['scoped-plugin-marketplace']).toBeDefined()
+      expect(settings.plugins.marketplaces['plugin-marketplace']).toBeDefined()
 
       // Check marketplace structure
       const marketplace = settings.plugins.marketplaces['test-plugin-marketplace']
       expect(marketplace.source.type).toBe('directory')
       expect(marketplace.source.path).toContain('test-plugin')
-      expect(marketplace.plugins.TestPlugin).toBeDefined()
-      expect(marketplace.plugins.TestPlugin.version).toBe('1.0.0')
+      expect(marketplace.plugins['test-plugin']).toBeDefined()
+      expect(marketplace.plugins['test-plugin'].version).toBe('1.0.0')
     })
 
     it('should display success message', async () => {
@@ -95,7 +95,7 @@ describe('air plugins sync (functional)', () => {
       // Manually disable a plugin
       const settingsPath = path.join(homeDir, '.claude/settings.json')
       let settings = await readJsonFile(settingsPath)
-      const pluginKey = 'TestPlugin@test-plugin-marketplace'
+      const pluginKey = 'test-plugin@test-plugin-marketplace'
       settings.plugins.enabled = settings.plugins.enabled.filter((p) => p !== pluginKey)
       settings.plugins.disabled = [pluginKey]
       await require('fs/promises').writeFile(settingsPath, JSON.stringify(settings, null, 2))
@@ -180,8 +180,8 @@ describe('air plugins sync (functional)', () => {
       const settings = await readJsonFile(settingsPath)
 
       // Check scoped package marketplace
-      expect(settings.plugins.marketplaces['scoped-plugin-marketplace']).toBeDefined()
-      expect(settings.plugins.enabled).toContain('ScopedPlugin@scoped-plugin-marketplace')
+      expect(settings.plugins.marketplaces['plugin-marketplace']).toBeDefined()
+      expect(settings.plugins.enabled).toContain('scoped-plugin@plugin-marketplace')
     })
   })
 

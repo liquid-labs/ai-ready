@@ -46,36 +46,37 @@ Scanner → Settings Manager → Commands
 1. **Scanner** (`src/lib/scanner.js`)
    - Scans direct dependencies from `package.json` (dependencies + devDependencies)
    - Discovers packages with `.claude-plugin/marketplace.json`
-   - Resolves plugin source paths (skillPath)
-   - Returns `PluginProvider[]`
+   - Parses marketplace declarations with plugin arrays
+   - Returns `MarketplaceProvider[]`
 
-2. **Settings Manager** (`src/lib/storage/settings-manager.js`)
+2. **Settings Manager** (`src/lib/storage/claude-settings.js`)
    - Non-destructively updates `$HOME/.claude/settings.json`
    - Manages `plugins.enabled`, `plugins.disabled`, `plugins.marketplaces`
    - Respects user choices (never re-enables disabled plugins)
-   - Creates marketplace entries for each plugin provider
+   - Creates marketplace entries for each marketplace provider
 
 3. **Commands** (`src/lib/commands/*.js`)
-   - **view**: Display plugin status (project or all)
-   - **sync**: Discover and enable plugins automatically
+   - **plugins-view**: Display plugin status (project or all)
+   - **plugins-sync**: Discover and enable plugins automatically
 
-### Plugin Provider System
+### Marketplace Provider System
 
-**Single Type, Automatic Discovery:**
+**Marketplace-Based Discovery:**
 
-- **Plugin Format:**
+- **Marketplace Format:**
   - Declaration: `.claude-plugin/marketplace.json` in package root
-  - Skill code: Specified by `skillPath` field (typically `.claude-plugin/skill/`)
+  - Contains: `name`, `owner`, and `plugins` array
+  - Each plugin has `name`, `source`, and optional metadata
   - Package distributed via npm (part of `dependencies` or `devDependencies`)
 
 - **Discovery Process:**
   1. Read `package.json` dependencies/devDependencies
   2. Check each package for `.claude-plugin/marketplace.json`
-  3. Parse plugin declaration
-  4. Resolve absolute paths to skill directories
+  3. Parse marketplace declaration
+  4. Extract plugin entries from the `plugins` array
 
 - **Settings Integration:**
-  - Marketplace name: `{packageName}-marketplace`
+  - Marketplace name: from `marketplace.json` `name` field
   - Plugin key: `{pluginName}@{marketplaceName}`
   - Settings structure: `plugins.marketplaces[marketplaceName]`
   - Enabled plugins: `plugins.enabled[]`
@@ -86,26 +87,47 @@ Scanner → Settings Manager → Commands
 From `src/lib/types.js`:
 
 ```javascript
-PluginProvider {
+MarketplaceProvider {
   packageName: string           // npm package name
   version: string               // Package version from package.json
   path: string                  // Absolute path to package directory
-  pluginDeclaration: PluginDeclaration
+  marketplaceDeclaration: MarketplaceDeclaration
 }
 
-PluginDeclaration {
-  name: string                  // Plugin name
-  version: string               // Plugin version
-  description: string           // Plugin description
-  skillPath: string             // Relative path to skill directory
+MarketplaceDeclaration {
+  name: string                  // Marketplace identifier (kebab-case)
+  owner: {                      // Marketplace maintainer info
+    name?: string
+    email?: string
+    url?: string
+  }
+  plugins: PluginEntry[]        // Array of plugin entries
+  metadata?: {                  // Optional metadata
+    description?: string
+    version?: string
+    pluginRoot?: string
+  }
+}
+
+PluginEntry {
+  name: string                  // Plugin identifier (kebab-case)
+  source: string | object       // Relative path or source object
+  version?: string              // Plugin version
+  description?: string          // Brief description
+  author?: string | object      // Author info
+  commands?: string | string[]  // Custom command paths
+  agents?: string | string[]    // Agent definition paths
+  hooks?: string | object       // Hook configuration
+  mcpServers?: string | object  // MCP server configuration
 }
 
 PluginState {
   name: string                  // Plugin name
   status: 'enabled'|'disabled'|'not-installed'
-  source: string                // Absolute path to plugin source
+  source: string                // Plugin source location
   version: string               // Plugin version
   description: string           // Plugin description
+  marketplace: string           // Marketplace name
 }
 
 ClaudeSettings {
@@ -118,7 +140,7 @@ ClaudeSettings {
         plugins: {
           [pluginName]: {
             version: string
-            skillPath: string   // Relative path within source
+            source: string      // Plugin source location
           }
         }
       }
@@ -130,9 +152,11 @@ ClaudeSettings {
 ### Module Organization
 
 **Directory Structure:**
-- `src/lib/` - Core modules (scanner, types, test helpers)
+- `src/lib/` - Core modules (scanner, types)
 - `src/lib/commands/` - CLI command implementations
-- `src/lib/storage/` - **Persistent state & file I/O** (settings-manager)
+- `src/lib/parsers/` - JSON parsing and validation
+- `src/lib/schemas/` - JSON Schema definitions and validators
+- `src/lib/storage/` - **Persistent state & file I/O** (claude-settings)
 
 **Layered Dependencies:**
 ```
@@ -141,6 +165,8 @@ CLI (air.mjs)
 Commands (commands/*.js)
   ↓
 Core (scanner.js, types.js) + Storage (storage/*.js)
+  ↓
+Parsers (parsers/*.js) + Schemas (schemas/*.js)
 ```
 
 **Key Principles:**
@@ -160,12 +186,21 @@ import { createPackageJson, createTestPackage } from './test-lib'
 // Create root package.json with dependencies
 await createPackageJson(tempDir, ['my-lib', '@scope/other-lib'])
 
-// Create test package with plugin
+// Create test package with marketplace (legacy format auto-converted)
 await createTestPackage(tempDir, 'my-lib', {
   name: 'my-plugin',
   version: '1.0.0',
-  description: 'Test plugin',
-  skillPath: '.claude-plugin/skill'
+  description: 'Test plugin'
+})
+
+// Or provide full marketplace format
+await createTestPackage(tempDir, 'my-lib', {
+  name: 'my-marketplace',
+  owner: { name: 'Test' },
+  plugins: [
+    { name: 'plugin-a', source: './plugins/a' },
+    { name: 'plugin-b', source: './plugins/b' }
+  ]
 })
 ```
 
@@ -177,7 +212,7 @@ it.each([
   ['valid provider', validProvider, true],
   ['missing name', invalidProvider, false],
 ])('should validate %s', (desc, input, expected) => {
-  expect(isValidPluginProvider(input)).toBe(expected)
+  expect(isValidMarketplaceProvider(input)).toBe(expected)
 })
 ```
 
@@ -185,9 +220,9 @@ it.each([
 
 ### JSDoc Type System
 - All modules use JSDoc (no TypeScript)
-- Import types: `@import { PluginProvider } from './types'`
+- Import types: `@import { MarketplaceProvider } from './types'`
 - Inline types: `@param {string[]} dependencies`
-- Return types: `@returns {Promise<PluginProvider[]>}`
+- Return types: `@returns {Promise<MarketplaceProvider[]>}`
 
 ### Error Handling
 
@@ -235,29 +270,29 @@ try {
 - **Dependency-only scanning**: Only scans packages listed in `package.json` dependencies/devDependencies
 - **Package resolution**: Uses `path.join(baseDir, 'node_modules', packageName)`
 - **Scoped packages**: Handles `@scope/package` names correctly
-- **Plugin detection**: Checks for `.claude-plugin/marketplace.json`
-- **Path resolution**: Converts relative `skillPath` to absolute paths
+- **Marketplace detection**: Checks for `.claude-plugin/marketplace.json`
+- **Schema validation**: Validates marketplace.json against official Claude Code schema
 
 ### Settings Manager Behavior
 - **Non-destructive merging**: Preserves existing settings, only adds/updates plugins
 - **User choice respect**: Never re-enables plugins in `disabled` array
-- **Marketplace creation**: Creates marketplace entry for each plugin provider
+- **Marketplace creation**: Creates marketplace entry for each marketplace provider
 - **Plugin key format**: `{pluginName}@{marketplaceName}` (kebab-case)
 - **Settings location**: `$HOME/.claude/settings.json`
 
 ### Command Behavior
-- **view**:
+- **`air plugins view`** (or `air plugins view [path]`):
   - Without `--all`: Shows plugins from current project's dependencies
   - With `--all`: Shows all plugins in Claude Code settings
   - Output: Table with status (enabled/disabled/not-installed)
-- **sync**:
+- **`air plugins sync`** (or `air sync` shortcut):
   - Scans dependencies → Updates settings → Enables new plugins
   - Respects disabled plugins (won't re-enable)
   - `--quiet` flag: Suppresses output (for hooks)
 
 ### Validation Layers
-1. **Type validation** (`types.js`) - Structure checks via `isValidPluginProvider()`, `isValidPluginState()`
-2. **Schema validation** - marketplace.json against `MARKETPLACE_JSON_SCHEMA`
+1. **Type validation** (`types.js`) - Structure checks via `isValidMarketplaceProvider()`, `isValidPluginEntry()`, `isValidPluginState()`
+2. **Schema validation** (`schemas/marketplace-validator.js`) - marketplace.json and plugin.json against JSON Schema using ajv
 3. **Business validation** (commands) - Dependency presence, file existence
 
 ## Key Files Reference
@@ -266,16 +301,23 @@ try {
 - `src/cli/air.mjs` - Command routing (Commander.js)
 
 ### Commands
-- `src/lib/commands/view.js` - Display plugin status
-- `src/lib/commands/sync.js` - Discover and enable plugins
+- `src/lib/commands/plugins-view.js` - Display plugin status
+- `src/lib/commands/plugins-sync.js` - Discover and enable plugins
 
 ### Core Modules
-- `src/lib/scanner.js` - Plugin discovery logic
+- `src/lib/scanner.js` - Marketplace discovery logic
 - `src/lib/types.js` - Type definitions and constants
 - `tests/unit/lib/test-lib.js` - Test fixture helpers
 
+### Parsers & Schemas
+- `src/lib/parsers/marketplace-json.js` - Parse and validate marketplace.json
+- `src/lib/schemas/marketplace-validator.js` - JSON Schema validation
+- `src/lib/schemas/claude-marketplace-schema.json` - Marketplace JSON Schema
+- `src/lib/schemas/plugin-manifest-schema.json` - Plugin manifest JSON Schema
+
 ### Storage
-- `src/lib/storage/settings-manager.js` - Claude Code settings integration
+- `src/lib/storage/claude-settings.js` - Claude Code settings integration
+- `src/lib/storage/claude-config.js` - Configuration paths
 
 ## Related Documentation
 

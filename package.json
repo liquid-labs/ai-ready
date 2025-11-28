@@ -1,6 +1,6 @@
 {
   "name": "ai-ready",
-  "version": "2.0.0-alpha.1",
+  "version": "1.0.0-alpha.1",
   "description": "Automatic Claude Code plugin discovery for npm dependencies.",
   "main": "dist/ai-ready.js",
   "scripts": {
@@ -33,6 +33,9 @@
   "homepage": "https://github.com/liquid-labs/ai-ready#readme",
   "dependencies": {
     "@folder/xdg": "^4.0.1",
+    "ajv": "^8.17.1",
+    "ajv-errors": "^3.0.0",
+    "ajv-formats": "^3.0.1",
     "check-disk-space": "^3.4.0",
     "commander": "^14.0.2",
     "find-plus": "^2.0.0",

@@ -45,8 +45,8 @@ describe('Integration: Sync Workflow', () => {
       const settings = await readJsonFile(settingsPath)
 
       // Verify plugins were enabled
-      expect(settings.plugins.enabled).toContain('TestPlugin@test-plugin-marketplace')
-      expect(settings.plugins.enabled).toContain('ScopedPlugin@scoped-plugin-marketplace')
+      expect(settings.plugins.enabled).toContain('test-plugin@test-plugin-marketplace')
+      expect(settings.plugins.enabled).toContain('scoped-plugin@scoped-plugin-marketplace')
 
       // Verify marketplaces were created
       expect(settings.plugins.marketplaces['test-plugin-marketplace']).toBeDefined()
@@ -56,9 +56,9 @@ describe('Integration: Sync Workflow', () => {
       const testMarketplace = settings.plugins.marketplaces['test-plugin-marketplace']
       expect(testMarketplace.source.type).toBe('directory')
       expect(testMarketplace.source.path).toBe(path.join(testDir, 'node_modules/test-plugin'))
-      expect(testMarketplace.plugins.TestPlugin).toBeDefined()
-      expect(testMarketplace.plugins.TestPlugin.version).toBe('1.0.0')
-      expect(testMarketplace.plugins.TestPlugin.skillPath).toBe('.claude-plugin/skill')
+      expect(testMarketplace.plugins['test-plugin']).toBeDefined()
+      expect(testMarketplace.plugins['test-plugin'].version).toBe('1.0.0')
+      expect(testMarketplace.plugins['test-plugin'].source).toBe('./')
     })
 
     it('should create settings file if it does not exist', async () => {
@@ -80,7 +80,7 @@ describe('Integration: Sync Workflow', () => {
 
       const settings = await readJsonFile(settingsPath)
       expect(settings.plugins).toBeDefined()
-      expect(settings.plugins.enabled).toContain('TestPlugin@test-plugin-marketplace')
+      expect(settings.plugins.enabled).toContain('test-plugin@test-plugin-marketplace')
     })
 
     it('should handle projects with no plugins gracefully', async () => {
@@ -140,8 +140,8 @@ describe('Integration: Sync Workflow', () => {
       expect(marketplaceCount2).toBe(marketplaceCount1)
 
       // Verify plugins are still there
-      expect(settings2.plugins.enabled).toContain('TestPlugin@test-plugin-marketplace')
-      expect(settings2.plugins.enabled).toContain('ScopedPlugin@scoped-plugin-marketplace')
+      expect(settings2.plugins.enabled).toContain('test-plugin@test-plugin-marketplace')
+      expect(settings2.plugins.enabled).toContain('scoped-plugin@scoped-plugin-marketplace')
     })
 
     it('should update marketplace entries if package content changes', async () => {
@@ -156,10 +156,10 @@ describe('Integration: Sync Workflow', () => {
 
       // Update the plugin declaration
       await createTestPackage(projectDir, 'test-plugin', {
-        name        : 'TestPlugin',
+        name        : 'test-plugin',
         version     : '2.0.0', // Updated version
         description : 'Updated test plugin',
-        skillPath   : '.claude-plugin/skill',
+        source      : './',
       })
 
       // Run sync again
@@ -171,10 +171,10 @@ describe('Integration: Sync Workflow', () => {
 
       // Verify version was updated in marketplace
       const marketplace = settings.plugins.marketplaces['test-plugin-marketplace']
-      expect(marketplace.plugins.TestPlugin.version).toBe('2.0.0')
+      expect(marketplace.plugins['test-plugin'].version).toBe('2.0.0')
 
       // Verify plugin remains enabled (no disruption)
-      expect(settings.plugins.enabled).toContain('TestPlugin@test-plugin-marketplace')
+      expect(settings.plugins.enabled).toContain('test-plugin@test-plugin-marketplace')
     })
   })
 
@@ -193,16 +193,16 @@ describe('Integration: Sync Workflow', () => {
 
       // Use helper to verify structure
       const verification = verifySettingsStructure(settings, {
-        enabled      : ['TestPlugin@test-plugin-marketplace', 'ScopedPlugin@scoped-plugin-marketplace'],
+        enabled      : ['test-plugin@test-plugin-marketplace', 'scoped-plugin@scoped-plugin-marketplace'],
         disabled     : [],
         marketplaces : {
           'test-plugin-marketplace' : {
             sourcePath : path.join(projectDir, 'node_modules/test-plugin'),
-            plugins    : { TestPlugin : {} },
+            plugins    : { 'test-plugin' : {} },
           },
           'scoped-plugin-marketplace' : {
             sourcePath : path.join(projectDir, 'node_modules/@scoped/plugin'),
-            plugins    : { ScopedPlugin : {} },
+            plugins    : { 'scoped-plugin' : {} },
           },
         },
       })
@@ -229,7 +229,7 @@ describe('Integration: Sync Workflow', () => {
       // Verify sync still happened despite no output
       const settingsPath = path.join(projectDir, '.claude/settings.json')
       const settings = await readJsonFile(settingsPath)
-      expect(settings.plugins.enabled).toContain('TestPlugin@test-plugin-marketplace')
+      expect(settings.plugins.enabled).toContain('test-plugin@test-plugin-marketplace')
     })
   })
 
@@ -242,7 +242,7 @@ describe('Integration: Sync Workflow', () => {
 
       // Should succeed with 0 plugins found (not an error condition)
       expect(result.exitCode).toBe(0)
-      expect(result.stdout).toContain('Found 0 plugins')
+      expect(result.stdout).toContain('Found 0 marketplaces with 0 plugins')
     })
 
     it('should fail gracefully when node_modules is missing', async () => {

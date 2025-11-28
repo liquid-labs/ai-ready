@@ -43,10 +43,10 @@ describe('Integration: Scoped Packages', () => {
 
       // Create scoped package
       await createTestPackage(projectDir, '@myorg/ai-plugin', {
-        name        : 'MyOrgPlugin',
+        name        : 'my-org-plugin',
         version     : '1.0.0',
         description : 'Scoped organization plugin',
-        skillPath   : '.claude-plugin/skill',
+        source      : '.claude-plugin/skill',
       })
 
       // Run sync
@@ -58,7 +58,7 @@ describe('Integration: Scoped Packages', () => {
       const settings = await readJsonFile(settingsPath)
 
       // Verify plugin was enabled with correct marketplace name
-      expect(settings.plugins.enabled).toContain('MyOrgPlugin@myorg-ai-plugin-marketplace')
+      expect(settings.plugins.enabled).toContain('my-org-plugin@myorg-ai-plugin-marketplace')
 
       // Verify marketplace was created with correct name (scope removed from marketplace name)
       expect(settings.plugins.marketplaces['myorg-ai-plugin-marketplace']).toBeDefined()
@@ -66,7 +66,7 @@ describe('Integration: Scoped Packages', () => {
       // Verify path resolution is correct for scoped package
       const marketplace = settings.plugins.marketplaces['myorg-ai-plugin-marketplace']
       expect(marketplace.source.path).toBe(path.join(projectDir, 'node_modules/@myorg/ai-plugin'))
-      expect(marketplace.plugins.MyOrgPlugin).toBeDefined()
+      expect(marketplace.plugins['my-org-plugin']).toBeDefined()
     })
 
     it('should handle multiple scoped packages from different orgs', async () => {
@@ -84,17 +84,17 @@ describe('Integration: Scoped Packages', () => {
       await fs.writeFile(path.join(projectDir, 'package.json'), JSON.stringify(packageJson, null, 2))
 
       await createTestPackage(projectDir, '@orgA/plugin', {
-        name        : 'OrgAPlugin',
+        name        : 'org-a-plugin',
         version     : '1.0.0',
         description : 'Organization A plugin',
-        skillPath   : '.claude-plugin/skill',
+        source      : '.claude-plugin/skill',
       })
 
       await createTestPackage(projectDir, '@orgB/plugin', {
-        name        : 'OrgBPlugin',
+        name        : 'org-b-plugin',
         version     : '1.0.0',
         description : 'Organization B plugin',
-        skillPath   : '.claude-plugin/skill',
+        source      : '.claude-plugin/skill',
       })
 
       const result = await runCLI(['sync'], projectDir, { env : { HOME : projectDir } })
@@ -105,8 +105,8 @@ describe('Integration: Scoped Packages', () => {
       const settings = await readJsonFile(settingsPath)
 
       // Verify both plugins enabled
-      expect(settings.plugins.enabled).toContain('OrgAPlugin@orga-plugin-marketplace')
-      expect(settings.plugins.enabled).toContain('OrgBPlugin@orgb-plugin-marketplace')
+      expect(settings.plugins.enabled).toContain('org-a-plugin@orga-plugin-marketplace')
+      expect(settings.plugins.enabled).toContain('org-b-plugin@orgb-plugin-marketplace')
 
       // Verify both marketplaces
       expect(settings.plugins.marketplaces['orga-plugin-marketplace']).toBeDefined()
@@ -128,17 +128,17 @@ describe('Integration: Scoped Packages', () => {
       await fs.writeFile(path.join(projectDir, 'package.json'), JSON.stringify(packageJson, null, 2))
 
       await createTestPackage(projectDir, '@scoped/plugin', {
-        name        : 'ScopedPlugin',
+        name        : 'scoped-plugin',
         version     : '1.0.0',
         description : 'Scoped plugin',
-        skillPath   : '.claude-plugin/skill',
+        source      : '.claude-plugin/skill',
       })
 
       await createTestPackage(projectDir, 'regular-plugin', {
-        name        : 'RegularPlugin',
+        name        : 'regular-plugin',
         version     : '1.0.0',
         description : 'Regular plugin',
-        skillPath   : '.claude-plugin/skill',
+        source      : '.claude-plugin/skill',
       })
 
       const result = await runCLI(['sync'], projectDir, { env : { HOME : projectDir } })
@@ -149,8 +149,8 @@ describe('Integration: Scoped Packages', () => {
       const settings = await readJsonFile(settingsPath)
 
       // Both should be enabled
-      expect(settings.plugins.enabled).toContain('ScopedPlugin@scoped-plugin-marketplace')
-      expect(settings.plugins.enabled).toContain('RegularPlugin@regular-plugin-marketplace')
+      expect(settings.plugins.enabled).toContain('scoped-plugin@scoped-plugin-marketplace')
+      expect(settings.plugins.enabled).toContain('regular-plugin@regular-plugin-marketplace')
     })
   })
 
@@ -169,10 +169,10 @@ describe('Integration: Scoped Packages', () => {
       await fs.writeFile(path.join(projectDir, 'package.json'), JSON.stringify(packageJson, null, 2))
 
       await createTestPackage(projectDir, '@company/awesome-plugin', {
-        name        : 'AwesomePlugin',
+        name        : 'awesome-plugin',
         version     : '1.0.0',
         description : 'Awesome plugin',
-        skillPath   : '.claude-plugin/skill',
+        source      : '.claude-plugin/skill',
       })
 
       const result = await runCLI(['sync'], projectDir, { env : { HOME : projectDir } })
@@ -186,7 +186,7 @@ describe('Integration: Scoped Packages', () => {
       expect(settings.plugins.marketplaces['company-awesome-plugin-marketplace']).toBeDefined()
 
       // Plugin key should reference correct marketplace
-      expect(settings.plugins.enabled).toContain('AwesomePlugin@company-awesome-plugin-marketplace')
+      expect(settings.plugins.enabled).toContain('awesome-plugin@company-awesome-plugin-marketplace')
     })
 
     it('should handle complex scoped package names', async () => {
@@ -203,10 +203,10 @@ describe('Integration: Scoped Packages', () => {
       await fs.writeFile(path.join(projectDir, 'package.json'), JSON.stringify(packageJson, null, 2))
 
       await createTestPackage(projectDir, '@my-org/my-ai-plugin', {
-        name        : 'MyAiPlugin',
+        name        : 'my-ai-plugin',
         version     : '1.0.0',
         description : 'AI plugin with hyphens',
-        skillPath   : '.claude-plugin/skill',
+        source      : '.claude-plugin/skill',
       })
 
       const result = await runCLI(['sync'], projectDir, { env : { HOME : projectDir } })
@@ -236,10 +236,10 @@ describe('Integration: Scoped Packages', () => {
       await fs.writeFile(path.join(projectDir, 'package.json'), JSON.stringify(packageJson, null, 2))
 
       await createTestPackage(projectDir, '@test/scoped-path', {
-        name        : 'ScopedPathPlugin',
+        name        : 'scoped-path-plugin',
         version     : '1.0.0',
         description : 'Plugin for path testing',
-        skillPath   : '.claude-plugin/skill',
+        source      : '.claude-plugin/skill',
       })
 
       const result = await runCLI(['sync'], projectDir, { env : { HOME : projectDir } })
@@ -254,8 +254,8 @@ describe('Integration: Scoped Packages', () => {
       // Source path should include scope directory
       expect(marketplace.source.path).toBe(path.join(projectDir, 'node_modules/@test/scoped-path'))
 
-      // Skill path should be relative within the package
-      expect(marketplace.plugins.ScopedPathPlugin.skillPath).toBe('.claude-plugin/skill')
+      // Plugin source should be relative within the package
+      expect(marketplace.plugins['scoped-path-plugin'].source).toBe('.claude-plugin/skill')
     })
 
     it('should verify skill directory exists in scoped package', async () => {
@@ -272,10 +272,10 @@ describe('Integration: Scoped Packages', () => {
       await fs.writeFile(path.join(projectDir, 'package.json'), JSON.stringify(packageJson, null, 2))
 
       await createTestPackage(projectDir, '@verify/plugin', {
-        name        : 'VerifyPlugin',
+        name        : 'verify-plugin',
         version     : '1.0.0',
         description : 'Plugin to verify skill',
-        skillPath   : '.claude-plugin/skill',
+        source      : '.claude-plugin/skill',
       })
 
       const result = await runCLI(['sync'], projectDir, { env : { HOME : projectDir } })
@@ -286,7 +286,7 @@ describe('Integration: Scoped Packages', () => {
       const skillFilePath = path.join(projectDir, 'node_modules/@verify/plugin/.claude-plugin/skill/SKILL.md')
       const skillContent = await fs.readFile(skillFilePath, 'utf8')
 
-      expect(skillContent).toContain('VerifyPlugin')
+      expect(skillContent).toContain('verify-plugin')
     })
   })
 
@@ -305,10 +305,10 @@ describe('Integration: Scoped Packages', () => {
       await fs.writeFile(path.join(projectDir, 'package.json'), JSON.stringify(packageJson, null, 2))
 
       await createTestPackage(projectDir, '@view/test-plugin', {
-        name        : 'ViewTestPlugin',
+        name        : 'view-test-plugin',
         version     : '1.0.0',
         description : 'Plugin for view testing',
-        skillPath   : '.claude-plugin/skill',
+        source      : '.claude-plugin/skill',
       })
 
       // Sync first
@@ -318,7 +318,7 @@ describe('Integration: Scoped Packages', () => {
       const viewResult = await runCLI(['plugins', 'view'], projectDir, { env : { HOME : projectDir } })
 
       expect(viewResult.exitCode).toBe(0)
-      expect(viewResult.stdout).toContain('ViewTestPlugin')
+      expect(viewResult.stdout).toContain('view-test-plugin')
       expect(viewResult.stdout).toContain('enabled')
     })
   })

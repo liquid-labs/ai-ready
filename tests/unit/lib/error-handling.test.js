@@ -8,6 +8,10 @@ import { readSettings, updateSettings } from '_lib/storage/claude-settings'
 
 import { createPackageJson, createTestPackage } from './test-lib'
 
+// many of the parameterized tests define an async function that just returns a Promise; the functions are then called
+// like 'await fn()' so we end up waiting on the returned Promise, which is fine.
+/* eslint-disable require-await */
+
 /**
  * Error handling tests
  * Verify graceful handling of various error scenarios
@@ -61,98 +65,63 @@ describe('Error handling', () => {
   })
 
   describe('Missing file handling', () => {
-    it('should handle missing package.json', async () => {
-      const providers = await scanDependencies(tempDir)
-      expect(providers).toEqual([])
+    it.each([
+      {
+        description : 'missing package.json returns empty providers',
+        fn          : async () => scanDependencies(tempDir),
+        expected    : [],
+      },
+      {
+        description : 'missing marketplace.json returns null',
+        fn          : async () => parseMarketplaceJson('/nonexistent/marketplace.json'),
+        expected    : null,
+      },
+      {
+        description : 'missing node_modules returns empty providers',
+        fn          : async () => {
+          await createPackageJson(tempDir, ['some-package'])
+
+          return scanDependencies(tempDir)
+        },
+        expected : [],
+      },
+    ])('should handle $description', async ({ fn, expected }) => {
+      const result = await fn()
+      expect(result).toEqual(expected)
     })
 
-    it('should handle missing marketplace.json', async () => {
-      const result = await parseMarketplaceJson('/nonexistent/marketplace.json')
-      expect(result).toBeNull()
-    })
-
-    it('should handle missing settings.json', async () => {
+    it('should handle missing settings.json with defaults', async () => {
       const settings = await readSettings(settingsPath)
       expect(settings.plugins.enabled).toEqual([])
       expect(settings.plugins.disabled).toEqual([])
     })
-
-    it('should handle missing node_modules directory', async () => {
-      await createPackageJson(tempDir, ['some-package'])
-      // Don't create node_modules
-
-      const providers = await scanDependencies(tempDir)
-      expect(providers).toEqual([])
-    })
   })
 
   describe('Invalid marketplace.json schemas', () => {
-    it('should reject marketplace.json with missing required fields', async () => {
+    it.each([
+      {
+        description : 'missing required fields',
+        data        : { name : 'test-marketplace' },
+      },
+      {
+        description : 'missing owner',
+        data        : { name : 'test-marketplace', plugins : [] },
+      },
+      {
+        description : 'missing plugins',
+        data        : { name : 'test-marketplace', owner : { name : 'Test' } },
+      },
+      {
+        description : 'non-object (string)',
+        data        : 'not an object',
+      },
+      {
+        description : 'non-string name',
+        data        : { name : 123, owner : { name : 'Test' }, plugins : [] },
+      },
+    ])('should reject marketplace.json with $description', async ({ data }) => {
       const marketplacePath = path.join(tempDir, 'marketplace.json')
-      await fs.writeFile(
-        marketplacePath,
-        JSON.stringify({
-          name    : 'plugin',
-          version : '1.0.0',
-          // Missing description and skillPath
-        })
-      )
-
-      const result = await parseMarketplaceJson(marketplacePath)
-      expect(result).toBeNull()
-    })
-
-    it('should reject marketplace.json with path traversal in skillPath', async () => {
-      const marketplacePath = path.join(tempDir, 'marketplace.json')
-      await fs.writeFile(
-        marketplacePath,
-        JSON.stringify({
-          name        : 'plugin',
-          version     : '1.0.0',
-          description : 'Test',
-          skillPath   : '../../../etc/passwd',
-        })
-      )
-
-      const result = await parseMarketplaceJson(marketplacePath)
-      expect(result).toBeNull()
-    })
-
-    it('should reject marketplace.json with absolute skillPath', async () => {
-      const marketplacePath = path.join(tempDir, 'marketplace.json')
-      await fs.writeFile(
-        marketplacePath,
-        JSON.stringify({
-          name        : 'plugin',
-          version     : '1.0.0',
-          description : 'Test',
-          skillPath   : '/absolute/path',
-        })
-      )
-
-      const result = await parseMarketplaceJson(marketplacePath)
-      expect(result).toBeNull()
-    })
-
-    it('should reject non-object marketplace.json', async () => {
-      const marketplacePath = path.join(tempDir, 'marketplace.json')
-      await fs.writeFile(marketplacePath, JSON.stringify('not an object'))
-
-      const result = await parseMarketplaceJson(marketplacePath)
-      expect(result).toBeNull()
-    })
-
-    it('should reject marketplace.json with non-string fields', async () => {
-      const marketplacePath = path.join(tempDir, 'marketplace.json')
-      await fs.writeFile(
-        marketplacePath,
-        JSON.stringify({
-          name        : 123, // Should be string
-          version     : '1.0.0',
-          description : 'Test',
-          skillPath   : '.claude-plugin/skill',
-        })
-      )
+      await fs.writeFile(marketplacePath, JSON.stringify(data))
 
       const result = await parseMarketplaceJson(marketplacePath)
       expect(result).toBeNull()
@@ -173,12 +142,11 @@ describe('Error handling', () => {
       }
       await fs.writeFile(settingsPath, JSON.stringify(initialSettings))
 
-      // Create test package
+      // Create test package with new marketplace format
       await createTestPackage(tempDir, 'test-pkg', {
         name        : 'test-plugin',
         version     : '1.0.0',
         description : 'Test',
-        skillPath   : '.claude-plugin/skill',
       })
 
       const providers = await scanDependencies(tempDir)
@@ -228,16 +196,20 @@ describe('Error handling', () => {
       await fs.writeFile(
         path.join(pkgPath, '.claude-plugin', 'marketplace.json'),
         JSON.stringify({
-          name        : 'broken-plugin',
-          version     : '1.0.0',
-          description : 'Test',
-          skillPath   : '.claude-plugin/skill',
+          name    : 'broken-marketplace',
+          owner   : { name : 'Test' },
+          plugins : [
+            {
+              name   : 'broken-plugin',
+              source : './plugin',
+            },
+          ],
         })
       )
 
       const providers = await scanDependencies(tempDir)
 
-      // Should still discover the plugin (uses directory name as fallback)
+      // Should still discover the marketplace (uses directory name as fallback)
       expect(providers).toHaveLength(1)
       expect(providers[0].packageName).toBe('broken-pkg')
       expect(providers[0].version).toBe('unknown')
@@ -252,21 +224,18 @@ describe('Error handling', () => {
         name        : 'plugin-1',
         version     : '1.0.0',
         description : 'Test 1',
-        skillPath   : '.claude-plugin/skill',
       })
 
       await createTestPackage(tempDir, 'pkg-2', {
         name        : 'plugin-2',
         version     : '1.0.0',
         description : 'Test 2',
-        skillPath   : '.claude-plugin/skill',
       })
 
       await createTestPackage(tempDir, 'pkg-3', {
         name        : 'plugin-3',
         version     : '1.0.0',
         description : 'Test 3',
-        skillPath   : '.claude-plugin/skill',
       })
 
       const providers = await scanDependencies(tempDir)
@@ -285,18 +254,24 @@ describe('Error handling', () => {
   })
 
   describe('Empty or minimal inputs', () => {
-    it('should handle empty dependencies array', async () => {
-      await createPackageJson(tempDir, [])
-
-      const providers = await scanDependencies(tempDir)
-      expect(providers).toEqual([])
-    })
-
-    it('should handle package.json with no dependencies field', async () => {
-      await fs.writeFile(path.join(tempDir, 'package.json'), JSON.stringify({ name : 'test', version : '1.0.0' }))
-
-      const providers = await scanDependencies(tempDir)
-      expect(providers).toEqual([])
+    it.each([
+      {
+        description : 'empty dependencies array',
+        setup       : async () => createPackageJson(tempDir, []),
+        fn          : async () => scanDependencies(tempDir),
+        expected    : [],
+      },
+      {
+        description : 'package.json with no dependencies field',
+        setup       : async () =>
+          fs.writeFile(path.join(tempDir, 'package.json'), JSON.stringify({ name : 'test', version : '1.0.0' })),
+        fn       : async () => scanDependencies(tempDir),
+        expected : [],
+      },
+    ])('should handle $description', async ({ setup, fn, expected }) => {
+      await setup()
+      const result = await fn()
+      expect(result).toEqual(expected)
     })
 
     it('should handle empty settings update', async () => {

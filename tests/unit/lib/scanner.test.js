@@ -27,7 +27,6 @@ describe('scanner', () => {
         name        : 'test-plugin',
         version     : '1.0.0',
         description : 'Test plugin',
-        skillPath   : '.claude-plugin/skill',
       })
       await createPackageJson(tempDir, ['test-lib'])
 
@@ -37,10 +36,9 @@ describe('scanner', () => {
       expect(providers[0].packageName).toBe('test-lib')
       expect(providers[0].version).toBe('1.0.0')
       expect(providers[0].path).toBe(path.join(tempDir, 'node_modules', 'test-lib'))
-      expect(providers[0].pluginDeclaration.name).toBe('test-plugin')
-      expect(providers[0].pluginDeclaration.version).toBe('1.0.0')
-      expect(providers[0].pluginDeclaration.description).toBe('Test plugin')
-      expect(providers[0].pluginDeclaration.skillPath).toBe('.claude-plugin/skill')
+      expect(providers[0].marketplaceDeclaration.name).toBe('test-lib-marketplace')
+      expect(providers[0].marketplaceDeclaration.plugins).toHaveLength(1)
+      expect(providers[0].marketplaceDeclaration.plugins[0].name).toBe('test-plugin')
     })
 
     it('should handle scoped packages', async () => {
@@ -48,7 +46,6 @@ describe('scanner', () => {
         name        : 'scoped-plugin',
         version     : '2.0.0',
         description : 'Scoped test',
-        skillPath   : '.claude-plugin/skill',
       })
       await createPackageJson(tempDir, ['@myorg/test-lib'])
 
@@ -56,7 +53,7 @@ describe('scanner', () => {
 
       expect(providers).toHaveLength(1)
       expect(providers[0].packageName).toBe('@myorg/test-lib')
-      expect(providers[0].pluginDeclaration.name).toBe('scoped-plugin')
+      expect(providers[0].marketplaceDeclaration.plugins[0].name).toBe('scoped-plugin')
     })
 
     it('should skip packages without marketplace.json', async () => {
@@ -78,19 +75,17 @@ describe('scanner', () => {
       expect(providers).toEqual([])
     })
 
-    it('should discover multiple packages with plugins', async () => {
+    it('should discover multiple packages with marketplaces', async () => {
       await createTestPackage(tempDir, 'lib-1', {
         name        : 'plugin-1',
         version     : '1.0.0',
         description : 'Plugin 1',
-        skillPath   : '.claude-plugin/skill',
       })
 
       await createTestPackage(tempDir, 'lib-2', {
         name        : 'plugin-2',
         version     : '2.0.0',
         description : 'Plugin 2',
-        skillPath   : '.claude-plugin/skill',
       })
       await createPackageJson(tempDir, ['lib-1', 'lib-2'])
 
@@ -101,16 +96,15 @@ describe('scanner', () => {
       expect(providers.find((p) => p.packageName === 'lib-2')).toBeDefined()
     })
 
-    it('should handle packages with and without plugins', async () => {
-      // Package with plugin
+    it('should handle packages with and without marketplaces', async () => {
+      // Package with marketplace
       await createTestPackage(tempDir, 'plugin-lib', {
         name        : 'my-plugin',
         version     : '1.0.0',
         description : 'My plugin',
-        skillPath   : '.claude-plugin/skill',
       })
 
-      // Regular package without plugin
+      // Regular package without marketplace
       const nodeModules = path.join(tempDir, 'node_modules')
       await fs.mkdir(path.join(nodeModules, 'regular-lib'), { recursive : true })
       await fs.writeFile(
@@ -151,10 +145,14 @@ describe('scanner', () => {
       await fs.writeFile(
         path.join(pluginDir, 'marketplace.json'),
         JSON.stringify({
-          name        : 'test-plugin',
-          version     : '1.0.0',
-          description : 'Test',
-          skillPath   : '.claude-plugin/skill',
+          name    : 'test-marketplace',
+          owner   : { name : 'Test' },
+          plugins : [
+            {
+              name   : 'test-plugin',
+              source : './plugin',
+            },
+          ],
         }),
         'utf8'
       )
@@ -202,14 +200,12 @@ describe('scanner', () => {
         name        : 'plugin-1',
         version     : '1.0.0',
         description : 'Plugin 1',
-        skillPath   : '.claude-plugin/skill',
       })
 
       await createTestPackage(tempDir, '@myorg/pkg-2', {
         name        : 'plugin-2',
         version     : '2.0.0',
         description : 'Plugin 2',
-        skillPath   : '.claude-plugin/skill',
       })
       await createPackageJson(tempDir, ['@myorg/pkg-1', '@myorg/pkg-2'])
 
@@ -235,10 +231,14 @@ describe('scanner', () => {
       await fs.writeFile(
         path.join(pluginDir, 'marketplace.json'),
         JSON.stringify({
-          name        : 'my-plugin',
-          version     : '1.0.0',
-          description : 'Test',
-          skillPath   : '.claude-plugin/skill',
+          name    : 'my-marketplace',
+          owner   : { name : 'Test' },
+          plugins : [
+            {
+              name   : 'my-plugin',
+              source : './plugin',
+            },
+          ],
         }),
         'utf8'
       )
@@ -249,6 +249,42 @@ describe('scanner', () => {
       expect(providers).toHaveLength(1)
       expect(providers[0].packageName).toBe('actual-package-name')
       expect(providers[0].version).toBe('3.0.0')
+    })
+
+    it('should handle marketplace with multiple plugins', async () => {
+      const nodeModules = path.join(tempDir, 'node_modules')
+      const packagePath = path.join(nodeModules, 'multi-plugin')
+      await fs.mkdir(packagePath, { recursive : true })
+      await fs.writeFile(
+        path.join(packagePath, 'package.json'),
+        JSON.stringify({ name : 'multi-plugin', version : '1.0.0' }),
+        'utf8'
+      )
+
+      const pluginDir = path.join(packagePath, '.claude-plugin')
+      await fs.mkdir(pluginDir, { recursive : true })
+      await fs.writeFile(
+        path.join(pluginDir, 'marketplace.json'),
+        JSON.stringify({
+          name    : 'multi-marketplace',
+          owner   : { name : 'Test' },
+          plugins : [
+            { name : 'plugin-a', source : './plugins/a', version : '1.0.0' },
+            { name : 'plugin-b', source : './plugins/b', version : '2.0.0' },
+            { name : 'plugin-c', source : { source : 'github', repo : 'owner/repo' } },
+          ],
+        }),
+        'utf8'
+      )
+      await createPackageJson(tempDir, ['multi-plugin'])
+
+      const providers = await scanDependencies(tempDir)
+
+      expect(providers).toHaveLength(1)
+      expect(providers[0].marketplaceDeclaration.plugins).toHaveLength(3)
+      expect(providers[0].marketplaceDeclaration.plugins[0].name).toBe('plugin-a')
+      expect(providers[0].marketplaceDeclaration.plugins[1].name).toBe('plugin-b')
+      expect(providers[0].marketplaceDeclaration.plugins[2].name).toBe('plugin-c')
     })
   })
 })

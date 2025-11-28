@@ -1,0 +1,235 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://ai-ready.dev/schemas/claude-marketplace.json",
+  "title": "Claude Plugin Marketplace",
+  "description": "Schema for marketplace.json files that define plugin marketplaces for Claude Code",
+  "type": "object",
+  "required": ["name", "owner", "plugins"],
+  "errorMessage": {
+    "type": "must be an object",
+    "required": {
+      "name": "Missing required field: \"name\"",
+      "owner": "Missing required field: \"owner\"",
+      "plugins": "Missing required field: \"plugins\""
+    }
+  },
+  "properties": {
+    "name": {
+      "type": "string",
+      "minLength": 1,
+      "pattern": "^[a-z][a-z0-9-]*$",
+      "description": "Marketplace identifier (kebab-case, no spaces)",
+      "errorMessage": {
+        "type": "Field \"name\" must be a string",
+        "minLength": "Field \"name\" must not be empty",
+        "pattern": "Field \"name\" must be kebab-case (lowercase letters, numbers, hyphens)"
+      }
+    },
+    "owner": {
+      "type": "object",
+      "description": "Marketplace maintainer information",
+      "properties": {
+        "name": {
+          "type": "string",
+          "description": "Maintainer name"
+        },
+        "email": {
+          "type": "string",
+          "format": "email",
+          "description": "Maintainer email"
+        },
+        "url": {
+          "type": "string",
+          "format": "uri",
+          "description": "Maintainer URL"
+        }
+      },
+      "errorMessage": {
+        "type": "Field \"owner\" must be an object"
+      }
+    },
+    "metadata": {
+      "type": "object",
+      "description": "Optional marketplace metadata",
+      "properties": {
+        "description": {
+          "type": "string",
+          "description": "Brief marketplace description"
+        },
+        "version": {
+          "type": "string",
+          "description": "Marketplace version"
+        },
+        "pluginRoot": {
+          "type": "string",
+          "description": "Base path for relative plugin sources"
+        }
+      }
+    },
+    "plugins": {
+      "type": "array",
+      "description": "List of available plugins",
+      "items": {
+        "$ref": "#/$defs/pluginEntry"
+      },
+      "errorMessage": {
+        "type": "Field \"plugins\" must be an array"
+      }
+    }
+  },
+  "additionalProperties": true,
+  "$defs": {
+    "pluginEntry": {
+      "type": "object",
+      "required": ["name", "source"],
+      "errorMessage": {
+        "required": {
+          "name": "Each plugin must have a \"name\" field",
+          "source": "Each plugin must have a \"source\" field"
+        }
+      },
+      "properties": {
+        "name": {
+          "type": "string",
+          "minLength": 1,
+          "pattern": "^[a-z][a-z0-9-]*$",
+          "description": "Plugin identifier (kebab-case)",
+          "errorMessage": {
+            "type": "Plugin \"name\" must be a string",
+            "minLength": "Plugin \"name\" must not be empty",
+            "pattern": "Plugin \"name\" must be kebab-case (lowercase letters, numbers, hyphens)"
+          }
+        },
+        "source": {
+          "oneOf": [
+            {
+              "type": "string",
+              "minLength": 1,
+              "description": "Relative path to plugin directory"
+            },
+            {
+              "type": "object",
+              "required": ["source"],
+              "properties": {
+                "source": {
+                  "type": "string",
+                  "enum": ["github", "url"],
+                  "description": "Source type"
+                },
+                "repo": {
+                  "type": "string",
+                  "description": "GitHub repository (owner/repo format)"
+                },
+                "url": {
+                  "type": "string",
+                  "format": "uri",
+                  "description": "Git URL"
+                },
+                "ref": {
+                  "type": "string",
+                  "description": "Git ref (branch, tag, or commit)"
+                }
+              }
+            }
+          ],
+          "description": "Plugin location (relative path, GitHub repo, or Git URL)",
+          "errorMessage": "Plugin \"source\" must be a relative path string or a source object with type"
+        },
+        "description": {
+          "type": "string",
+          "description": "Brief description of what the plugin does"
+        },
+        "version": {
+          "type": "string",
+          "description": "Plugin version (semver recommended)"
+        },
+        "author": {
+          "oneOf": [
+            { "type": "string" },
+            {
+              "type": "object",
+              "properties": {
+                "name": { "type": "string" },
+                "email": { "type": "string", "format": "email" },
+                "url": { "type": "string", "format": "uri" }
+              }
+            }
+          ],
+          "description": "Plugin author information"
+        },
+        "homepage": {
+          "type": "string",
+          "format": "uri",
+          "description": "URL to plugin documentation"
+        },
+        "repository": {
+          "oneOf": [
+            { "type": "string" },
+            {
+              "type": "object",
+              "properties": {
+                "type": { "type": "string" },
+                "url": { "type": "string" }
+              }
+            }
+          ],
+          "description": "Source code repository"
+        },
+        "license": {
+          "type": "string",
+          "description": "SPDX license identifier"
+        },
+        "keywords": {
+          "type": "array",
+          "items": { "type": "string" },
+          "description": "Discovery tags for the plugin"
+        },
+        "category": {
+          "type": "string",
+          "description": "Plugin category"
+        },
+        "tags": {
+          "type": "array",
+          "items": { "type": "string" },
+          "description": "Additional tags"
+        },
+        "strict": {
+          "type": "boolean",
+          "default": true,
+          "description": "Requires plugin.json presence (default: true)"
+        },
+        "commands": {
+          "oneOf": [
+            { "type": "string" },
+            { "type": "array", "items": { "type": "string" } },
+            { "type": "object" }
+          ],
+          "description": "Custom command paths or configuration"
+        },
+        "agents": {
+          "oneOf": [
+            { "type": "string" },
+            { "type": "array", "items": { "type": "string" } },
+            { "type": "object" }
+          ],
+          "description": "Custom agent paths or configuration"
+        },
+        "hooks": {
+          "oneOf": [
+            { "type": "string" },
+            { "type": "object" }
+          ],
+          "description": "Hook configuration path or inline JSON"
+        },
+        "mcpServers": {
+          "oneOf": [
+            { "type": "string" },
+            { "type": "object" }
+          ],
+          "description": "MCP server configuration path or inline JSON"
+        }
+      },
+      "additionalProperties": true
+    }
+  }
+}

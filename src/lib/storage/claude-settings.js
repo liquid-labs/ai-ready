@@ -4,21 +4,8 @@ import path from 'path'
 import { PLUGIN_STATUSES } from '../types'
 
 /**
- * @import { PluginProvider, PluginState, ClaudeSettings } from '../types.js'
+ * @import { MarketplaceProvider, PluginState, ClaudeSettings, PluginEntry } from '../types.js'
  */
-
-/**
- * Convert package name to marketplace name
- * Handles scoped packages: @scope/package -> scope-package-marketplace
- * @param {string} packageName - npm package name
- * @returns {string} Marketplace name
- */
-function packageNameToMarketplaceName(packageName) {
-  // Remove @ prefix, replace / with -, and convert to lowercase
-  const normalized = packageName.replace(/^@/, '').replace(/\//g, '-').toLowerCase()
-
-  return `${normalized}-marketplace`
-}
 
 /**
  * Read Claude Code settings.json
@@ -92,45 +79,95 @@ async function checkSettingsExists(settingsPath) {
 }
 
 /**
- * Build marketplace entry for provider
- * @param {PluginProvider} provider - Plugin provider
- * @returns {object} Marketplace entry
+ * Get the source string for a plugin entry
+ * @param {PluginEntry} plugin - Plugin entry from marketplace
+ * @returns {string} Source string representation
+ */
+function getPluginSourceString(plugin) {
+  if (typeof plugin.source === 'string') {
+    return plugin.source
+  }
+
+  // Object source - serialize it
+  if (plugin.source.source === 'github') {
+    return `github:${plugin.source.repo}${plugin.source.ref ? `#${plugin.source.ref}` : ''}`
+  }
+
+  if (plugin.source.source === 'url') {
+    return plugin.source.url
+  }
+
+  return JSON.stringify(plugin.source)
+}
+
+/**
+ * Build marketplace entry for Claude settings from provider
+ * @param {MarketplaceProvider} provider - Marketplace provider
+ * @returns {object} Marketplace entry for settings
  */
 function buildMarketplaceEntry(provider) {
+  const marketplace = provider.marketplaceDeclaration
+  const plugins = {}
+
+  for (const plugin of marketplace.plugins) {
+    plugins[plugin.name] = {
+      version : plugin.version || 'unknown',
+      source  : getPluginSourceString(plugin),
+    }
+  }
+
   return {
     source : {
       type : 'directory',
       path : provider.path,
     },
-    plugins : {
-      [provider.pluginDeclaration.name] : {
-        version   : provider.pluginDeclaration.version,
-        skillPath : provider.pluginDeclaration.skillPath,
-      },
-    },
+    plugins,
   }
 }
 
 /**
  * Check if marketplace entry needs updating
- * @param {object} existingMarketplace - Current marketplace entry
- * @param {object} newMarketplace - New marketplace entry
- * @param {string} pluginName - Plugin name
+ * @param {object} existingEntry - Current marketplace entry in settings
+ * @param {object} newEntry - New marketplace entry
  * @returns {boolean} True if marketplace needs updating
  */
-function shouldUpdateMarketplace(existingMarketplace, newMarketplace, pluginName) {
-  return (
-    !existingMarketplace
-    || existingMarketplace.source.path !== newMarketplace.source.path
-    || existingMarketplace.plugins[pluginName]?.version !== newMarketplace.plugins[pluginName].version
-    || existingMarketplace.plugins[pluginName]?.skillPath !== newMarketplace.plugins[pluginName].skillPath
-  )
+function shouldUpdateMarketplace(existingEntry, newEntry) {
+  if (!existingEntry) {
+    return true
+  }
+
+  if (existingEntry.source.path !== newEntry.source.path) {
+    return true
+  }
+
+  // Check if plugins have changed
+  const existingPlugins = Object.keys(existingEntry.plugins || {})
+  const newPlugins = Object.keys(newEntry.plugins || {})
+
+  if (existingPlugins.length !== newPlugins.length) {
+    return true
+  }
+
+  for (const pluginName of newPlugins) {
+    const existing = existingEntry.plugins[pluginName]
+    const updated = newEntry.plugins[pluginName]
+
+    if (!existing) {
+      return true
+    }
+
+    if (existing.version !== updated.version || existing.source !== updated.source) {
+      return true
+    }
+  }
+
+  return false
 }
 
 /**
- * Update settings with discovered providers (non-destructive merge)
+ * Update settings with discovered marketplace providers (non-destructive merge)
  * @param {string} settingsPath - Path to settings.json
- * @param {PluginProvider[]} providers - Discovered providers
+ * @param {MarketplaceProvider[]} providers - Discovered marketplace providers
  * @returns {Promise<{added: string[], updated: string[]}>} Change summary
  */
 export async function updateSettings(settingsPath, providers) {
@@ -140,29 +177,33 @@ export async function updateSettings(settingsPath, providers) {
   let marketplacesUpdated = false
 
   for (const provider of providers) {
-    const pluginName = provider.pluginDeclaration.name
-    const marketplaceName = packageNameToMarketplaceName(provider.packageName)
-    const pluginKey = `${pluginName}@${marketplaceName}`
+    const marketplace = provider.marketplaceDeclaration
+    const marketplaceName = marketplace.name
 
-    const existingMarketplace = settings.plugins.marketplaces[marketplaceName]
-    const newMarketplace = buildMarketplaceEntry(provider)
+    const existingEntry = settings.plugins.marketplaces[marketplaceName]
+    const newEntry = buildMarketplaceEntry(provider)
 
-    if (shouldUpdateMarketplace(existingMarketplace, newMarketplace, pluginName)) {
-      settings.plugins.marketplaces[marketplaceName] = newMarketplace
+    if (shouldUpdateMarketplace(existingEntry, newEntry)) {
+      settings.plugins.marketplaces[marketplaceName] = newEntry
       marketplacesUpdated = true
     }
 
-    if (settings.plugins.disabled.includes(pluginKey)) {
-      continue
-    }
+    // Process each plugin in the marketplace
+    for (const plugin of marketplace.plugins) {
+      const pluginKey = `${plugin.name}@${marketplaceName}`
 
-    const isEnabled = settings.plugins.enabled.includes(pluginKey)
-    if (!isEnabled) {
-      settings.plugins.enabled.push(pluginKey)
-      changes.added.push(pluginName)
-    }
-    else {
-      changes.updated.push(pluginName)
+      if (settings.plugins.disabled.includes(pluginKey)) {
+        continue
+      }
+
+      const isEnabled = settings.plugins.enabled.includes(pluginKey)
+      if (!isEnabled) {
+        settings.plugins.enabled.push(pluginKey)
+        changes.added.push(plugin.name)
+      }
+      else {
+        changes.updated.push(plugin.name)
+      }
     }
   }
 
@@ -235,12 +276,11 @@ async function createBackup(settingsPath) {
 /**
  * Get plugin state from settings
  * @param {string} pluginName - Plugin name
- * @param {string} packageName - Package name (for constructing plugin key)
+ * @param {string} marketplaceName - Marketplace name
  * @param {ClaudeSettings} settings - Settings object
  * @returns {string} Status: 'enabled' | 'disabled' | 'not-installed'
  */
-export function getPluginState(pluginName, packageName, settings) {
-  const marketplaceName = packageNameToMarketplaceName(packageName)
+export function getPluginState(pluginName, marketplaceName, settings) {
   const pluginKey = `${pluginName}@${marketplaceName}`
 
   if (settings.plugins.enabled.includes(pluginKey)) {
@@ -255,17 +295,29 @@ export function getPluginState(pluginName, packageName, settings) {
 }
 
 /**
- * Get states for all discovered providers
- * @param {PluginProvider[]} providers - Discovered providers
+ * Get states for all plugins in discovered marketplaces
+ * @param {MarketplaceProvider[]} providers - Discovered marketplace providers
  * @param {ClaudeSettings} settings - Settings object
  * @returns {PluginState[]} Plugin states
  */
 export function getPluginStates(providers, settings) {
-  return providers.map((provider) => ({
-    name        : provider.pluginDeclaration.name,
-    status      : getPluginState(provider.pluginDeclaration.name, provider.packageName, settings),
-    source      : provider.path,
-    version     : provider.pluginDeclaration.version,
-    description : provider.pluginDeclaration.description,
-  }))
+  const states = []
+
+  for (const provider of providers) {
+    const marketplace = provider.marketplaceDeclaration
+    const marketplaceName = marketplace.name
+
+    for (const plugin of marketplace.plugins) {
+      states.push({
+        name        : plugin.name,
+        status      : getPluginState(plugin.name, marketplaceName, settings),
+        source      : getPluginSourceString(plugin),
+        version     : plugin.version || 'unknown',
+        description : plugin.description || '',
+        marketplace : marketplaceName,
+      })
+    }
+  }
+
+  return states
 }

@@ -5,6 +5,28 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+### Breaking Changes
+
+- **Schema redesign**: `marketplace.json` now follows the official Claude Code Plugin Marketplace schema
+  - Required fields: `name`, `owner`, `plugins` (array)
+  - Removed: `version`, `description`, `skillPath` at root level
+  - Plugins are now defined as entries in the `plugins` array with `name` and `source` required
+
+### Changed
+
+- Updated marketplace schema validation to use official Claude Code schema
+- Plugin entries now use `source` instead of `skillPath`
+- Added plugin manifest schema (`plugin.json`) for individual plugin definitions
+- Improved error messages for schema validation
+
+### Added
+
+- Support for multiple plugins per marketplace
+- Support for different plugin source types (relative paths, GitHub repos, Git URLs)
+- Plugin manifest schema (`plugin-manifest-schema.json`) for `plugin.json` files
+
 ## [2.0.0-alpha.1] - 2025-01-22
 
 ### Breaking Changes
@@ -47,15 +69,24 @@ To migrate your package to the new plugin format:
 2. Add `marketplace.json` with plugin metadata:
    ```json
    {
-     "name": "your-plugin-name",
-     "version": "1.0.0",
-     "description": "What your plugin does",
-     "skillPath": ".claude-plugin/skill"
+     "name": "your-library-marketplace",
+     "owner": {
+       "name": "Your Name"
+     },
+     "plugins": [
+       {
+         "name": "your-plugin-name",
+         "source": "./plugins/your-plugin",
+         "version": "1.0.0",
+         "description": "What your plugin does"
+       }
+     ]
    }
    ```
-3. Move plugin skill code to `.claude-plugin/skill/SKILL.md`
-4. Remove old `ai-ready/integrations/` directory
-5. Publish updated package
+3. Create plugin directory at the `source` path
+4. Optionally add `plugin.json` manifest in each plugin directory
+5. Remove old `ai-ready/integrations/` directory
+6. Publish updated package
 
 #### For Users
 

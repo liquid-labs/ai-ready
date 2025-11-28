@@ -16,112 +16,83 @@ describe('marketplace-json parser', () => {
   })
 
   describe('validateMarketplaceJson', () => {
-    it('should accept valid declaration', () => {
+    it('should accept valid marketplace declaration', () => {
       const valid = {
-        name        : 'my-plugin',
-        version     : '1.0.0',
-        description : 'Test plugin',
-        skillPath   : '.claude-plugin/skill',
+        name    : 'my-marketplace',
+        owner   : { name : 'Test Owner' },
+        plugins : [
+          {
+            name   : 'my-plugin',
+            source : './plugins/my-plugin',
+          },
+        ],
       }
-      expect(validateMarketplaceJson(valid)).toBe(true)
+      expect(validateMarketplaceJson(valid).valid).toBe(true)
     })
 
-    it('should accept declaration with optional fields', () => {
+    it('should accept marketplace with optional fields', () => {
       const valid = {
-        name        : 'my-plugin',
-        version     : '1.0.0',
-        description : 'Test plugin',
-        skillPath   : '.claude-plugin/skill',
-        author      : 'Test Author',
-        license     : 'MIT',
-        homepage    : 'https://example.com',
+        name     : 'my-marketplace',
+        owner    : { name : 'Test Owner', email : 'test@example.com' },
+        metadata : { description : 'A test marketplace' },
+        plugins  : [
+          {
+            name        : 'my-plugin',
+            source      : './plugins/my-plugin',
+            version     : '1.0.0',
+            description : 'A test plugin',
+            author      : 'Test Author',
+            license     : 'MIT',
+            homepage    : 'https://example.com',
+          },
+        ],
       }
-      expect(validateMarketplaceJson(valid)).toBe(true)
+      expect(validateMarketplaceJson(valid).valid).toBe(true)
     })
 
-    it('should reject missing required fields', () => {
-      const invalid = { name : 'my-plugin' }
-      expect(validateMarketplaceJson(invalid)).toBe(false)
-    })
+    describe('invalid inputs', () => {
+      it.each([
+        {
+          description : 'missing required fields',
+          data        : { name : 'my-marketplace' },
+        },
+        {
+          description : 'missing name',
+          data        : { owner : { name : 'Test' }, plugins : [] },
+        },
+        {
+          description : 'empty name',
+          data        : { name : '', owner : { name : 'Test' }, plugins : [] },
+        },
+        {
+          description : 'missing owner',
+          data        : { name : 'my-marketplace', plugins : [] },
+        },
+        {
+          description : 'missing plugins',
+          data        : { name : 'my-marketplace', owner : { name : 'Test' } },
+        },
+        {
+          description : 'plugin without name',
+          data        : { name : 'my-marketplace', owner : { name : 'Test' }, plugins : [{ source : './plugin' }] },
+        },
+        {
+          description : 'plugin without source',
+          data        : { name : 'my-marketplace', owner : { name : 'Test' }, plugins : [{ name : 'my-plugin' }] },
+        },
+      ])('should reject $description', ({ data }) => {
+        expect(validateMarketplaceJson(data).valid).toBe(false)
+      })
 
-    it('should reject missing name', () => {
-      const invalid = {
-        version     : '1.0.0',
-        description : 'Test',
-        skillPath   : '.claude-plugin/skill',
-      }
-      expect(validateMarketplaceJson(invalid)).toBe(false)
-    })
-
-    it('should reject empty name', () => {
-      const invalid = {
-        name        : '',
-        version     : '1.0.0',
-        description : 'Test',
-        skillPath   : '.claude-plugin/skill',
-      }
-      expect(validateMarketplaceJson(invalid)).toBe(false)
-    })
-
-    it('should reject missing version', () => {
-      const invalid = {
-        name        : 'my-plugin',
-        description : 'Test',
-        skillPath   : '.claude-plugin/skill',
-      }
-      expect(validateMarketplaceJson(invalid)).toBe(false)
-    })
-
-    it('should reject missing description', () => {
-      const invalid = {
-        name      : 'my-plugin',
-        version   : '1.0.0',
-        skillPath : '.claude-plugin/skill',
-      }
-      expect(validateMarketplaceJson(invalid)).toBe(false)
-    })
-
-    it('should reject missing skillPath', () => {
-      const invalid = {
-        name        : 'my-plugin',
-        version     : '1.0.0',
-        description : 'Test',
-      }
-      expect(validateMarketplaceJson(invalid)).toBe(false)
-    })
-
-    it('should reject path traversal in skillPath', () => {
-      const invalid = {
-        name        : 'my-plugin',
-        version     : '1.0.0',
-        description : 'Test',
-        skillPath   : '../../../etc/passwd',
-      }
-      expect(validateMarketplaceJson(invalid)).toBe(false)
-    })
-
-    it('should reject absolute path in skillPath', () => {
-      const invalid = {
-        name        : 'my-plugin',
-        version     : '1.0.0',
-        description : 'Test',
-        skillPath   : '/absolute/path',
-      }
-      expect(validateMarketplaceJson(invalid)).toBe(false)
-    })
-
-    it('should reject null', () => {
-      expect(validateMarketplaceJson(null)).toBe(false)
-    })
-
-    it('should reject undefined', () => {
-      expect(validateMarketplaceJson(undefined)).toBe(false)
-    })
-
-    it('should reject non-object', () => {
-      expect(validateMarketplaceJson('string')).toBe(false)
-      expect(validateMarketplaceJson(123)).toBe(false)
-      expect(validateMarketplaceJson([])).toBe(false)
+      it.each([
+        { description : 'null', data : null },
+        { description : 'undefined', data : undefined },
+        { description : 'string', data : 'string' },
+        { description : 'number', data : 123 },
+        { description : 'array', data : [] },
+      ])('should reject $description', ({ data }) => {
+        expect(validateMarketplaceJson(data).valid).toBe(false)
+      })
     })
   })
 
@@ -129,10 +100,14 @@ describe('marketplace-json parser', () => {
     it('should parse valid JSON file', async () => {
       const jsonPath = path.join(tempDir, 'marketplace.json')
       const data = {
-        name        : 'test-plugin',
-        version     : '1.0.0',
-        description : 'Test',
-        skillPath   : '.claude-plugin/skill',
+        name    : 'test-marketplace',
+        owner   : { name : 'Test Owner' },
+        plugins : [
+          {
+            name   : 'test-plugin',
+            source : './plugins/test',
+          },
+        ],
       }
       await fs.writeFile(jsonPath, JSON.stringify(data))
 
@@ -143,13 +118,18 @@ describe('marketplace-json parser', () => {
     it('should parse file with optional fields', async () => {
       const jsonPath = path.join(tempDir, 'marketplace.json')
       const data = {
-        name        : 'test-plugin',
-        version     : '1.0.0',
-        description : 'Test',
-        skillPath   : '.claude-plugin/skill',
-        author      : 'Test Author',
-        license     : 'MIT',
-        homepage    : 'https://example.com',
+        name    : 'test-marketplace',
+        owner   : { name : 'Test Owner', email : 'test@example.com' },
+        plugins : [
+          {
+            name     : 'test-plugin',
+            source   : './plugins/test',
+            version  : '1.0.0',
+            author   : 'Test Author',
+            license  : 'MIT',
+            homepage : 'https://example.com',
+          },
+        ],
       }
       await fs.writeFile(jsonPath, JSON.stringify(data))
 
@@ -157,9 +137,30 @@ describe('marketplace-json parser', () => {
       expect(result).toEqual(data)
     })
 
-    it('should return null for malformed JSON', async () => {
-      const jsonPath = path.join(tempDir, 'bad.json')
-      await fs.writeFile(jsonPath, '{invalid json}')
+    it.each([
+      {
+        description : 'malformed JSON',
+        filename    : 'bad.json',
+        content     : '{invalid json}',
+      },
+      {
+        description : 'invalid data (missing fields)',
+        filename    : 'invalid.json',
+        content     : JSON.stringify({ name : 'test-marketplace' }),
+      },
+      {
+        description : 'empty file',
+        filename    : 'empty.json',
+        content     : '',
+      },
+      {
+        description : 'whitespace only',
+        filename    : 'whitespace.json',
+        content     : '   \n  \t  ',
+      },
+    ])('should return null for $description', async ({ filename, content }) => {
+      const jsonPath = path.join(tempDir, filename)
+      await fs.writeFile(jsonPath, content)
 
       const result = await parseMarketplaceJson(jsonPath)
       expect(result).toBeNull()
@@ -170,70 +171,12 @@ describe('marketplace-json parser', () => {
       expect(result).toBeNull()
     })
 
-    it('should return null for invalid data', async () => {
-      const jsonPath = path.join(tempDir, 'invalid.json')
-      const data = {
-        name    : 'test-plugin',
-        version : '1.0.0',
-        // missing description and skillPath
-      }
-      await fs.writeFile(jsonPath, JSON.stringify(data))
-
-      const result = await parseMarketplaceJson(jsonPath)
-      expect(result).toBeNull()
-    })
-
-    it('should return null for path traversal attempt', async () => {
-      const jsonPath = path.join(tempDir, 'evil.json')
-      const data = {
-        name        : 'evil-plugin',
-        version     : '1.0.0',
-        description : 'Evil',
-        skillPath   : '../../../etc/passwd',
-      }
-      await fs.writeFile(jsonPath, JSON.stringify(data))
-
-      const result = await parseMarketplaceJson(jsonPath)
-      expect(result).toBeNull()
-    })
-
-    it('should return null for absolute path attempt', async () => {
-      const jsonPath = path.join(tempDir, 'absolute.json')
-      const data = {
-        name        : 'abs-plugin',
-        version     : '1.0.0',
-        description : 'Absolute',
-        skillPath   : '/absolute/path',
-      }
-      await fs.writeFile(jsonPath, JSON.stringify(data))
-
-      const result = await parseMarketplaceJson(jsonPath)
-      expect(result).toBeNull()
-    })
-
-    it('should handle empty file', async () => {
-      const jsonPath = path.join(tempDir, 'empty.json')
-      await fs.writeFile(jsonPath, '')
-
-      const result = await parseMarketplaceJson(jsonPath)
-      expect(result).toBeNull()
-    })
-
-    it('should handle file with only whitespace', async () => {
-      const jsonPath = path.join(tempDir, 'whitespace.json')
-      await fs.writeFile(jsonPath, '   \n  \t  ')
-
-      const result = await parseMarketplaceJson(jsonPath)
-      expect(result).toBeNull()
-    })
-
     it('should preserve extra fields not in schema', async () => {
       const jsonPath = path.join(tempDir, 'extra.json')
       const data = {
-        name        : 'test-plugin',
-        version     : '1.0.0',
-        description : 'Test',
-        skillPath   : '.claude-plugin/skill',
+        name        : 'test-marketplace',
+        owner       : { name : 'Test' },
+        plugins     : [{ name : 'test', source : './test' }],
         customField : 'custom value',
       }
       await fs.writeFile(jsonPath, JSON.stringify(data))
@@ -241,6 +184,24 @@ describe('marketplace-json parser', () => {
       const result = await parseMarketplaceJson(jsonPath)
       expect(result).toEqual(data)
       expect(result.customField).toBe('custom value')
+    })
+
+    it('should parse marketplace with multiple plugins', async () => {
+      const jsonPath = path.join(tempDir, 'marketplace.json')
+      const data = {
+        name    : 'multi-marketplace',
+        owner   : { name : 'Test' },
+        plugins : [
+          { name : 'plugin-a', source : './plugins/a' },
+          { name : 'plugin-b', source : './plugins/b', version : '2.0.0' },
+          { name : 'plugin-c', source : { source : 'github', repo : 'owner/repo' } },
+        ],
+      }
+      await fs.writeFile(jsonPath, JSON.stringify(data))
+
+      const result = await parseMarketplaceJson(jsonPath)
+      expect(result).toEqual(data)
+      expect(result.plugins).toHaveLength(3)
     })
   })
 })

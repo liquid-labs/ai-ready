@@ -42,7 +42,19 @@
       "Bash(docker inspect:*)",
       "Bash(git -C /Users/zane/playground/ai-ready mv:*)",
       "Bash(npm run:*)",
-      "Bash(NODE_OPTIONS=' --no-webstorage' npx jest:*)"
+      "Bash(NODE_OPTIONS=' --no-webstorage' npx jest:*)",
+      "WebFetch(domain:ajv.js.org)",
+      "Bash(TEST=marketplace-validator.test make test:*)",
+      "Bash(git branch:*)",
+      "Bash(git worktree add:*)",
+      "Bash(TEST=claude-settings.test make test:*)",
+      "Bash(TEST=parse-library-integration.test make test:*)",
+      "Bash(TEST=marketplace-json.test make test:*)",
+      "Bash(TEST=error-handling.test make test:*)",
+      "Bash(git merge:*)",
+      "Bash(TEST=integration/multiple-plugins.test make:*)",
+      "Bash(TEST=integration/multi-project.test make integration-test:*)",
+      "Bash(TEST=integration/npm-workflow.test make:*)"
     ],
     "deny": [],
     "ask": []
