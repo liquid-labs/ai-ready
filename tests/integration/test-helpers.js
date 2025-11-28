@@ -7,6 +7,8 @@ const fs = require('fs/promises')
 const path = require('path')
 const { promisify } = require('util')
 
+const { verifySettingsStructure } = require('./verify-helpers')
+
 const execFileAsync = promisify(execFile)
 
 /**
