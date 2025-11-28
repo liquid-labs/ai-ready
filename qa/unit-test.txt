@@ -1,0 +1,324 @@
+Test git rev: 52eb9d6b90abb9983beb1416ddcf79636df96b75
+PASS tests/unit/lib/commands/plugins-sync.test.js
+PASS tests/unit/lib/commands/plugins-view.test.js
+  ● Console
+
+    console.log
+      
+      Discovered Claude Code Plugins in /var/folders/b_/cqvmw4wd3p97n3h4qh85kb1c0000gp/T/air-view-test-Hv7Tkf
+
+      at log (../src/lib/commands/plugins-view.js:44:11)
+
+PASS tests/unit/lib/error-handling.test.js
+  ● Console
+
+    console.warn
+      Malformed JSON in /var/folders/b_/cqvmw4wd3p97n3h4qh85kb1c0000gp/T/air-error-QxpcvM/marketplace.json: Expected property name or '}' in JSON at position 1 (line 1 column 2)
+
+      34 |     if (error instanceof SyntaxError) {
+      35 |       // eslint-disable-next-line no-console
+    > 36 |       console.warn(`Malformed JSON in ${filePath}: ${error.message}`)
+         |               ^
+      37 |
+      38 |       return null
+      39 |     }
+
+      at warn (../src/lib/parsers/marketplace-json.js:36:15)
+      at ../node_modules/@babel/runtime/helpers/regeneratorRuntime.js:52:18
+      at Generator.<anonymous> (../node_modules/@babel/runtime/helpers/regenerator.js:52:51)
+      at Generator.next (../node_modules/@babel/runtime/helpers/regeneratorDefine.js:11:21)
+      at asyncGeneratorStep (../node_modules/@babel/runtime/helpers/asyncToGenerator.js:3:17)
+      at _next (../node_modules/@babel/runtime/helpers/asyncToGenerator.js:17:9)
+
+    console.warn
+      Malformed settings.json, creating backup and using defaults
+
+      47 |     if (error instanceof SyntaxError) {
+      48 |       // eslint-disable-next-line no-console
+    > 49 |       console.warn('Malformed settings.json, creating backup and using defaults')
+         |               ^
+      50 |       await createBackup(settingsPath)
+      51 |
+      52 |       return {
+
+      at warn (../src/lib/storage/claude-settings.js:49:15)
+      at ../node_modules/@babel/runtime/helpers/regeneratorRuntime.js:52:18
+      at Generator.<anonymous> (../node_modules/@babel/runtime/helpers/regenerator.js:52:51)
+      at Generator.next (../node_modules/@babel/runtime/helpers/regeneratorDefine.js:11:21)
+      at asyncGeneratorStep (../node_modules/@babel/runtime/helpers/asyncToGenerator.js:3:17)
+      at _next (../node_modules/@babel/runtime/helpers/asyncToGenerator.js:17:9)
+
+    console.warn
+      Invalid marketplace.json at /var/folders/b_/cqvmw4wd3p97n3h4qh85kb1c0000gp/T/air-error-C7bcGZ/marketplace.json:
+      Found 2 validation errors:
+        - Missing required field: "owner"
+        - Missing required field: "plugins"
+
+      23 |
+      24 |     // eslint-disable-next-line no-console
+    > 25 |     console.warn(`Invalid marketplace.json at ${filePath}:\n${formatValidationSummary(result.errors)}`)
+         |             ^
+      26 |
+      27 |     return null
+      28 |   }
+
+      at warn (../src/lib/parsers/marketplace-json.js:25:13)
+      at ../node_modules/@babel/runtime/helpers/regeneratorRuntime.js:52:18
+      at Generator.<anonymous> (../node_modules/@babel/runtime/helpers/regenerator.js:52:51)
+      at Generator.next (../node_modules/@babel/runtime/helpers/regeneratorDefine.js:11:21)
+      at asyncGeneratorStep (../node_modules/@babel/runtime/helpers/asyncToGenerator.js:3:17)
+      at _next (../node_modules/@babel/runtime/helpers/asyncToGenerator.js:17:9)
+
+    console.warn
+      Invalid marketplace.json at /var/folders/b_/cqvmw4wd3p97n3h4qh85kb1c0000gp/T/air-error-HxwkR6/marketplace.json:
+      Missing required field: "owner"
+
+      23 |
+      24 |     // eslint-disable-next-line no-console
+    > 25 |     console.warn(`Invalid marketplace.json at ${filePath}:\n${formatValidationSummary(result.errors)}`)
+         |             ^
+      26 |
+      27 |     return null
+      28 |   }
+
+      at warn (../src/lib/parsers/marketplace-json.js:25:13)
+      at ../node_modules/@babel/runtime/helpers/regeneratorRuntime.js:52:18
+      at Generator.<anonymous> (../node_modules/@babel/runtime/helpers/regenerator.js:52:51)
+      at Generator.next (../node_modules/@babel/runtime/helpers/regeneratorDefine.js:11:21)
+      at asyncGeneratorStep (../node_modules/@babel/runtime/helpers/asyncToGenerator.js:3:17)
+      at _next (../node_modules/@babel/runtime/helpers/asyncToGenerator.js:17:9)
+
+    console.warn
+      Invalid marketplace.json at /var/folders/b_/cqvmw4wd3p97n3h4qh85kb1c0000gp/T/air-error-jfMdrb/marketplace.json:
+      Missing required field: "plugins"
+
+      23 |
+      24 |     // eslint-disable-next-line no-console
+    > 25 |     console.warn(`Invalid marketplace.json at ${filePath}:\n${formatValidationSummary(result.errors)}`)
+         |             ^
+      26 |
+      27 |     return null
+      28 |   }
+
+      at warn (../src/lib/parsers/marketplace-json.js:25:13)
+      at ../node_modules/@babel/runtime/helpers/regeneratorRuntime.js:52:18
+      at Generator.<anonymous> (../node_modules/@babel/runtime/helpers/regenerator.js:52:51)
+      at Generator.next (../node_modules/@babel/runtime/helpers/regeneratorDefine.js:11:21)
+      at asyncGeneratorStep (../node_modules/@babel/runtime/helpers/asyncToGenerator.js:3:17)
+      at _next (../node_modules/@babel/runtime/helpers/asyncToGenerator.js:17:9)
+
+    console.warn
+      Invalid marketplace.json at /var/folders/b_/cqvmw4wd3p97n3h4qh85kb1c0000gp/T/air-error-MX66sn/marketplace.json:
+      must be an object
+
+      23 |
+      24 |     // eslint-disable-next-line no-console
+    > 25 |     console.warn(`Invalid marketplace.json at ${filePath}:\n${formatValidationSummary(result.errors)}`)
+         |             ^
+      26 |
+      27 |     return null
+      28 |   }
+
+      at warn (../src/lib/parsers/marketplace-json.js:25:13)
+      at ../node_modules/@babel/runtime/helpers/regeneratorRuntime.js:52:18
+      at Generator.<anonymous> (../node_modules/@babel/runtime/helpers/regenerator.js:52:51)
+      at Generator.next (../node_modules/@babel/runtime/helpers/regeneratorDefine.js:11:21)
+      at asyncGeneratorStep (../node_modules/@babel/runtime/helpers/asyncToGenerator.js:3:17)
+      at _next (../node_modules/@babel/runtime/helpers/asyncToGenerator.js:17:9)
+
+    console.warn
+      Invalid marketplace.json at /var/folders/b_/cqvmw4wd3p97n3h4qh85kb1c0000gp/T/air-error-KGjzmQ/marketplace.json:
+      Field "name" must be a string
+
+      23 |
+      24 |     // eslint-disable-next-line no-console
+    > 25 |     console.warn(`Invalid marketplace.json at ${filePath}:\n${formatValidationSummary(result.errors)}`)
+         |             ^
+      26 |
+      27 |     return null
+      28 |   }
+
+      at warn (../src/lib/parsers/marketplace-json.js:25:13)
+      at ../node_modules/@babel/runtime/helpers/regeneratorRuntime.js:52:18
+      at Generator.<anonymous> (../node_modules/@babel/runtime/helpers/regenerator.js:52:51)
+      at Generator.next (../node_modules/@babel/runtime/helpers/regeneratorDefine.js:11:21)
+      at asyncGeneratorStep (../node_modules/@babel/runtime/helpers/asyncToGenerator.js:3:17)
+      at _next (../node_modules/@babel/runtime/helpers/asyncToGenerator.js:17:9)
+
+    console.warn
+      Could not read package.json for /var/folders/b_/cqvmw4wd3p97n3h4qh85kb1c0000gp/T/air-error-6aX87H/node_modules/broken-pkg
+
+      86 |   catch {
+      87 |     // eslint-disable-next-line no-console
+    > 88 |     console.warn(`Could not read package.json for ${packagePath}`)
+         |             ^
+      89 |   }
+      90 |
+      91 |   // Resolve symlinks to get canonical path
+
+      at warn (../src/lib/scanner.js:88:13)
+      at ../node_modules/@babel/runtime/helpers/regeneratorRuntime.js:52:18
+      at Generator.<anonymous> (../node_modules/@babel/runtime/helpers/regenerator.js:52:51)
+      at Generator.throw (../node_modules/@babel/runtime/helpers/regeneratorDefine.js:11:21)
+      at asyncGeneratorStep (../node_modules/@babel/runtime/helpers/asyncToGenerator.js:3:17)
+      at _throw (../node_modules/@babel/runtime/helpers/asyncToGenerator.js:20:9)
+
+PASS tests/unit/lib/scanner.test.js
+  ● Console
+
+    console.warn
+      Malformed JSON in /private/var/folders/b_/cqvmw4wd3p97n3h4qh85kb1c0000gp/T/air-scanner-test-BZZoqi/node_modules/bad-plugin/.claude-plugin/marketplace.json: Expected property name or '}' in JSON at position 1 (line 1 column 2)
+
+      34 |     if (error instanceof SyntaxError) {
+      35 |       // eslint-disable-next-line no-console
+    > 36 |       console.warn(`Malformed JSON in ${filePath}: ${error.message}`)
+         |               ^
+      37 |
+      38 |       return null
+      39 |     }
+
+      at warn (../src/lib/parsers/marketplace-json.js:36:15)
+      at ../node_modules/@babel/runtime/helpers/regeneratorRuntime.js:52:18
+      at Generator.<anonymous> (../node_modules/@babel/runtime/helpers/regenerator.js:52:51)
+      at Generator.next (../node_modules/@babel/runtime/helpers/regeneratorDefine.js:11:21)
+      at asyncGeneratorStep (../node_modules/@babel/runtime/helpers/asyncToGenerator.js:3:17)
+      at _next (../node_modules/@babel/runtime/helpers/asyncToGenerator.js:17:9)
+
+    console.warn
+      Invalid marketplace.json at /private/var/folders/b_/cqvmw4wd3p97n3h4qh85kb1c0000gp/T/air-scanner-test-tQHvrl/node_modules/invalid-plugin/.claude-plugin/marketplace.json:
+      Found 2 validation errors:
+        - Missing required field: "owner"
+        - Missing required field: "plugins"
+
+      23 |
+      24 |     // eslint-disable-next-line no-console
+    > 25 |     console.warn(`Invalid marketplace.json at ${filePath}:\n${formatValidationSummary(result.errors)}`)
+         |             ^
+      26 |
+      27 |     return null
+      28 |   }
+
+      at warn (../src/lib/parsers/marketplace-json.js:25:13)
+      at ../node_modules/@babel/runtime/helpers/regeneratorRuntime.js:52:18
+      at Generator.<anonymous> (../node_modules/@babel/runtime/helpers/regenerator.js:52:51)
+      at Generator.next (../node_modules/@babel/runtime/helpers/regeneratorDefine.js:11:21)
+      at asyncGeneratorStep (../node_modules/@babel/runtime/helpers/asyncToGenerator.js:3:17)
+      at _next (../node_modules/@babel/runtime/helpers/asyncToGenerator.js:17:9)
+
+PASS tests/unit/lib/parsers/marketplace-json.test.js
+  ● Console
+
+    console.warn
+      Malformed JSON in /var/folders/b_/cqvmw4wd3p97n3h4qh85kb1c0000gp/T/air-test-X5mtK9/bad.json: Expected property name or '}' in JSON at position 1 (line 1 column 2)
+
+      34 |     if (error instanceof SyntaxError) {
+      35 |       // eslint-disable-next-line no-console
+    > 36 |       console.warn(`Malformed JSON in ${filePath}: ${error.message}`)
+         |               ^
+      37 |
+      38 |       return null
+      39 |     }
+
+      at warn (../src/lib/parsers/marketplace-json.js:36:15)
+      at ../node_modules/@babel/runtime/helpers/regeneratorRuntime.js:52:18
+      at Generator.<anonymous> (../node_modules/@babel/runtime/helpers/regenerator.js:52:51)
+      at Generator.next (../node_modules/@babel/runtime/helpers/regeneratorDefine.js:11:21)
+      at asyncGeneratorStep (../node_modules/@babel/runtime/helpers/asyncToGenerator.js:3:17)
+      at _next (../node_modules/@babel/runtime/helpers/asyncToGenerator.js:17:9)
+
+    console.warn
+      Invalid marketplace.json at /var/folders/b_/cqvmw4wd3p97n3h4qh85kb1c0000gp/T/air-test-61fmy3/invalid.json:
+      Found 2 validation errors:
+        - Missing required field: "owner"
+        - Missing required field: "plugins"
+
+      23 |
+      24 |     // eslint-disable-next-line no-console
+    > 25 |     console.warn(`Invalid marketplace.json at ${filePath}:\n${formatValidationSummary(result.errors)}`)
+         |             ^
+      26 |
+      27 |     return null
+      28 |   }
+
+      at warn (../src/lib/parsers/marketplace-json.js:25:13)
+      at ../node_modules/@babel/runtime/helpers/regeneratorRuntime.js:52:18
+      at Generator.<anonymous> (../node_modules/@babel/runtime/helpers/regenerator.js:52:51)
+      at Generator.next (../node_modules/@babel/runtime/helpers/regeneratorDefine.js:11:21)
+      at asyncGeneratorStep (../node_modules/@babel/runtime/helpers/asyncToGenerator.js:3:17)
+      at _next (../node_modules/@babel/runtime/helpers/asyncToGenerator.js:17:9)
+
+    console.warn
+      Malformed JSON in /var/folders/b_/cqvmw4wd3p97n3h4qh85kb1c0000gp/T/air-test-BLPkWG/empty.json: Unexpected end of JSON input
+
+      34 |     if (error instanceof SyntaxError) {
+      35 |       // eslint-disable-next-line no-console
+    > 36 |       console.warn(`Malformed JSON in ${filePath}: ${error.message}`)
+         |               ^
+      37 |
+      38 |       return null
+      39 |     }
+
+      at warn (../src/lib/parsers/marketplace-json.js:36:15)
+      at ../node_modules/@babel/runtime/helpers/regeneratorRuntime.js:52:18
+      at Generator.<anonymous> (../node_modules/@babel/runtime/helpers/regenerator.js:52:51)
+      at Generator.next (../node_modules/@babel/runtime/helpers/regeneratorDefine.js:11:21)
+      at asyncGeneratorStep (../node_modules/@babel/runtime/helpers/asyncToGenerator.js:3:17)
+      at _next (../node_modules/@babel/runtime/helpers/asyncToGenerator.js:17:9)
+
+    console.warn
+      Malformed JSON in /var/folders/b_/cqvmw4wd3p97n3h4qh85kb1c0000gp/T/air-test-Fk2Slp/whitespace.json: Unexpected end of JSON input
+
+      34 |     if (error instanceof SyntaxError) {
+      35 |       // eslint-disable-next-line no-console
+    > 36 |       console.warn(`Malformed JSON in ${filePath}: ${error.message}`)
+         |               ^
+      37 |
+      38 |       return null
+      39 |     }
+
+      at warn (../src/lib/parsers/marketplace-json.js:36:15)
+      at ../node_modules/@babel/runtime/helpers/regeneratorRuntime.js:52:18
+      at Generator.<anonymous> (../node_modules/@babel/runtime/helpers/regenerator.js:52:51)
+      at Generator.next (../node_modules/@babel/runtime/helpers/regeneratorDefine.js:11:21)
+      at asyncGeneratorStep (../node_modules/@babel/runtime/helpers/asyncToGenerator.js:3:17)
+      at _next (../node_modules/@babel/runtime/helpers/asyncToGenerator.js:17:9)
+
+PASS tests/unit/lib/storage/claude-settings.test.js
+PASS tests/unit/lib/schemas/marketplace-validator.test.js
+PASS tests/unit/lib/utils/parse-library-integration.test.js
+PASS tests/unit/lib/types.test.js
+-------------------------------|---------|----------|---------|---------|-------------------------------------
+File                           | % Stmts | % Branch | % Funcs | % Lines | Uncovered Line #s                   
+-------------------------------|---------|----------|---------|---------|-------------------------------------
+All files                      |   56.71 |    48.94 |   49.52 |   57.18 |                                     
+ src/cli                       |       0 |        0 |       0 |       0 |                                     
+  air.mjs                      |       0 |        0 |       0 |       0 | 1-37                                
+ src/lib                       |   97.18 |    86.88 |     100 |   97.56 |                                     
+  scanner.js                   |   97.01 |    79.48 |     100 |   97.29 | 99                                  
+  types.js                     |     100 |      100 |     100 |     100 |                                     
+ src/lib/commands              |   95.93 |    69.69 |     100 |   95.04 |                                     
+  plugins-sync.js              |   93.22 |    58.18 |     100 |   93.02 | 53,98-99                            
+  plugins-view.js              |   97.34 |    75.45 |     100 |   96.15 | 126-127,157                         
+ src/lib/parsers               |    92.3 |    71.42 |     100 |   88.23 |                                     
+  marketplace-json.js          |    92.3 |    71.42 |     100 |   88.23 | 34,38                               
+ src/lib/schemas               |   90.16 |    81.53 |     100 |   90.74 |                                     
+  marketplace-validator.js     |   90.16 |    81.53 |     100 |   90.74 | 114,128,156-158,163                 
+ src/lib/storage               |   89.67 |    69.56 |    90.9 |   86.82 |                                     
+  claude-config.js             |   76.92 |    66.66 |   57.14 |      75 | 23-31,47                            
+  claude-settings.js           |   90.64 |    69.69 |     100 |   88.03 | 47,58,77,92-100,148,156,214,251-254 
+ src/lib/utils                 |     100 |      100 |     100 |     100 |                                     
+  parse-library-integration.js |     100 |      100 |     100 |     100 |                                     
+ tests/functional              |       0 |        0 |       0 |       0 |                                     
+  helpers.js                   |       0 |        0 |       0 |       0 | 5-220                               
+ tests/integration             |       0 |        0 |       0 |       0 |                                     
+  test-helpers.js              |       0 |        0 |       0 |       0 | 5-405                               
+  verify-helpers.js            |       0 |        0 |       0 |       0 | 14-126                              
+ tests/unit/lib                |   93.22 |    61.11 |     100 |    92.1 |                                     
+  test-lib.js                  |   93.22 |    61.11 |     100 |    92.1 | 16,54,100                           
+-------------------------------|---------|----------|---------|---------|-------------------------------------
+
+Test Suites: 9 passed, 9 total
+Tests:       155 passed, 155 total
+Snapshots:   0 total
+Time:        0.559 s, estimated 1 s
+Ran all test suites matching test-staging/tests/unit/.
