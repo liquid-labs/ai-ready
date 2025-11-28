@@ -1,123 +1,100 @@
 import { parseLibraryIntegration } from '_lib/utils/parse-library-integration'
 
 describe('parseLibraryIntegration', () => {
-  describe('Unscoped packages', () => {
-    it('should parse library only', () => {
-      const result = parseLibraryIntegration('my-package')
-      expect(result).toEqual({
-        libraryName     : 'my-package',
-        integrationName : null,
-      })
-    })
-
-    it('should parse library and integration', () => {
-      const result = parseLibraryIntegration('my-package/MyIntegration')
-      expect(result).toEqual({
-        libraryName     : 'my-package',
-        integrationName : 'MyIntegration',
-      })
-    })
-
-    it('should handle package names with hyphens', () => {
-      const result = parseLibraryIntegration('my-long-package-name/TestIntegration')
-      expect(result).toEqual({
-        libraryName     : 'my-long-package-name',
-        integrationName : 'TestIntegration',
-      })
-    })
-  })
-
-  describe('Scoped packages', () => {
-    it('should parse scoped library only', () => {
-      const result = parseLibraryIntegration('@myorg/my-package')
-      expect(result).toEqual({
-        libraryName     : '@myorg/my-package',
-        integrationName : null,
-      })
-    })
-
-    it('should parse scoped library and integration', () => {
-      const result = parseLibraryIntegration('@myorg/my-package/MyIntegration')
-      expect(result).toEqual({
-        libraryName     : '@myorg/my-package',
-        integrationName : 'MyIntegration',
-      })
-    })
-
-    it('should handle scoped packages with hyphens', () => {
-      const result = parseLibraryIntegration('@my-org/my-package/TestIntegration')
-      expect(result).toEqual({
-        libraryName     : '@my-org/my-package',
-        integrationName : 'TestIntegration',
-      })
-    })
-
-    it('should handle deep scopes', () => {
-      const result = parseLibraryIntegration('@company/team-package/Integration')
-      expect(result).toEqual({
-        libraryName     : '@company/team-package',
-        integrationName : 'Integration',
-      })
-    })
-  })
-
-  describe('Edge cases', () => {
-    it('should handle empty string', () => {
-      const result = parseLibraryIntegration('')
-      expect(result).toEqual({
-        libraryName     : null,
-        integrationName : null,
-      })
-    })
-
-    it('should handle null', () => {
-      const result = parseLibraryIntegration(null)
-      expect(result).toEqual({
-        libraryName     : null,
-        integrationName : null,
-      })
-    })
-
-    it('should handle undefined', () => {
-      const result = parseLibraryIntegration(undefined)
-      expect(result).toEqual({
-        libraryName     : null,
-        integrationName : null,
-      })
-    })
-
-    it('should handle just a scope (invalid but graceful)', () => {
-      const result = parseLibraryIntegration('@myorg')
-      expect(result).toEqual({
-        libraryName     : '@myorg',
-        integrationName : null,
-      })
-    })
-  })
-
-  describe('Real-world examples', () => {
-    it('should parse jest-ai package', () => {
-      const result = parseLibraryIntegration('jest-ai/TestGenerator')
-      expect(result).toEqual({
-        libraryName     : 'jest-ai',
-        integrationName : 'TestGenerator',
-      })
-    })
-
-    it('should parse @ai-ready/test-package', () => {
-      const result = parseLibraryIntegration('@ai-ready/test-package/SkillOnly')
-      expect(result).toEqual({
-        libraryName     : '@ai-ready/test-package',
-        integrationName : 'SkillOnly',
-      })
-    })
-
-    it('should parse @liquid-labs scoped package', () => {
-      const result = parseLibraryIntegration('@liquid-labs/ai-tools/CodeAnalyzer')
-      expect(result).toEqual({
-        libraryName     : '@liquid-labs/ai-tools',
-        integrationName : 'CodeAnalyzer',
-      })
+  it.each([
+    // Unscoped packages
+    {
+      description     : 'library only',
+      input           : 'my-package',
+      expectedLibrary : 'my-package',
+      expectedInteg   : null,
+    },
+    {
+      description     : 'library and integration',
+      input           : 'my-package/MyIntegration',
+      expectedLibrary : 'my-package',
+      expectedInteg   : 'MyIntegration',
+    },
+    {
+      description     : 'package names with hyphens',
+      input           : 'my-long-package-name/TestIntegration',
+      expectedLibrary : 'my-long-package-name',
+      expectedInteg   : 'TestIntegration',
+    },
+    // Scoped packages
+    {
+      description     : 'scoped library only',
+      input           : '@myorg/my-package',
+      expectedLibrary : '@myorg/my-package',
+      expectedInteg   : null,
+    },
+    {
+      description     : 'scoped library and integration',
+      input           : '@myorg/my-package/MyIntegration',
+      expectedLibrary : '@myorg/my-package',
+      expectedInteg   : 'MyIntegration',
+    },
+    {
+      description     : 'scoped packages with hyphens',
+      input           : '@my-org/my-package/TestIntegration',
+      expectedLibrary : '@my-org/my-package',
+      expectedInteg   : 'TestIntegration',
+    },
+    {
+      description     : 'deep scopes',
+      input           : '@company/team-package/Integration',
+      expectedLibrary : '@company/team-package',
+      expectedInteg   : 'Integration',
+    },
+    // Edge cases
+    {
+      description     : 'empty string',
+      input           : '',
+      expectedLibrary : null,
+      expectedInteg   : null,
+    },
+    {
+      description     : 'null',
+      input           : null,
+      expectedLibrary : null,
+      expectedInteg   : null,
+    },
+    {
+      description     : 'undefined',
+      input           : undefined,
+      expectedLibrary : null,
+      expectedInteg   : null,
+    },
+    {
+      description     : 'just a scope (invalid but graceful)',
+      input           : '@myorg',
+      expectedLibrary : '@myorg',
+      expectedInteg   : null,
+    },
+    // Real-world examples
+    {
+      description     : 'jest-ai package',
+      input           : 'jest-ai/TestGenerator',
+      expectedLibrary : 'jest-ai',
+      expectedInteg   : 'TestGenerator',
+    },
+    {
+      description     : '@ai-ready/test-package',
+      input           : '@ai-ready/test-package/SkillOnly',
+      expectedLibrary : '@ai-ready/test-package',
+      expectedInteg   : 'SkillOnly',
+    },
+    {
+      description     : '@liquid-labs scoped package',
+      input           : '@liquid-labs/ai-tools/CodeAnalyzer',
+      expectedLibrary : '@liquid-labs/ai-tools',
+      expectedInteg   : 'CodeAnalyzer',
+    },
+  ])('should parse $description', ({ input, expectedLibrary, expectedInteg }) => {
+    const result = parseLibraryIntegration(input)
+    expect(result).toEqual({
+      libraryName     : expectedLibrary,
+      integrationName : expectedInteg,
     })
   })
 })
