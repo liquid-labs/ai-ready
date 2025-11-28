@@ -127,94 +127,80 @@ describe('marketplace-validator', () => {
     })
 
     describe('missing required fields', () => {
-      it('should reject empty object and list all missing fields', () => {
-        const result = validateMarketplaceSchema({})
+      it.each([
+        {
+          description     : 'empty object',
+          data            : {},
+          expectedMissing : ['name', 'owner', 'plugins'],
+          minErrors       : 3,
+        },
+        {
+          description : 'missing name field',
+          data        : {
+            owner   : { name : 'Test' },
+            plugins : [{ name : 'plugin', source : './plugin' }],
+          },
+          expectedMissing : ['name'],
+        },
+        {
+          description : 'missing owner field',
+          data        : {
+            name    : 'my-marketplace',
+            plugins : [{ name : 'plugin', source : './plugin' }],
+          },
+          expectedMissing : ['owner'],
+        },
+        {
+          description : 'missing plugins field',
+          data        : {
+            name  : 'my-marketplace',
+            owner : { name : 'Test' },
+          },
+          expectedMissing : ['plugins'],
+        },
+        {
+          description : 'multiple missing fields (owner and plugins)',
+          data        : {
+            name : 'my-marketplace',
+          },
+          expectedMissing : ['owner', 'plugins'],
+        },
+      ])('should report $description', ({ data, expectedMissing, minErrors }) => {
+        const result = validateMarketplaceSchema(data)
 
         expect(result.valid).toBe(false)
-        expect(result.errors.length).toBeGreaterThanOrEqual(3)
+        if (minErrors !== undefined) {
+          expect(result.errors.length).toBeGreaterThanOrEqual(minErrors)
+        }
 
         const missingFields = getMissingFields(result.errors)
-        expect(missingFields).toContain('name')
-        expect(missingFields).toContain('owner')
-        expect(missingFields).toContain('plugins')
-      })
-
-      it('should report missing name field', () => {
-        const data = {
-          owner   : { name : 'Test' },
-          plugins : [{ name : 'plugin', source : './plugin' }],
+        for (const field of expectedMissing) {
+          expect(missingFields).toContain(field)
         }
-
-        const result = validateMarketplaceSchema(data)
-
-        expect(result.valid).toBe(false)
-        expect(getMissingFields(result.errors)).toContain('name')
       })
 
-      it('should report missing owner field', () => {
-        const data = {
-          name    : 'my-marketplace',
-          plugins : [{ name : 'plugin', source : './plugin' }],
-        }
-
-        const result = validateMarketplaceSchema(data)
-
-        expect(result.valid).toBe(false)
-        expect(getMissingFields(result.errors)).toContain('owner')
-      })
-
-      it('should report missing plugins field', () => {
-        const data = {
-          name  : 'my-marketplace',
-          owner : { name : 'Test' },
-        }
-
-        const result = validateMarketplaceSchema(data)
-
-        expect(result.valid).toBe(false)
-        expect(getMissingFields(result.errors)).toContain('plugins')
-      })
-
-      it('should report multiple missing fields', () => {
-        const data = {
-          name : 'my-marketplace',
-        }
-
-        const result = validateMarketplaceSchema(data)
-
-        expect(result.valid).toBe(false)
-
-        const missingFields = getMissingFields(result.errors)
-        expect(missingFields).toContain('owner')
-        expect(missingFields).toContain('plugins')
-      })
-
-      it('should report missing plugin name in array', () => {
+      it.each([
+        {
+          description     : 'missing plugin name in array',
+          plugins         : [{ source : './plugin' }],
+          expectedMessage : 'name',
+        },
+        {
+          description     : 'missing plugin source in array',
+          plugins         : [{ name : 'plugin' }],
+          expectedMessage : 'source',
+        },
+      ])('should report $description', ({ plugins, expectedMessage }) => {
         const data = {
           name    : 'my-marketplace',
           owner   : { name : 'Test' },
-          plugins : [{ source : './plugin' }],
+          plugins,
         }
 
         const result = validateMarketplaceSchema(data)
 
         expect(result.valid).toBe(false)
-        // The error should indicate a problem with the plugins array item
-        expect(result.errors.some((e) => e.field.includes('plugins') && e.message.includes('name'))).toBe(true)
-      })
-
-      it('should report missing plugin source in array', () => {
-        const data = {
-          name    : 'my-marketplace',
-          owner   : { name : 'Test' },
-          plugins : [{ name : 'plugin' }],
-        }
-
-        const result = validateMarketplaceSchema(data)
-
-        expect(result.valid).toBe(false)
-        // The error should indicate a problem with the plugins array item
-        expect(result.errors.some((e) => e.field.includes('plugins') && e.message.includes('source'))).toBe(true)
+        expect(result.errors.some((e) => e.field.includes('plugins') && e.message.includes(expectedMessage))).toBe(true)
       })
     })
 
