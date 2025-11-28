@@ -26,7 +26,9 @@ const logAddedPlugins = (addedPlugins, providers) => {
   for (const pluginName of addedPlugins) {
     const provider = findProviderForPlugin(providers, pluginName)
     if (provider) {
-      console.log(`  • ${pluginName} (from ${provider.marketplaceDeclaration.name} in ${provider.packageName} v${provider.version})`)
+      console.log(
+        `  • ${pluginName} (from ${provider.marketplaceDeclaration.name} in ${provider.packageName} v${provider.version})`
+      )
     }
   }
   console.log()
@@ -40,7 +42,9 @@ const logAddedPlugins = (addedPlugins, providers) => {
 const logSyncResults = (changes, settingsPath) => {
   if (changes.added.length > 0 || changes.updated.length > 0) {
     console.log(`Updated settings: ${settingsPath}`)
-    console.log(`✓ ${changes.added.length} plugin${changes.added.length === 1 ? '' : 's'} added, ${changes.updated.length} updated\n`)
+    console.log(
+      `✓ ${changes.added.length} plugin${changes.added.length === 1 ? '' : 's'} added, ${changes.updated.length} updated\n`
+    )
     if (changes.added.length > 0) {
       console.log('  Restart Claude Code to load new plugins\n')
     }
@@ -72,7 +76,9 @@ export async function pluginsSyncCommand(options = {}) {
     const totalPlugins = providers.reduce((sum, p) => sum + p.marketplaceDeclaration.plugins.length, 0)
 
     if (!quiet) {
-      console.log(`Found ${providers.length} marketplace${providers.length === 1 ? '' : 's'} with ${totalPlugins} plugin${totalPlugins === 1 ? '' : 's'}\n`)
+      console.log(
+        `Found ${providers.length} marketplace${providers.length === 1 ? '' : 's'} with ${totalPlugins} plugin${totalPlugins === 1 ? '' : 's'}\n`
+      )
     }
 
     const changes = await updateSettings(config.settingsPath, providers)
