@@ -1,6 +1,6 @@
 {
   "name": "ai-ready",
-  "version": "2.0.0-alpha.1",
+  "version": "1.0.0-alpha.1",
   "description": "Automatic Claude Code plugin discovery for npm dependencies.",
   "main": "dist/ai-ready.js",
   "scripts": {
