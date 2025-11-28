@@ -460,40 +460,43 @@ describe('claude-settings', () => {
   })
 
   describe('getPluginState', () => {
-    it('should return enabled for enabled plugin', () => {
+    it.each([
+      {
+        description    : 'enabled plugin',
+        enabled        : ['test-plugin@test-marketplace'],
+        disabled       : [],
+        expectedStatus : PLUGIN_STATUSES.ENABLED,
+      },
+      {
+        description    : 'disabled plugin',
+        enabled        : [],
+        disabled       : ['test-plugin@test-marketplace'],
+        expectedStatus : PLUGIN_STATUSES.DISABLED,
+      },
+      {
+        description    : 'unknown plugin',
+        enabled        : [],
+        disabled       : [],
+        pluginName     : 'unknown-plugin',
+        marketplace    : 'unknown-marketplace',
+        expectedStatus : PLUGIN_STATUSES.NOT_INSTALLED,
+      },
+    ])('should return $expectedStatus for $description', ({
+      enabled,
+      disabled,
+      pluginName = 'test-plugin',
+      marketplace = 'test-marketplace',
+      expectedStatus,
+    }) => {
       const settings = {
         plugins : {
-          enabled      : ['test-plugin@test-marketplace'],
-          disabled     : [],
+          enabled,
+          disabled,
           marketplaces : {},
         },
       }
 
-      expect(getPluginState('test-plugin', 'test-marketplace', settings)).toBe(PLUGIN_STATUSES.ENABLED)
-    })
-
-    it('should return disabled for disabled plugin', () => {
-      const settings = {
-        plugins : {
-          enabled      : [],
-          disabled     : ['test-plugin@test-marketplace'],
-          marketplaces : {},
-        },
-      }
-
-      expect(getPluginState('test-plugin', 'test-marketplace', settings)).toBe(PLUGIN_STATUSES.DISABLED)
-    })
-
-    it('should return not-installed for unknown plugin', () => {
-      const settings = {
-        plugins : {
-          enabled      : [],
-          disabled     : [],
-          marketplaces : {},
-        },
-      }
-
-      expect(getPluginState('unknown-plugin', 'unknown-marketplace', settings)).toBe(PLUGIN_STATUSES.NOT_INSTALLED)
+      expect(getPluginState(pluginName, marketplace, settings)).toBe(expectedStatus)
     })
   })
 
