@@ -30,70 +30,51 @@ describe('types', () => {
       expect(isValidMarketplaceProvider(provider)).toBe(true)
     })
 
-    it('should reject provider with missing packageName', () => {
-      const provider = {
-        version                : '1.0.0',
-        path                   : '/path',
-        marketplaceDeclaration : {
-          name    : 'test-marketplace',
-          owner   : {},
-          plugins : [],
+    it.each([
+      {
+        description : 'missing packageName',
+        provider    : {
+          version                : '1.0.0',
+          path                   : '/path',
+          marketplaceDeclaration : { name : 'test', owner : {}, plugins : [] },
         },
-      }
-
-      expect(isValidMarketplaceProvider(provider)).toBe(false)
-    })
-
-    it('should reject provider with empty packageName', () => {
-      const provider = {
-        packageName            : '',
-        version                : '1.0.0',
-        path                   : '/path',
-        marketplaceDeclaration : {
-          name    : 'test-marketplace',
-          owner   : {},
-          plugins : [],
+      },
+      {
+        description : 'empty packageName',
+        provider    : {
+          packageName            : '',
+          version                : '1.0.0',
+          path                   : '/path',
+          marketplaceDeclaration : { name : 'test', owner : {}, plugins : [] },
         },
-      }
-
-      expect(isValidMarketplaceProvider(provider)).toBe(false)
-    })
-
-    it('should reject provider with missing marketplaceDeclaration', () => {
-      const provider = {
-        packageName : 'test-lib',
-        version     : '1.0.0',
-        path        : '/path',
-      }
-
-      expect(isValidMarketplaceProvider(provider)).toBe(false)
-    })
-
-    it('should reject provider with incomplete marketplaceDeclaration', () => {
-      const provider = {
-        packageName            : 'test-lib',
-        version                : '1.0.0',
-        path                   : '/path',
-        marketplaceDeclaration : {
-          name : 'test-marketplace',
+      },
+      {
+        description : 'missing marketplaceDeclaration',
+        provider    : {
+          packageName : 'test-lib',
+          version     : '1.0.0',
+          path        : '/path',
         },
-      }
-
-      expect(isValidMarketplaceProvider(provider)).toBe(false)
-    })
-
-    it('should reject provider with non-array plugins', () => {
-      const provider = {
-        packageName            : 'test-lib',
-        version                : '1.0.0',
-        path                   : '/path',
-        marketplaceDeclaration : {
-          name    : 'test-marketplace',
-          owner   : {},
-          plugins : 'not-an-array',
+      },
+      {
+        description : 'incomplete marketplaceDeclaration',
+        provider    : {
+          packageName            : 'test-lib',
+          version                : '1.0.0',
+          path                   : '/path',
+          marketplaceDeclaration : { name : 'test' },
         },
-      }
-
+      },
+      {
+        description : 'non-array plugins',
+        provider    : {
+          packageName            : 'test-lib',
+          version                : '1.0.0',
+          path                   : '/path',
+          marketplaceDeclaration : { name : 'test', owner : {}, plugins : 'not-an-array' },
+        },
+      },
+    ])('should reject provider with $description', ({ provider }) => {
       expect(isValidMarketplaceProvider(provider)).toBe(false)
     })
   })
@@ -117,28 +98,20 @@ describe('types', () => {
       expect(isValidPluginEntry(plugin)).toBe(true)
     })
 
-    it('should reject plugin with missing name', () => {
-      const plugin = {
-        source : './plugins/test',
-      }
-
-      expect(isValidPluginEntry(plugin)).toBe(false)
-    })
-
-    it('should reject plugin with empty name', () => {
-      const plugin = {
-        name   : '',
-        source : './plugins/test',
-      }
-
-      expect(isValidPluginEntry(plugin)).toBe(false)
-    })
-
-    it('should reject plugin with missing source', () => {
-      const plugin = {
-        name : 'test-plugin',
-      }
-
+    it.each([
+      {
+        description : 'missing name',
+        plugin      : { source : './plugins/test' },
+      },
+      {
+        description : 'empty name',
+        plugin      : { name : '', source : './plugins/test' },
+      },
+      {
+        description : 'missing source',
+        plugin      : { name : 'test-plugin' },
+      },
+    ])('should reject plugin with $description', ({ plugin }) => {
       expect(isValidPluginEntry(plugin)).toBe(false)
     })
   })
@@ -169,38 +142,27 @@ describe('types', () => {
       expect(isValidPluginState({ ...baseState, status : 'not-installed' })).toBe(true)
     })
 
-    it('should reject invalid status', () => {
-      const state = {
-        name        : 'test',
-        status      : 'invalid-status',
-        source      : '/path',
-        version     : '1.0.0',
-        description : 'Test',
-      }
+    const baseState = {
+      name        : 'test',
+      source      : '/path',
+      version     : '1.0.0',
+      description : 'Test',
+    }
 
-      expect(isValidPluginState(state)).toBe(false)
-    })
-
-    it('should reject state with missing name', () => {
-      const state = {
-        status      : 'enabled',
-        source      : '/path',
-        version     : '1.0.0',
-        description : 'Test',
-      }
-
-      expect(isValidPluginState(state)).toBe(false)
-    })
-
-    it('should reject state with empty name', () => {
-      const state = {
-        name        : '',
-        status      : 'enabled',
-        source      : '/path',
-        version     : '1.0.0',
-        description : 'Test',
-      }
-
+    it.each([
+      {
+        description : 'invalid status',
+        state       : { ...baseState, status : 'invalid-status' },
+      },
+      {
+        description : 'missing name',
+        state       : { status : 'enabled', source : '/path', version : '1.0.0', description : 'Test' },
+      },
+      {
+        description : 'empty name',
+        state       : { ...baseState, name : '', status : 'enabled' },
+      },
+    ])('should reject state with $description', ({ state }) => {
       expect(isValidPluginState(state)).toBe(false)
     })
   })
