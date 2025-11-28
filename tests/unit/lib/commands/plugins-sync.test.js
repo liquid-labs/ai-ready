@@ -30,7 +30,6 @@ describe('plugins sync command', () => {
         name        : 'test-plugin',
         version     : '1.0.0',
         description : 'Test plugin',
-        skillPath   : '.claude-plugin/skill',
       })
       await createPackageJson(tempDir, ['test-lib'])
 
@@ -61,7 +60,6 @@ describe('plugins sync command', () => {
         name        : 'test-plugin',
         version     : '1.0.0',
         description : 'Test plugin',
-        skillPath   : '.claude-plugin/skill',
       })
       await createPackageJson(tempDir, ['test-lib'])
 
@@ -94,14 +92,12 @@ describe('plugins sync command', () => {
         name        : 'plugin-1',
         version     : '1.0.0',
         description : 'Plugin 1',
-        skillPath   : '.claude-plugin/skill',
       })
 
       await createTestPackage(tempDir, 'lib-2', {
         name        : 'plugin-2',
         version     : '2.0.0',
         description : 'Plugin 2',
-        skillPath   : '.claude-plugin/skill',
       })
       await createPackageJson(tempDir, ['lib-1', 'lib-2'])
 
@@ -121,7 +117,6 @@ describe('plugins sync command', () => {
         name        : 'test-plugin',
         version     : '1.0.0',
         description : 'Test plugin',
-        skillPath   : '.claude-plugin/skill',
       })
       await createPackageJson(tempDir, ['test-lib'])
 
@@ -136,7 +131,6 @@ describe('plugins sync command', () => {
         name        : 'test-plugin',
         version     : '2.0.0',
         description : 'Test plugin updated',
-        skillPath   : '.claude-plugin/skill',
       })
 
       // Sync again with noCache to force rescan
@@ -151,7 +145,6 @@ describe('plugins sync command', () => {
         name        : 'test-plugin',
         version     : '1.0.0',
         description : 'Test',
-        skillPath   : '.claude-plugin/skill',
       })
       await createPackageJson(tempDir, ['test-lib'])
 
@@ -175,7 +168,6 @@ describe('plugins sync command', () => {
         name        : 'test-plugin',
         version     : '1.0.0',
         description : 'Test',
-        skillPath   : '.claude-plugin/skill',
       })
       await createPackageJson(tempDir, ['test-lib'])
 
@@ -193,7 +185,7 @@ describe('plugins sync command', () => {
 
       const output = logs.join('\n')
       expect(output).toContain('Scanning dependencies')
-      expect(output).toContain('Found 1 plugin')
+      expect(output).toContain('Found 1 marketplace')
       expect(output).toContain('New plugins discovered')
       expect(output).toContain('test-plugin')
       expect(output).toContain('Restart Claude Code')
@@ -204,7 +196,6 @@ describe('plugins sync command', () => {
         name        : 'test-plugin',
         version     : '1.0.0',
         description : 'Test',
-        skillPath   : '.claude-plugin/skill',
       })
       await createPackageJson(tempDir, ['test-lib'])
 

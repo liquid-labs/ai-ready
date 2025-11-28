@@ -92,9 +92,8 @@ describe('Error handling', () => {
       await fs.writeFile(
         marketplacePath,
         JSON.stringify({
-          name    : 'plugin',
-          version : '1.0.0',
-          // Missing description and skillPath
+          name : 'test-marketplace',
+          // Missing owner and plugins
         })
       )
 
@@ -102,15 +101,13 @@ describe('Error handling', () => {
       expect(result).toBeNull()
     })
 
-    it('should reject marketplace.json with path traversal in skillPath', async () => {
+    it('should reject marketplace.json with missing owner', async () => {
       const marketplacePath = path.join(tempDir, 'marketplace.json')
       await fs.writeFile(
         marketplacePath,
         JSON.stringify({
-          name        : 'plugin',
-          version     : '1.0.0',
-          description : 'Test',
-          skillPath   : '../../../etc/passwd',
+          name    : 'test-marketplace',
+          plugins : [],
         })
       )
 
@@ -118,15 +115,13 @@ describe('Error handling', () => {
       expect(result).toBeNull()
     })
 
-    it('should reject marketplace.json with absolute skillPath', async () => {
+    it('should reject marketplace.json with missing plugins', async () => {
       const marketplacePath = path.join(tempDir, 'marketplace.json')
       await fs.writeFile(
         marketplacePath,
         JSON.stringify({
-          name        : 'plugin',
-          version     : '1.0.0',
-          description : 'Test',
-          skillPath   : '/absolute/path',
+          name  : 'test-marketplace',
+          owner : { name : 'Test' },
         })
       )
 
@@ -142,15 +137,14 @@ describe('Error handling', () => {
       expect(result).toBeNull()
     })
 
-    it('should reject marketplace.json with non-string fields', async () => {
+    it('should reject marketplace.json with non-string name', async () => {
       const marketplacePath = path.join(tempDir, 'marketplace.json')
       await fs.writeFile(
         marketplacePath,
         JSON.stringify({
-          name        : 123, // Should be string
-          version     : '1.0.0',
-          description : 'Test',
-          skillPath   : '.claude-plugin/skill',
+          name    : 123, // Should be string
+          owner   : { name : 'Test' },
+          plugins : [],
         })
       )
 
@@ -173,12 +167,11 @@ describe('Error handling', () => {
       }
       await fs.writeFile(settingsPath, JSON.stringify(initialSettings))
 
-      // Create test package
+      // Create test package with new marketplace format
       await createTestPackage(tempDir, 'test-pkg', {
         name        : 'test-plugin',
         version     : '1.0.0',
         description : 'Test',
-        skillPath   : '.claude-plugin/skill',
       })
 
       const providers = await scanDependencies(tempDir)
@@ -228,16 +221,20 @@ describe('Error handling', () => {
       await fs.writeFile(
         path.join(pkgPath, '.claude-plugin', 'marketplace.json'),
         JSON.stringify({
-          name        : 'broken-plugin',
-          version     : '1.0.0',
-          description : 'Test',
-          skillPath   : '.claude-plugin/skill',
+          name    : 'broken-marketplace',
+          owner   : { name : 'Test' },
+          plugins : [
+            {
+              name   : 'broken-plugin',
+              source : './plugin',
+            },
+          ],
         })
       )
 
       const providers = await scanDependencies(tempDir)
 
-      // Should still discover the plugin (uses directory name as fallback)
+      // Should still discover the marketplace (uses directory name as fallback)
       expect(providers).toHaveLength(1)
       expect(providers[0].packageName).toBe('broken-pkg')
       expect(providers[0].version).toBe('unknown')
@@ -252,21 +249,18 @@ describe('Error handling', () => {
         name        : 'plugin-1',
         version     : '1.0.0',
         description : 'Test 1',
-        skillPath   : '.claude-plugin/skill',
       })
 
       await createTestPackage(tempDir, 'pkg-2', {
         name        : 'plugin-2',
         version     : '1.0.0',
         description : 'Test 2',
-        skillPath   : '.claude-plugin/skill',
       })
 
       await createTestPackage(tempDir, 'pkg-3', {
         name        : 'plugin-3',
         version     : '1.0.0',
         description : 'Test 3',
-        skillPath   : '.claude-plugin/skill',
       })
 
       const providers = await scanDependencies(tempDir)

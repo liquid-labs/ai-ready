@@ -5,7 +5,7 @@ import { getPluginStates, readSettings } from '../storage/claude-settings'
 import { PLUGIN_STATUSES } from '../types'
 
 /**
- * @import { PluginProvider } from '../types.js'
+ * @import { MarketplaceProvider } from '../types.js'
  */
 
 /**
@@ -47,7 +47,7 @@ async function viewProjectPlugins(baseDir, settingsPath) {
   const providers = await scanDependencies(baseDir)
 
   if (providers.length === 0) {
-    console.log('No Claude Code plugins found in dependencies.\n')
+    console.log('No Claude Code plugin marketplaces found in dependencies.\n')
 
     return
   }
@@ -56,24 +56,30 @@ async function viewProjectPlugins(baseDir, settingsPath) {
   const settings = await readSettings(settingsPath)
   const states = getPluginStates(providers, settings)
 
-  // Display plugins
+  // Display marketplaces and plugins
   let enabledCount = 0
   let disabledCount = 0
   let notInstalledCount = 0
 
-  for (let i = 0; i < providers.length; i++) {
-    const provider = providers[i]
-    const state = states[i]
+  for (const provider of providers) {
+    const marketplace = provider.marketplaceDeclaration
+    console.log(`Marketplace: ${marketplace.name} (from ${provider.packageName} v${provider.version})`)
 
-    console.log(`Package: ${provider.packageName} (v${provider.version})`)
-    console.log(`  Plugin: ${state.name}`)
-    console.log(`  Status: ${formatStatus(state.status)}`)
-    console.log(`  Description: ${state.description}`)
+    for (const plugin of marketplace.plugins) {
+      const state = states.find((s) => s.name === plugin.name && s.marketplace === marketplace.name)
+
+      console.log(`  Plugin: ${plugin.name}`)
+      console.log(`    Status: ${formatStatus(state?.status || PLUGIN_STATUSES.NOT_INSTALLED)}`)
+      console.log(`    Source: ${typeof plugin.source === 'string' ? plugin.source : JSON.stringify(plugin.source)}`)
+      if (plugin.description) {
+        console.log(`    Description: ${plugin.description}`)
+      }
+
+      if (state?.status === PLUGIN_STATUSES.ENABLED) enabledCount++
+      else if (state?.status === PLUGIN_STATUSES.DISABLED) disabledCount++
+      else notInstalledCount++
+    }
     console.log()
-
-    if (state.status === PLUGIN_STATUSES.ENABLED) enabledCount++
-    else if (state.status === PLUGIN_STATUSES.DISABLED) disabledCount++
-    else notInstalledCount++
   }
 
   // Summary
@@ -81,7 +87,7 @@ async function viewProjectPlugins(baseDir, settingsPath) {
 
   // Restart warning if there are new plugins
   if (notInstalledCount > 0) {
-    console.log('\n⚠️  Run `air sync` to enable new plugins, then restart Claude Code\n')
+    console.log('\n  Run `air sync` to enable new plugins, then restart Claude Code\n')
   }
 }
 
@@ -106,21 +112,23 @@ async function viewAllPlugins(settingsPath) {
   let enabledCount = 0
   let disabledCount = 0
 
-  for (const pluginName of allPlugins) {
-    const isEnabled = settings.plugins.enabled.includes(pluginName)
+  for (const pluginKey of allPlugins) {
+    const isEnabled = settings.plugins.enabled.includes(pluginKey)
     const status = isEnabled ? PLUGIN_STATUSES.ENABLED : PLUGIN_STATUSES.DISABLED
+
+    // Parse plugin key (format: pluginName@marketplaceName)
+    const [pluginName, marketplaceName] = pluginKey.split('@')
 
     // Find source from marketplaces
     let source = '(not found)'
-    for (const [, marketplace] of Object.entries(settings.plugins.marketplaces)) {
-      if (marketplace.plugins[pluginName]) {
-        source = marketplace.source.path
-
-        break
-      }
+    const marketplace = settings.plugins.marketplaces[marketplaceName]
+    if (marketplace) {
+      const pluginMeta = marketplace.plugins[pluginName]
+      source = pluginMeta?.source || marketplace.source.path
     }
 
-    console.log(`Plugin: ${pluginName}`)
+    console.log(`Plugin: ${pluginKey}`)
+    console.log(`  Marketplace: ${marketplaceName || '(unknown)'}`)
     console.log(`  Source: ${source}`)
     console.log(`  Status: ${formatStatus(status)}`)
     console.log()

@@ -4,7 +4,7 @@ import { ClaudePluginConfig } from '../storage/claude-config'
 import { updateSettings } from '../storage/claude-settings'
 
 /**
- * @import { PluginProvider } from '../types.js'
+ * @import { MarketplaceProvider } from '../types.js'
  */
 
 /**
@@ -22,14 +22,19 @@ export async function pluginsSyncCommand(options = {}) {
 
   try {
     if (!quiet) {
-      console.log('Scanning dependencies for Claude Code plugins...')
+      console.log('Scanning dependencies for Claude Code plugin marketplaces...')
     }
 
     // Scan dependencies
     const providers = await scanDependencies(baseDir)
 
+    // Count total plugins across all marketplaces
+    const totalPlugins = providers.reduce((sum, p) => sum + p.marketplaceDeclaration.plugins.length, 0)
+
     if (!quiet) {
-      console.log(`Found ${providers.length} plugin${providers.length === 1 ? '' : 's'}\n`)
+      console.log(
+        `Found ${providers.length} marketplace${providers.length === 1 ? '' : 's'} with ${totalPlugins} plugin${totalPlugins === 1 ? '' : 's'}\n`
+      )
     }
 
     // Update settings (non-destructive merge)
@@ -45,8 +50,17 @@ export async function pluginsSyncCommand(options = {}) {
       if (changes.added.length > 0) {
         console.log('New plugins discovered:')
         for (const pluginName of changes.added) {
-          const provider = providers.find((p) => p.pluginDeclaration.name === pluginName)
-          console.log(`  • ${pluginName} (from ${provider.packageName} v${provider.version})`)
+          // Find the provider and plugin
+          for (const provider of providers) {
+            const plugin = provider.marketplaceDeclaration.plugins.find((p) => p.name === pluginName)
+            if (plugin) {
+              console.log(
+                `  • ${pluginName} (from ${provider.marketplaceDeclaration.name} in ${provider.packageName} v${provider.version})`
+              )
+
+              break
+            }
+          }
         }
         console.log()
       }
@@ -58,7 +72,7 @@ export async function pluginsSyncCommand(options = {}) {
         )
 
         if (changes.added.length > 0) {
-          console.log('⚠️  Restart Claude Code to load new plugins\n')
+          console.log('  Restart Claude Code to load new plugins\n')
         }
       }
       else {

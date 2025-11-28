@@ -1,4 +1,4 @@
-import { PLUGIN_STATUSES, isValidPluginProvider, isValidPluginState } from '_lib/types'
+import { PLUGIN_STATUSES, isValidMarketplaceProvider, isValidPluginEntry, isValidPluginState } from '_lib/types'
 
 describe('types', () => {
   describe('PLUGIN_STATUSES', () => {
@@ -9,75 +9,137 @@ describe('types', () => {
     })
   })
 
-  describe('isValidPluginProvider', () => {
-    it('should validate a valid PluginProvider', () => {
+  describe('isValidMarketplaceProvider', () => {
+    it('should validate a valid MarketplaceProvider', () => {
       const provider = {
-        packageName       : 'test-lib',
-        version           : '1.0.0',
-        path              : '/path/to/lib',
-        pluginDeclaration : {
-          name        : 'test-plugin',
-          version     : '1.0.0',
-          description : 'Test plugin',
-          skillPath   : '.claude-plugin/skill',
+        packageName            : 'test-lib',
+        version                : '1.0.0',
+        path                   : '/path/to/lib',
+        marketplaceDeclaration : {
+          name    : 'test-marketplace',
+          owner   : { name : 'Test Owner' },
+          plugins : [
+            {
+              name   : 'test-plugin',
+              source : './plugins/test',
+            },
+          ],
         },
       }
 
-      expect(isValidPluginProvider(provider)).toBe(true)
+      expect(isValidMarketplaceProvider(provider)).toBe(true)
     })
 
     it('should reject provider with missing packageName', () => {
       const provider = {
-        version           : '1.0.0',
-        path              : '/path',
-        pluginDeclaration : {
-          name        : 'test',
-          version     : '1.0.0',
-          description : 'Test',
-          skillPath   : 'skill',
+        version                : '1.0.0',
+        path                   : '/path',
+        marketplaceDeclaration : {
+          name    : 'test-marketplace',
+          owner   : {},
+          plugins : [],
         },
       }
 
-      expect(isValidPluginProvider(provider)).toBe(false)
+      expect(isValidMarketplaceProvider(provider)).toBe(false)
     })
 
     it('should reject provider with empty packageName', () => {
       const provider = {
-        packageName       : '',
-        version           : '1.0.0',
-        path              : '/path',
-        pluginDeclaration : {
-          name        : 'test',
-          version     : '1.0.0',
-          description : 'Test',
-          skillPath   : 'skill',
+        packageName            : '',
+        version                : '1.0.0',
+        path                   : '/path',
+        marketplaceDeclaration : {
+          name    : 'test-marketplace',
+          owner   : {},
+          plugins : [],
         },
       }
 
-      expect(isValidPluginProvider(provider)).toBe(false)
+      expect(isValidMarketplaceProvider(provider)).toBe(false)
     })
 
-    it('should reject provider with missing pluginDeclaration', () => {
+    it('should reject provider with missing marketplaceDeclaration', () => {
       const provider = {
         packageName : 'test-lib',
         version     : '1.0.0',
         path        : '/path',
       }
 
-      expect(isValidPluginProvider(provider)).toBe(false)
+      expect(isValidMarketplaceProvider(provider)).toBe(false)
     })
 
-    it('should reject provider with incomplete pluginDeclaration', () => {
+    it('should reject provider with incomplete marketplaceDeclaration', () => {
       const provider = {
-        packageName       : 'test-lib',
-        version           : '1.0.0',
-        path              : '/path',
-        pluginDeclaration : {
-          name : 'test',
+        packageName            : 'test-lib',
+        version                : '1.0.0',
+        path                   : '/path',
+        marketplaceDeclaration : {
+          name : 'test-marketplace',
         },
       }
 
-      expect(isValidPluginProvider(provider)).toBe(false)
+      expect(isValidMarketplaceProvider(provider)).toBe(false)
+    })
+
+    it('should reject provider with non-array plugins', () => {
+      const provider = {
+        packageName            : 'test-lib',
+        version                : '1.0.0',
+        path                   : '/path',
+        marketplaceDeclaration : {
+          name    : 'test-marketplace',
+          owner   : {},
+          plugins : 'not-an-array',
+        },
+      }
+
+      expect(isValidMarketplaceProvider(provider)).toBe(false)
+    })
+  })
+
+  describe('isValidPluginEntry', () => {
+    it('should validate a valid PluginEntry with string source', () => {
+      const plugin = {
+        name   : 'test-plugin',
+        source : './plugins/test',
+      }
+
+      expect(isValidPluginEntry(plugin)).toBe(true)
+    })
+
+    it('should validate a valid PluginEntry with object source', () => {
+      const plugin = {
+        name   : 'test-plugin',
+        source : { source : 'github', repo : 'owner/repo' },
+      }
+
+      expect(isValidPluginEntry(plugin)).toBe(true)
+    })
+
+    it('should reject plugin with missing name', () => {
+      const plugin = {
+        source : './plugins/test',
+      }
+
+      expect(isValidPluginEntry(plugin)).toBe(false)
+    })
+
+    it('should reject plugin with empty name', () => {
+      const plugin = {
+        name   : '',
+        source : './plugins/test',
+      }
+
+      expect(isValidPluginEntry(plugin)).toBe(false)
+    })
+
+    it('should reject plugin with missing source', () => {
+      const plugin = {
+        name : 'test-plugin',
+      }
+
+      expect(isValidPluginEntry(plugin)).toBe(false)
     })
   })
 

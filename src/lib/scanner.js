@@ -4,14 +4,14 @@ import path from 'path'
 import { parseMarketplaceJson } from './parsers/marketplace-json'
 
 /**
- * @import { PluginProvider } from './types.js'
+ * @import { MarketplaceProvider } from './types.js'
  */
 
 /**
  * Scan direct dependencies for packages with .claude-plugin/marketplace.json
  * Only scans packages listed in dependencies and devDependencies in package.json
  * @param {string} baseDir - Project root directory
- * @returns {Promise<PluginProvider[]>} Discovered plugin providers
+ * @returns {Promise<MarketplaceProvider[]>} Discovered marketplace providers
  */
 export async function scanDependencies(baseDir = process.cwd()) {
   const nodeModulesPath = path.resolve(baseDir, 'node_modules')
@@ -55,14 +55,14 @@ export async function scanDependencies(baseDir = process.cwd()) {
   // Scan packages in parallel
   const results = await Promise.all(packagePaths.map((pkg) => scanPackage(pkg)))
 
-  // Filter out null results (packages without plugins)
+  // Filter out null results (packages without marketplaces)
   return results.filter((provider) => provider !== null)
 }
 
 /**
- * Scan a single package for plugin declaration
+ * Scan a single package for marketplace declaration
  * @param {string} packagePath - Absolute path to package
- * @returns {Promise<PluginProvider|null>} Provider or null if no plugin
+ * @returns {Promise<MarketplaceProvider|null>} Provider or null if no marketplace
  */
 async function scanPackage(packagePath) {
   const marketplacePath = path.join(packagePath, '.claude-plugin', 'marketplace.json')
@@ -94,7 +94,7 @@ async function scanPackage(packagePath) {
   return {
     packageName,
     version,
-    path              : canonicalPath,
-    pluginDeclaration : declaration,
+    path                   : canonicalPath,
+    marketplaceDeclaration : declaration,
   }
 }

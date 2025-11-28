@@ -30,7 +30,6 @@ describe('plugins view command', () => {
         name        : 'test-plugin',
         version     : '1.0.0',
         description : 'Test plugin',
-        skillPath   : '.claude-plugin/skill',
       })
       await createPackageJson(tempDir, ['test-lib'])
 
@@ -60,21 +59,26 @@ describe('plugins view command', () => {
         name        : 'enabled-plugin',
         version     : '1.0.0',
         description : 'Enabled plugin',
-        skillPath   : '.claude-plugin/skill',
       })
       await createPackageJson(tempDir, ['enabled-lib'])
 
-      // Mark plugin as enabled
+      // Mark plugin as enabled using new format
       await updateSettings(settingsPath, [
         {
-          packageName       : 'enabled-lib',
-          path              : path.join(tempDir, 'node_modules', 'enabled-lib'),
-          version           : '1.0.0',
-          pluginDeclaration : {
-            name        : 'enabled-plugin',
-            version     : '1.0.0',
-            description : 'Enabled plugin',
-            skillPath   : '.claude-plugin/skill',
+          packageName            : 'enabled-lib',
+          path                   : path.join(tempDir, 'node_modules', 'enabled-lib'),
+          version                : '1.0.0',
+          marketplaceDeclaration : {
+            name    : 'enabled-lib-marketplace',
+            owner   : { name : 'Test' },
+            plugins : [
+              {
+                name        : 'enabled-plugin',
+                source      : './plugin',
+                version     : '1.0.0',
+                description : 'Enabled plugin',
+              },
+            ],
           },
         },
       ])
@@ -102,7 +106,6 @@ describe('plugins view command', () => {
         name        : 'disabled-plugin',
         version     : '1.0.0',
         description : 'Disabled plugin',
-        skillPath   : '.claude-plugin/skill',
       })
       await createPackageJson(tempDir, ['disabled-lib'])
 
@@ -152,7 +155,7 @@ describe('plugins view command', () => {
 
       const output = logs.join('\n')
 
-      expect(output).toContain('No Claude Code plugins found in dependencies.')
+      expect(output).toContain('No Claude Code plugin marketplaces found in dependencies.')
     })
 
     it('should handle multiple plugins', async () => {
@@ -160,14 +163,12 @@ describe('plugins view command', () => {
         name        : 'plugin-1',
         version     : '1.0.0',
         description : 'First plugin',
-        skillPath   : '.claude-plugin/skill',
       })
 
       await createTestPackage(tempDir, 'lib-2', {
         name        : 'plugin-2',
         version     : '2.0.0',
         description : 'Second plugin',
-        skillPath   : '.claude-plugin/skill',
       })
       await createPackageJson(tempDir, ['lib-1', 'lib-2'])
 
@@ -195,7 +196,6 @@ describe('plugins view command', () => {
         name        : 'new-plugin',
         version     : '1.0.0',
         description : 'New plugin',
-        skillPath   : '.claude-plugin/skill',
       })
       await createPackageJson(tempDir, ['new-lib'])
 
@@ -213,7 +213,7 @@ describe('plugins view command', () => {
 
       const output = logs.join('\n')
 
-      expect(output).toContain('⚠️  Run `air sync` to enable new plugins, then restart Claude Code')
+      expect(output).toContain('Run `air sync` to enable new plugins, then restart Claude Code')
     })
   })
 
@@ -234,8 +234,8 @@ describe('plugins view command', () => {
                 },
                 plugins : {
                   'plugin-a' : {
-                    version   : '1.0.0',
-                    skillPath : '.claude-plugin/skill',
+                    version : '1.0.0',
+                    source  : './plugins/a',
                   },
                 },
               },
@@ -246,8 +246,8 @@ describe('plugins view command', () => {
                 },
                 plugins : {
                   'plugin-b' : {
-                    version   : '2.0.0',
-                    skillPath : '.claude-plugin/skill',
+                    version : '2.0.0',
+                    source  : './plugins/b',
                   },
                 },
               },
@@ -258,8 +258,8 @@ describe('plugins view command', () => {
                 },
                 plugins : {
                   'plugin-c' : {
-                    version   : '3.0.0',
-                    skillPath : '.claude-plugin/skill',
+                    version : '3.0.0',
+                    source  : './plugins/c',
                   },
                 },
               },

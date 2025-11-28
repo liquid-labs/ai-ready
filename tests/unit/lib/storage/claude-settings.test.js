@@ -41,8 +41,8 @@ describe('claude-settings', () => {
               },
               plugins : {
                 'plugin-a' : {
-                  version   : '1.0.0',
-                  skillPath : '.claude-plugin/skill',
+                  version : '1.0.0',
+                  source  : './plugins/a',
                 },
               },
             },
@@ -112,14 +112,20 @@ describe('claude-settings', () => {
     it('should add new plugin to enabled list', async () => {
       const providers = [
         {
-          packageName       : 'test-package',
-          path              : '/path/to/test-package',
-          version           : '1.0.0',
-          pluginDeclaration : {
-            name        : 'test-plugin',
-            version     : '1.0.0',
-            description : 'Test plugin',
-            skillPath   : '.claude-plugin/skill',
+          packageName            : 'test-package',
+          path                   : '/path/to/test-package',
+          version                : '1.0.0',
+          marketplaceDeclaration : {
+            name    : 'test-marketplace',
+            owner   : { name : 'Test Owner' },
+            plugins : [
+              {
+                name        : 'test-plugin',
+                source      : './plugin',
+                version     : '1.0.0',
+                description : 'Test plugin',
+              },
+            ],
           },
         },
       ]
@@ -131,8 +137,8 @@ describe('claude-settings', () => {
 
       const settings = await readSettings(settingsPath)
 
-      expect(settings.plugins.enabled).toContain('test-plugin@test-package-marketplace')
-      expect(settings.plugins.marketplaces['test-package-marketplace']).toBeDefined()
+      expect(settings.plugins.enabled).toContain('test-plugin@test-marketplace')
+      expect(settings.plugins.marketplaces['test-marketplace']).toBeDefined()
     })
 
     it('should not add disabled plugin to enabled list', async () => {
@@ -140,7 +146,7 @@ describe('claude-settings', () => {
       const existingSettings = {
         plugins : {
           enabled      : [],
-          disabled     : ['test-plugin@test-package-marketplace'],
+          disabled     : ['test-plugin@test-marketplace'],
           marketplaces : {},
         },
       }
@@ -148,14 +154,20 @@ describe('claude-settings', () => {
 
       const providers = [
         {
-          packageName       : 'test-package',
-          path              : '/path/to/test-package',
-          version           : '1.0.0',
-          pluginDeclaration : {
-            name        : 'test-plugin',
-            version     : '1.0.0',
-            description : 'Test plugin',
-            skillPath   : '.claude-plugin/skill',
+          packageName            : 'test-package',
+          path                   : '/path/to/test-package',
+          version                : '1.0.0',
+          marketplaceDeclaration : {
+            name    : 'test-marketplace',
+            owner   : { name : 'Test Owner' },
+            plugins : [
+              {
+                name        : 'test-plugin',
+                source      : './plugin',
+                version     : '1.0.0',
+                description : 'Test plugin',
+              },
+            ],
           },
         },
       ]
@@ -167,26 +179,26 @@ describe('claude-settings', () => {
 
       const settings = await readSettings(settingsPath)
 
-      expect(settings.plugins.enabled).not.toContain('test-plugin@test-package-marketplace')
-      expect(settings.plugins.disabled).toContain('test-plugin@test-package-marketplace')
+      expect(settings.plugins.enabled).not.toContain('test-plugin@test-marketplace')
+      expect(settings.plugins.disabled).toContain('test-plugin@test-marketplace')
     })
 
     it('should update marketplace entry for existing plugin', async () => {
       // Set up existing settings
       const existingSettings = {
         plugins : {
-          enabled      : ['test-plugin@test-package-marketplace'],
+          enabled      : ['test-plugin@test-marketplace'],
           disabled     : [],
           marketplaces : {
-            'test-package-marketplace' : {
+            'test-marketplace' : {
               source : {
                 type : 'directory',
                 path : '/old/path',
               },
               plugins : {
                 'test-plugin' : {
-                  version   : '0.9.0',
-                  skillPath : '.claude-plugin/skill',
+                  version : '0.9.0',
+                  source  : './plugin',
                 },
               },
             },
@@ -197,14 +209,20 @@ describe('claude-settings', () => {
 
       const providers = [
         {
-          packageName       : 'test-package',
-          path              : '/new/path',
-          version           : '1.0.0',
-          pluginDeclaration : {
-            name        : 'test-plugin',
-            version     : '1.0.0',
-            description : 'Test plugin',
-            skillPath   : '.claude-plugin/skill',
+          packageName            : 'test-package',
+          path                   : '/new/path',
+          version                : '1.0.0',
+          marketplaceDeclaration : {
+            name    : 'test-marketplace',
+            owner   : { name : 'Test Owner' },
+            plugins : [
+              {
+                name        : 'test-plugin',
+                source      : './plugin',
+                version     : '1.0.0',
+                description : 'Test plugin',
+              },
+            ],
           },
         },
       ]
@@ -216,32 +234,44 @@ describe('claude-settings', () => {
 
       const settings = await readSettings(settingsPath)
 
-      expect(settings.plugins.marketplaces['test-package-marketplace'].source.path).toBe('/new/path')
-      expect(settings.plugins.marketplaces['test-package-marketplace'].plugins['test-plugin'].version).toBe('1.0.0')
+      expect(settings.plugins.marketplaces['test-marketplace'].source.path).toBe('/new/path')
+      expect(settings.plugins.marketplaces['test-marketplace'].plugins['test-plugin'].version).toBe('1.0.0')
     })
 
     it('should handle multiple providers', async () => {
       const providers = [
         {
-          packageName       : 'package-a',
-          path              : '/path/a',
-          version           : '1.0.0',
-          pluginDeclaration : {
-            name        : 'plugin-a',
-            version     : '1.0.0',
-            description : 'Plugin A',
-            skillPath   : '.claude-plugin/skill',
+          packageName            : 'package-a',
+          path                   : '/path/a',
+          version                : '1.0.0',
+          marketplaceDeclaration : {
+            name    : 'marketplace-a',
+            owner   : { name : 'Test' },
+            plugins : [
+              {
+                name        : 'plugin-a',
+                source      : './plugin',
+                version     : '1.0.0',
+                description : 'Plugin A',
+              },
+            ],
           },
         },
         {
-          packageName       : 'package-b',
-          path              : '/path/b',
-          version           : '2.0.0',
-          pluginDeclaration : {
-            name        : 'plugin-b',
-            version     : '2.0.0',
-            description : 'Plugin B',
-            skillPath   : '.claude-plugin/skill',
+          packageName            : 'package-b',
+          path                   : '/path/b',
+          version                : '2.0.0',
+          marketplaceDeclaration : {
+            name    : 'marketplace-b',
+            owner   : { name : 'Test' },
+            plugins : [
+              {
+                name        : 'plugin-b',
+                source      : './plugin',
+                version     : '2.0.0',
+                description : 'Plugin B',
+              },
+            ],
           },
         },
       ]
@@ -252,9 +282,38 @@ describe('claude-settings', () => {
 
       const settings = await readSettings(settingsPath)
 
-      expect(settings.plugins.enabled).toEqual(['plugin-a@package-a-marketplace', 'plugin-b@package-b-marketplace'])
-      expect(settings.plugins.marketplaces['package-a-marketplace']).toBeDefined()
-      expect(settings.plugins.marketplaces['package-b-marketplace']).toBeDefined()
+      expect(settings.plugins.enabled).toEqual(['plugin-a@marketplace-a', 'plugin-b@marketplace-b'])
+      expect(settings.plugins.marketplaces['marketplace-a']).toBeDefined()
+      expect(settings.plugins.marketplaces['marketplace-b']).toBeDefined()
+    })
+
+    it('should handle marketplace with multiple plugins', async () => {
+      const providers = [
+        {
+          packageName            : 'multi-package',
+          path                   : '/path/multi',
+          version                : '1.0.0',
+          marketplaceDeclaration : {
+            name    : 'multi-marketplace',
+            owner   : { name : 'Test' },
+            plugins : [
+              { name : 'plugin-a', source : './plugins/a', version : '1.0.0' },
+              { name : 'plugin-b', source : './plugins/b', version : '2.0.0' },
+            ],
+          },
+        },
+      ]
+
+      const changes = await updateSettings(settingsPath, providers)
+
+      expect(changes.added).toEqual(['plugin-a', 'plugin-b'])
+
+      const settings = await readSettings(settingsPath)
+
+      expect(settings.plugins.enabled).toContain('plugin-a@multi-marketplace')
+      expect(settings.plugins.enabled).toContain('plugin-b@multi-marketplace')
+      expect(settings.plugins.marketplaces['multi-marketplace'].plugins['plugin-a']).toBeDefined()
+      expect(settings.plugins.marketplaces['multi-marketplace'].plugins['plugin-b']).toBeDefined()
     })
 
     it('should not write settings if no changes', async () => {
@@ -262,17 +321,17 @@ describe('claude-settings', () => {
       const existingSettings = {
         plugins : {
           enabled      : [],
-          disabled     : ['test-plugin@test-package-marketplace'],
+          disabled     : ['test-plugin@test-marketplace'],
           marketplaces : {
-            'test-package-marketplace' : {
+            'test-marketplace' : {
               source : {
                 type : 'directory',
                 path : '/path/to/test-package',
               },
               plugins : {
                 'test-plugin' : {
-                  version   : '1.0.0',
-                  skillPath : '.claude-plugin/skill',
+                  version : '1.0.0',
+                  source  : './plugin',
                 },
               },
             },
@@ -287,14 +346,20 @@ describe('claude-settings', () => {
 
       const providers = [
         {
-          packageName       : 'test-package',
-          path              : '/path/to/test-package',
-          version           : '1.0.0',
-          pluginDeclaration : {
-            name        : 'test-plugin',
-            version     : '1.0.0',
-            description : 'Test plugin',
-            skillPath   : '.claude-plugin/skill',
+          packageName            : 'test-package',
+          path                   : '/path/to/test-package',
+          version                : '1.0.0',
+          marketplaceDeclaration : {
+            name    : 'test-marketplace',
+            owner   : { name : 'Test Owner' },
+            plugins : [
+              {
+                name        : 'test-plugin',
+                source      : './plugin',
+                version     : '1.0.0',
+                description : 'Test plugin',
+              },
+            ],
           },
         },
       ]
@@ -320,14 +385,20 @@ describe('claude-settings', () => {
 
       const providers = [
         {
-          packageName       : 'test-package',
-          path              : '/path/to/test-package',
-          version           : '1.0.0',
-          pluginDeclaration : {
-            name        : 'test-plugin',
-            version     : '1.0.0',
-            description : 'Test plugin',
-            skillPath   : '.claude-plugin/skill',
+          packageName            : 'test-package',
+          path                   : '/path/to/test-package',
+          version                : '1.0.0',
+          marketplaceDeclaration : {
+            name    : 'test-marketplace',
+            owner   : { name : 'Test Owner' },
+            plugins : [
+              {
+                name        : 'test-plugin',
+                source      : './plugin',
+                version     : '1.0.0',
+                description : 'Test plugin',
+              },
+            ],
           },
         },
       ]
@@ -361,14 +432,20 @@ describe('claude-settings', () => {
 
       const providers = [
         {
-          packageName       : 'test-package',
-          path              : '/path/to/test-package',
-          version           : '1.0.0',
-          pluginDeclaration : {
-            name        : 'test-plugin',
-            version     : '1.0.0',
-            description : 'Test plugin',
-            skillPath   : '.claude-plugin/skill',
+          packageName            : 'test-package',
+          path                   : '/path/to/test-package',
+          version                : '1.0.0',
+          marketplaceDeclaration : {
+            name    : 'test-marketplace',
+            owner   : { name : 'Test Owner' },
+            plugins : [
+              {
+                name        : 'test-plugin',
+                source      : './plugin',
+                version     : '1.0.0',
+                description : 'Test plugin',
+              },
+            ],
           },
         },
       ]
@@ -386,25 +463,25 @@ describe('claude-settings', () => {
     it('should return enabled for enabled plugin', () => {
       const settings = {
         plugins : {
-          enabled      : ['test-plugin@test-package-marketplace'],
+          enabled      : ['test-plugin@test-marketplace'],
           disabled     : [],
           marketplaces : {},
         },
       }
 
-      expect(getPluginState('test-plugin', 'test-package', settings)).toBe(PLUGIN_STATUSES.ENABLED)
+      expect(getPluginState('test-plugin', 'test-marketplace', settings)).toBe(PLUGIN_STATUSES.ENABLED)
     })
 
     it('should return disabled for disabled plugin', () => {
       const settings = {
         plugins : {
           enabled      : [],
-          disabled     : ['test-plugin@test-package-marketplace'],
+          disabled     : ['test-plugin@test-marketplace'],
           marketplaces : {},
         },
       }
 
-      expect(getPluginState('test-plugin', 'test-package', settings)).toBe(PLUGIN_STATUSES.DISABLED)
+      expect(getPluginState('test-plugin', 'test-marketplace', settings)).toBe(PLUGIN_STATUSES.DISABLED)
     })
 
     it('should return not-installed for unknown plugin', () => {
@@ -416,41 +493,53 @@ describe('claude-settings', () => {
         },
       }
 
-      expect(getPluginState('unknown-plugin', 'unknown-package', settings)).toBe(PLUGIN_STATUSES.NOT_INSTALLED)
+      expect(getPluginState('unknown-plugin', 'unknown-marketplace', settings)).toBe(PLUGIN_STATUSES.NOT_INSTALLED)
     })
   })
 
   describe('getPluginStates', () => {
-    it('should return states for all providers', () => {
+    it('should return states for all plugins in providers', () => {
       const providers = [
         {
-          packageName       : 'package-a',
-          path              : '/path/a',
-          version           : '1.0.0',
-          pluginDeclaration : {
-            name        : 'plugin-a',
-            version     : '1.0.0',
-            description : 'Plugin A',
-            skillPath   : '.claude-plugin/skill',
+          packageName            : 'package-a',
+          path                   : '/path/a',
+          version                : '1.0.0',
+          marketplaceDeclaration : {
+            name    : 'marketplace-a',
+            owner   : { name : 'Test' },
+            plugins : [
+              {
+                name        : 'plugin-a',
+                source      : './plugin',
+                version     : '1.0.0',
+                description : 'Plugin A',
+              },
+            ],
           },
         },
         {
-          packageName       : 'package-b',
-          path              : '/path/b',
-          version           : '2.0.0',
-          pluginDeclaration : {
-            name        : 'plugin-b',
-            version     : '2.0.0',
-            description : 'Plugin B',
-            skillPath   : '.claude-plugin/skill',
+          packageName            : 'package-b',
+          path                   : '/path/b',
+          version                : '2.0.0',
+          marketplaceDeclaration : {
+            name    : 'marketplace-b',
+            owner   : { name : 'Test' },
+            plugins : [
+              {
+                name        : 'plugin-b',
+                source      : './plugin',
+                version     : '2.0.0',
+                description : 'Plugin B',
+              },
+            ],
           },
         },
       ]
 
       const settings = {
         plugins : {
-          enabled      : ['plugin-a@package-a-marketplace'],
-          disabled     : ['plugin-b@package-b-marketplace'],
+          enabled      : ['plugin-a@marketplace-a'],
+          disabled     : ['plugin-b@marketplace-b'],
           marketplaces : {},
         },
       }
@@ -461,17 +550,53 @@ describe('claude-settings', () => {
       expect(states[0]).toMatchObject({
         name        : 'plugin-a',
         status      : PLUGIN_STATUSES.ENABLED,
-        source      : '/path/a',
+        source      : './plugin',
         version     : '1.0.0',
         description : 'Plugin A',
+        marketplace : 'marketplace-a',
       })
       expect(states[1]).toMatchObject({
         name        : 'plugin-b',
         status      : PLUGIN_STATUSES.DISABLED,
-        source      : '/path/b',
+        source      : './plugin',
         version     : '2.0.0',
         description : 'Plugin B',
+        marketplace : 'marketplace-b',
       })
+    })
+
+    it('should handle marketplace with multiple plugins', () => {
+      const providers = [
+        {
+          packageName            : 'multi-package',
+          path                   : '/path/multi',
+          version                : '1.0.0',
+          marketplaceDeclaration : {
+            name    : 'multi-marketplace',
+            owner   : { name : 'Test' },
+            plugins : [
+              { name : 'plugin-a', source : './plugins/a', version : '1.0.0', description : 'Plugin A' },
+              { name : 'plugin-b', source : './plugins/b', version : '2.0.0', description : 'Plugin B' },
+            ],
+          },
+        },
+      ]
+
+      const settings = {
+        plugins : {
+          enabled      : ['plugin-a@multi-marketplace'],
+          disabled     : [],
+          marketplaces : {},
+        },
+      }
+
+      const states = getPluginStates(providers, settings)
+
+      expect(states).toHaveLength(2)
+      expect(states[0].name).toBe('plugin-a')
+      expect(states[0].status).toBe(PLUGIN_STATUSES.ENABLED)
+      expect(states[1].name).toBe('plugin-b')
+      expect(states[1].status).toBe(PLUGIN_STATUSES.NOT_INSTALLED)
     })
   })
 })

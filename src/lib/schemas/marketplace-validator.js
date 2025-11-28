@@ -1,8 +1,9 @@
 import Ajv from 'ajv'
-import addFormats from 'ajv-formats'
 import ajvErrors from 'ajv-errors'
+import addFormats from 'ajv-formats'
 
 import marketplaceSchema from './claude-marketplace-schema.json'
+import pluginManifestSchema from './plugin-manifest-schema.json'
 
 /**
  * @typedef {object} ValidationResult
@@ -12,7 +13,7 @@ import marketplaceSchema from './claude-marketplace-schema.json'
 
 /**
  * @typedef {object} ValidationError
- * @property {string} field - Field path that failed validation (e.g., "name", "skillPath")
+ * @property {string} field - Field path that failed validation (e.g., "name", "plugins[0].source")
  * @property {string} message - Human-readable error message
  * @property {string} [keyword] - JSON Schema keyword that failed (e.g., "required", "pattern")
  * @property {*} [value] - The invalid value (if applicable)
@@ -31,8 +32,9 @@ addFormats(ajv)
 // Add custom error messages support
 ajvErrors(ajv)
 
-// Compile the schema
-const validate = ajv.compile(marketplaceSchema)
+// Compile the schemas
+const validateMarketplace = ajv.compile(marketplaceSchema)
+const validatePluginManifest = ajv.compile(pluginManifestSchema)
 
 /**
  * Validate marketplace.json data against the schema
@@ -40,13 +42,30 @@ const validate = ajv.compile(marketplaceSchema)
  * @returns {ValidationResult} Validation result with detailed errors
  */
 export function validateMarketplaceSchema(data) {
-  const valid = validate(data)
+  const valid = validateMarketplace(data)
 
   if (valid) {
     return { valid : true, errors : [] }
   }
 
-  const errors = formatErrors(validate.errors)
+  const errors = formatErrors(validateMarketplace.errors)
+
+  return { valid : false, errors }
+}
+
+/**
+ * Validate plugin.json data against the schema
+ * @param {object} data - Parsed JSON data to validate
+ * @returns {ValidationResult} Validation result with detailed errors
+ */
+export function validatePluginManifestSchema(data) {
+  const valid = validatePluginManifest(data)
+
+  if (valid) {
+    return { valid : true, errors : [] }
+  }
+
+  const errors = formatErrors(validatePluginManifest.errors)
 
   return { valid : false, errors }
 }
@@ -121,7 +140,9 @@ function getFieldName(error) {
 
     // Required errors have the missing property in params
     if (originalError.keyword === 'required' && originalError.params?.missingProperty) {
-      return originalError.params.missingProperty
+      const basePath = originalError.instancePath.replace(/^\//, '').replace(/\//g, '.')
+
+      return basePath ? `${basePath}.${originalError.params.missingProperty}` : originalError.params.missingProperty
     }
 
     // Other errors have the field in instancePath
@@ -132,11 +153,12 @@ function getFieldName(error) {
 
   // For direct 'required' errors (not wrapped)
   if (error.keyword === 'required' && error.params?.missingProperty) {
-    return error.params.missingProperty
+    const basePath = error.instancePath.replace(/^\//, '').replace(/\//g, '.')
+
+    return basePath ? `${basePath}.${error.params.missingProperty}` : error.params.missingProperty
   }
 
   // For other errors, extract from instancePath
-  // instancePath is like "/name" or "/skillPath"
   if (error.instancePath) {
     return error.instancePath.replace(/^\//, '').replace(/\//g, '.')
   }
@@ -169,9 +191,7 @@ export function formatValidationSummary(errors) {
  * @returns {string[]} List of missing field names
  */
 export function getMissingFields(errors) {
-  return errors
-    .filter((e) => e.message?.startsWith('Missing required field'))
-    .map((e) => e.field)
+  return errors.filter((e) => e.message?.startsWith('Missing required field')).map((e) => e.field)
 }
 
 /**
@@ -180,7 +200,5 @@ export function getMissingFields(errors) {
  * @returns {string[]} List of invalid field names
  */
 export function getInvalidFields(errors) {
-  return errors
-    .filter((e) => !e.message?.startsWith('Missing required field'))
-    .map((e) => e.field)
+  return errors.filter((e) => !e.message?.startsWith('Missing required field')).map((e) => e.field)
 }
