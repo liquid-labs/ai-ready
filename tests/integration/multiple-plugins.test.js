@@ -56,17 +56,23 @@ describe('Integration: Multiple Plugins', () => {
       await fs.mkdir(pluginDir, { recursive : true })
 
       const marketplaceJson = {
-        name        : 'PluginSuiteMain',
-        version     : '1.0.0',
-        description : 'Main plugin from suite',
-        skillPath   : '.claude-plugin/skill-main',
+        name    : 'plugin-suite-marketplace',
+        owner   : { name : 'Test Owner' },
+        plugins : [
+          {
+            name        : 'plugin-suite-main',
+            version     : '1.0.0',
+            description : 'Main plugin from suite',
+            source      : '.claude-plugin/skill-main',
+          },
+        ],
       }
       await fs.writeFile(path.join(pluginDir, 'marketplace.json'), JSON.stringify(marketplaceJson, null, 2))
 
       // Create skill directory
       const skillPath = path.join(packagePath, '.claude-plugin/skill-main')
       await fs.mkdir(skillPath, { recursive : true })
-      await fs.writeFile(path.join(skillPath, 'SKILL.md'), '# PluginSuiteMain\n\nMain plugin from suite')
+      await fs.writeFile(path.join(skillPath, 'SKILL.md'), '# plugin-suite-main\n\nMain plugin from suite')
 
       // Run sync
       const result = await runCLI(['sync'], projectDir, { env : { HOME : projectDir } })
@@ -76,9 +82,9 @@ describe('Integration: Multiple Plugins', () => {
       const settings = await readJsonFile(settingsPath)
 
       // Verify plugin was enabled
-      expect(settings.plugins.enabled).toContain('PluginSuiteMain@plugin-suite-marketplace')
+      expect(settings.plugins.enabled).toContain('plugin-suite-main@plugin-suite-marketplace')
       expect(settings.plugins.marketplaces['plugin-suite-marketplace']).toBeDefined()
-      expect(settings.plugins.marketplaces['plugin-suite-marketplace'].plugins.PluginSuiteMain).toBeDefined()
+      expect(settings.plugins.marketplaces['plugin-suite-marketplace'].plugins['plugin-suite-main']).toBeDefined()
     })
 
     it('should handle package with plugins in different directories', async () => {
@@ -109,16 +115,22 @@ describe('Integration: Multiple Plugins', () => {
       await fs.mkdir(pluginDir, { recursive : true })
 
       const marketplaceJson = {
-        name        : 'OrganizedPlugin',
-        version     : '1.0.0',
-        description : 'Main organized plugin',
-        skillPath   : 'plugins/main',
+        name    : 'organized-plugins-marketplace',
+        owner   : { name : 'Test Owner' },
+        plugins : [
+          {
+            name        : 'organized-plugin',
+            version     : '1.0.0',
+            description : 'Main organized plugin',
+            source      : 'plugins/main',
+          },
+        ],
       }
       await fs.writeFile(path.join(pluginDir, 'marketplace.json'), JSON.stringify(marketplaceJson, null, 2))
 
       const skillPath = path.join(packagePath, 'plugins/main')
       await fs.mkdir(skillPath, { recursive : true })
-      await fs.writeFile(path.join(skillPath, 'SKILL.md'), '# OrganizedPlugin\n\nOrganized plugin')
+      await fs.writeFile(path.join(skillPath, 'SKILL.md'), '# organized-plugin\n\nOrganized plugin')
 
       const result = await runCLI(['sync'], projectDir, { env : { HOME : projectDir } })
       expect(result.exitCode).toBe(0)
@@ -126,9 +138,9 @@ describe('Integration: Multiple Plugins', () => {
       const settingsPath = path.join(projectDir, '.claude/settings.json')
       const settings = await readJsonFile(settingsPath)
 
-      expect(settings.plugins.enabled).toContain('OrganizedPlugin@organized-plugins-marketplace')
+      expect(settings.plugins.enabled).toContain('organized-plugin@organized-plugins-marketplace')
       const marketplace = settings.plugins.marketplaces['organized-plugins-marketplace']
-      expect(marketplace.plugins.OrganizedPlugin.skillPath).toBe('plugins/main')
+      expect(marketplace.plugins['organized-plugin'].source).toBe('plugins/main')
     })
   })
 
@@ -163,10 +175,16 @@ describe('Integration: Multiple Plugins', () => {
         path.join(pluginDirA, 'marketplace.json'),
         JSON.stringify(
           {
-            name        : 'HelperPlugin',
-            version     : '1.0.0',
-            description : 'Helper from package A',
-            skillPath   : '.claude-plugin/skill',
+            name    : 'package-a-marketplace',
+            owner   : { name : 'Test Owner' },
+            plugins : [
+              {
+                name        : 'helper-plugin',
+                version     : '1.0.0',
+                description : 'Helper from package A',
+                source      : '.claude-plugin/skill',
+              },
+            ],
           },
           null,
           2
@@ -175,7 +193,7 @@ describe('Integration: Multiple Plugins', () => {
 
       const skillPathA = path.join(packageAPath, '.claude-plugin/skill')
       await fs.mkdir(skillPathA, { recursive : true })
-      await fs.writeFile(path.join(skillPathA, 'SKILL.md'), '# HelperPlugin A')
+      await fs.writeFile(path.join(skillPathA, 'SKILL.md'), '# helper-plugin A')
 
       // Create package-b with HelperPlugin (same name)
       const packageBPath = path.join(projectDir, 'node_modules/package-b')
@@ -193,10 +211,16 @@ describe('Integration: Multiple Plugins', () => {
         path.join(pluginDirB, 'marketplace.json'),
         JSON.stringify(
           {
-            name        : 'HelperPlugin',
-            version     : '2.0.0',
-            description : 'Helper from package B',
-            skillPath   : '.claude-plugin/skill',
+            name    : 'package-b-marketplace',
+            owner   : { name : 'Test Owner' },
+            plugins : [
+              {
+                name        : 'helper-plugin',
+                version     : '2.0.0',
+                description : 'Helper from package B',
+                source      : '.claude-plugin/skill',
+              },
+            ],
           },
           null,
           2
@@ -205,7 +229,7 @@ describe('Integration: Multiple Plugins', () => {
 
       const skillPathB = path.join(packageBPath, '.claude-plugin/skill')
       await fs.mkdir(skillPathB, { recursive : true })
-      await fs.writeFile(path.join(skillPathB, 'SKILL.md'), '# HelperPlugin B')
+      await fs.writeFile(path.join(skillPathB, 'SKILL.md'), '# helper-plugin B')
 
       const result = await runCLI(['sync'], projectDir, { env : { HOME : projectDir } })
       expect(result.exitCode).toBe(0)
@@ -214,16 +238,16 @@ describe('Integration: Multiple Plugins', () => {
       const settings = await readJsonFile(settingsPath)
 
       // Both should be enabled under different marketplace names
-      expect(settings.plugins.enabled).toContain('HelperPlugin@package-a-marketplace')
-      expect(settings.plugins.enabled).toContain('HelperPlugin@package-b-marketplace')
+      expect(settings.plugins.enabled).toContain('helper-plugin@package-a-marketplace')
+      expect(settings.plugins.enabled).toContain('helper-plugin@package-b-marketplace')
 
       // Both marketplaces should exist
       expect(settings.plugins.marketplaces['package-a-marketplace']).toBeDefined()
       expect(settings.plugins.marketplaces['package-b-marketplace']).toBeDefined()
 
-      // Each marketplace should have its own HelperPlugin
-      expect(settings.plugins.marketplaces['package-a-marketplace'].plugins.HelperPlugin).toBeDefined()
-      expect(settings.plugins.marketplaces['package-b-marketplace'].plugins.HelperPlugin).toBeDefined()
+      // Each marketplace should have its own helper-plugin
+      expect(settings.plugins.marketplaces['package-a-marketplace'].plugins['helper-plugin']).toBeDefined()
+      expect(settings.plugins.marketplaces['package-b-marketplace'].plugins['helper-plugin']).toBeDefined()
     })
 
     it('should handle multiple packages from same organization', async () => {
@@ -244,10 +268,10 @@ describe('Integration: Multiple Plugins', () => {
       // Create three plugins from same org
       await Promise.all(
         [
-          ['@myorg/core-plugin', 'CorePlugin'],
-          ['@myorg/utils-plugin', 'UtilsPlugin'],
-          ['@myorg/ext-plugin', 'ExtPlugin'],
-        ].map(async ([pkg, pluginName]) => {
+          ['@myorg/core-plugin', 'core-plugin', 'myorg-core-plugin-marketplace'],
+          ['@myorg/utils-plugin', 'utils-plugin', 'myorg-utils-plugin-marketplace'],
+          ['@myorg/ext-plugin', 'ext-plugin', 'myorg-ext-plugin-marketplace'],
+        ].map(async ([pkg, pluginName, marketplaceName]) => {
           const packagePath = path.join(projectDir, `node_modules/${pkg}`)
           await fs.mkdir(packagePath, { recursive : true })
 
@@ -263,10 +287,16 @@ describe('Integration: Multiple Plugins', () => {
             path.join(pluginDir, 'marketplace.json'),
             JSON.stringify(
               {
-                name        : pluginName,
-                version     : '1.0.0',
-                description : `${pluginName} from ${pkg}`,
-                skillPath   : '.claude-plugin/skill',
+                name    : marketplaceName,
+                owner   : { name : 'Test Owner' },
+                plugins : [
+                  {
+                    name        : pluginName,
+                    version     : '1.0.0',
+                    description : `${pluginName} from ${pkg}`,
+                    source      : '.claude-plugin/skill',
+                  },
+                ],
               },
               null,
               2
@@ -286,9 +316,9 @@ describe('Integration: Multiple Plugins', () => {
       const settings = await readJsonFile(settingsPath)
 
       // All three should be enabled
-      expect(settings.plugins.enabled).toContain('CorePlugin@myorg-core-plugin-marketplace')
-      expect(settings.plugins.enabled).toContain('UtilsPlugin@myorg-utils-plugin-marketplace')
-      expect(settings.plugins.enabled).toContain('ExtPlugin@myorg-ext-plugin-marketplace')
+      expect(settings.plugins.enabled).toContain('core-plugin@myorg-core-plugin-marketplace')
+      expect(settings.plugins.enabled).toContain('utils-plugin@myorg-utils-plugin-marketplace')
+      expect(settings.plugins.enabled).toContain('ext-plugin@myorg-ext-plugin-marketplace')
 
       // All three marketplaces should exist
       expect(settings.plugins.marketplaces['myorg-core-plugin-marketplace']).toBeDefined()
@@ -315,9 +345,9 @@ describe('Integration: Multiple Plugins', () => {
       // Create two packages, each with one plugin
       await Promise.all(
         [
-          ['single-plugin', 'SinglePlugin'],
-          ['another-single', 'AnotherPlugin'],
-        ].map(async ([pkg, pluginName]) => {
+          ['single-plugin', 'single-plugin', 'single-plugin-marketplace'],
+          ['another-single', 'another-plugin', 'another-single-marketplace'],
+        ].map(async ([pkg, pluginName, marketplaceName]) => {
           const packagePath = path.join(projectDir, `node_modules/${pkg}`)
           await fs.mkdir(packagePath, { recursive : true })
 
@@ -333,10 +363,16 @@ describe('Integration: Multiple Plugins', () => {
             path.join(pluginDir, 'marketplace.json'),
             JSON.stringify(
               {
-                name        : pluginName,
-                version     : '1.0.0',
-                description : pluginName,
-                skillPath   : '.claude-plugin/skill',
+                name    : marketplaceName,
+                owner   : { name : 'Test Owner' },
+                plugins : [
+                  {
+                    name        : pluginName,
+                    version     : '1.0.0',
+                    description : pluginName,
+                    source      : '.claude-plugin/skill',
+                  },
+                ],
               },
               null,
               2
@@ -357,8 +393,8 @@ describe('Integration: Multiple Plugins', () => {
 
       // Both should be enabled
       expect(settings.plugins.enabled.length).toBeGreaterThanOrEqual(2)
-      expect(settings.plugins.enabled).toContain('SinglePlugin@single-plugin-marketplace')
-      expect(settings.plugins.enabled).toContain('AnotherPlugin@another-single-marketplace')
+      expect(settings.plugins.enabled).toContain('single-plugin@single-plugin-marketplace')
+      expect(settings.plugins.enabled).toContain('another-plugin@another-single-marketplace')
     })
   })
 
@@ -387,15 +423,21 @@ describe('Integration: Multiple Plugins', () => {
       const pluginDir = path.join(packagePath, '.claude-plugin')
       await fs.mkdir(pluginDir, { recursive : true })
 
-      // Empty name
+      // Empty plugin name (marketplace name is valid, but plugin name is empty)
       await fs.writeFile(
         path.join(pluginDir, 'marketplace.json'),
         JSON.stringify(
           {
-            name        : '',
-            version     : '1.0.0',
-            description : 'Invalid plugin',
-            skillPath   : '.claude-plugin/skill',
+            name    : 'invalid-plugin-marketplace',
+            owner   : { name : 'Test Owner' },
+            plugins : [
+              {
+                name        : '',
+                version     : '1.0.0',
+                description : 'Invalid plugin',
+                source      : '.claude-plugin/skill',
+              },
+            ],
           },
           null,
           2

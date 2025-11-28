@@ -51,7 +51,10 @@
       "Bash(TEST=parse-library-integration.test make test:*)",
       "Bash(TEST=marketplace-json.test make test:*)",
       "Bash(TEST=error-handling.test make test:*)",
-      "Bash(git merge:*)"
+      "Bash(git merge:*)",
+      "Bash(TEST=integration/multiple-plugins.test make:*)",
+      "Bash(TEST=integration/multi-project.test make integration-test:*)",
+      "Bash(TEST=integration/npm-workflow.test make:*)"
     ],
     "deny": [],
     "ask": []

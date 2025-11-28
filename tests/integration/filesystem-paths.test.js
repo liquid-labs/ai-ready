@@ -3,11 +3,11 @@
  * Tests paths with spaces, special characters, symlinks, and other edge cases
  * @module tests/integration/filesystem-paths
  */
-import fs from 'fs/promises'
-import os from 'os'
-import path from 'path'
+const fs = require('fs/promises')
+const os = require('os')
+const path = require('path')
 
-import { createTestPackage, readJsonFile, runCLI } from './test-helpers'
+const { createTestPackage, readJsonFile, runCLI } = require('./test-helpers')
 
 describe('Integration: Filesystem Paths', () => {
   let testDir
@@ -40,10 +40,10 @@ describe('Integration: Filesystem Paths', () => {
       await fs.writeFile(path.join(projectDir, 'package.json'), JSON.stringify(packageJson, null, 2))
 
       await createTestPackage(projectDir, 'test-plugin', {
-        name        : 'SpacedPlugin',
+        name        : 'spaced-plugin',
         version     : '1.0.0',
         description : 'Plugin in spaced path',
-        skillPath   : '.claude-plugin/skill',
+        source      : '.claude-plugin/skill',
       })
 
       const result = await runCLI(['sync'], projectDir, { env : { HOME : projectDir } })
@@ -53,7 +53,7 @@ describe('Integration: Filesystem Paths', () => {
       const settingsPath = path.join(projectDir, '.claude/settings.json')
       const settings = await readJsonFile(settingsPath)
 
-      expect(settings.plugins.enabled).toContain('SpacedPlugin@test-plugin-marketplace')
+      expect(settings.plugins.enabled).toContain('spaced-plugin@test-plugin-marketplace')
 
       // Verify path with spaces is correctly stored
       const marketplace = settings.plugins.marketplaces['test-plugin-marketplace']
@@ -77,10 +77,10 @@ describe('Integration: Filesystem Paths', () => {
       await fs.writeFile(path.join(projectDir, 'package.json'), JSON.stringify(packageJson, null, 2))
 
       await createTestPackage(projectDir, 'home-test-plugin', {
-        name        : 'HomeTestPlugin',
+        name        : 'home-test-plugin',
         version     : '1.0.0',
         description : 'Plugin with spaced home',
-        skillPath   : '.claude-plugin/skill',
+        source      : '.claude-plugin/skill',
       })
 
       const result = await runCLI(['sync'], projectDir, { env : { HOME : homeDir } })
@@ -90,7 +90,7 @@ describe('Integration: Filesystem Paths', () => {
       const settingsPath = path.join(homeDir, '.claude/settings.json')
       const settings = await readJsonFile(settingsPath)
 
-      expect(settings.plugins.enabled).toContain('HomeTestPlugin@home-test-plugin-marketplace')
+      expect(settings.plugins.enabled).toContain('home-test-plugin@home-test-plugin-marketplace')
     })
 
     it('should handle skill path with spaces', async () => {
@@ -117,17 +117,36 @@ describe('Integration: Filesystem Paths', () => {
       const pluginDir = path.join(packagePath, '.claude-plugin')
       await fs.mkdir(pluginDir, { recursive : true })
 
+      // Use v2 marketplace.json structure
       const marketplaceJson = {
-        name        : 'SpacedSkillPlugin',
-        version     : '1.0.0',
-        description : 'Plugin with spaces in skill path',
-        skillPath   : 'skills/my skill', // Path with space
+        name    : 'spaced-skill-plugin-marketplace',
+        owner   : { name : 'Test Owner' },
+        plugins : [
+          {
+            name        : 'spaced-skill-plugin',
+            version     : '1.0.0',
+            description : 'Plugin with spaces in skill path',
+            source      : 'skills/my skill', // Path with space
+          },
+        ],
       }
       await fs.writeFile(path.join(pluginDir, 'marketplace.json'), JSON.stringify(marketplaceJson, null, 2))
 
       const skillPath = path.join(packagePath, 'skills/my skill')
       await fs.mkdir(skillPath, { recursive : true })
-      await fs.writeFile(path.join(skillPath, 'SKILL.md'), '# SpacedSkillPlugin')
+      await fs.writeFile(path.join(skillPath, 'SKILL.md'), '# spaced-skill-plugin')
+      await fs.writeFile(
+        path.join(skillPath, 'plugin.json'),
+        JSON.stringify(
+          {
+            name        : 'spaced-skill-plugin',
+            version     : '1.0.0',
+            description : 'Plugin with spaces in skill path',
+          },
+          null,
+          2
+        )
+      )
 
       const result = await runCLI(['sync'], projectDir, { env : { HOME : projectDir } })
 
@@ -137,7 +156,7 @@ describe('Integration: Filesystem Paths', () => {
       const settings = await readJsonFile(settingsPath)
 
       const marketplace = settings.plugins.marketplaces['spaced-skill-plugin-marketplace']
-      expect(marketplace.plugins.SpacedSkillPlugin.skillPath).toBe('skills/my skill')
+      expect(marketplace.plugins['spaced-skill-plugin'].source).toBe('skills/my skill')
     })
   })
 
@@ -156,10 +175,10 @@ describe('Integration: Filesystem Paths', () => {
       await fs.writeFile(path.join(projectDir, 'package.json'), JSON.stringify(packageJson, null, 2))
 
       await createTestPackage(projectDir, 'plugin-with_underscores', {
-        name        : 'SpecialCharsPlugin',
+        name        : 'special-chars-plugin',
         version     : '1.0.0',
         description : 'Plugin with special chars',
-        skillPath   : '.claude-plugin/skill',
+        source      : '.claude-plugin/skill',
       })
 
       const result = await runCLI(['sync'], projectDir, { env : { HOME : projectDir } })
@@ -169,7 +188,8 @@ describe('Integration: Filesystem Paths', () => {
       const settingsPath = path.join(projectDir, '.claude/settings.json')
       const settings = await readJsonFile(settingsPath)
 
-      expect(settings.plugins.enabled).toContain('SpecialCharsPlugin@plugin-with_underscores-marketplace')
+      // Package name is converted to kebab-case for marketplace name (underscores become hyphens)
+      expect(settings.plugins.enabled).toContain('special-chars-plugin@plugin-with-underscores-marketplace')
     })
 
     it('should handle paths with dots', async () => {
@@ -186,10 +206,10 @@ describe('Integration: Filesystem Paths', () => {
       await fs.writeFile(path.join(projectDir, 'package.json'), JSON.stringify(packageJson, null, 2))
 
       await createTestPackage(projectDir, 'plugin.with.dots', {
-        name        : 'DotsPlugin',
+        name        : 'dots-plugin',
         version     : '1.0.0',
         description : 'Plugin with dots',
-        skillPath   : '.claude-plugin/skill',
+        source      : '.claude-plugin/skill',
       })
 
       const result = await runCLI(['sync'], projectDir, { env : { HOME : projectDir } })
@@ -199,7 +219,8 @@ describe('Integration: Filesystem Paths', () => {
       const settingsPath = path.join(projectDir, '.claude/settings.json')
       const settings = await readJsonFile(settingsPath)
 
-      expect(settings.plugins.marketplaces['plugin.with.dots-marketplace']).toBeDefined()
+      // Package name is converted to kebab-case for marketplace name (dots become hyphens)
+      expect(settings.plugins.marketplaces['plugin-with-dots-marketplace']).toBeDefined()
     })
   })
 
@@ -228,10 +249,10 @@ describe('Integration: Filesystem Paths', () => {
       const tempDir = path.join(testDir, 'temp-for-symlink')
       await fs.mkdir(tempDir, { recursive : true })
       await createTestPackage(tempDir, 'symlink-plugin', {
-        name        : 'SymlinkPlugin',
+        name        : 'symlink-plugin',
         version     : '1.0.0',
         description : 'Plugin via symlink',
-        skillPath   : '.claude-plugin/skill',
+        source      : '.claude-plugin/skill',
       })
 
       // Move the created package to actualModulesDir
@@ -298,14 +319,21 @@ describe('Integration: Filesystem Paths', () => {
       const pluginDir = path.join(actualPluginDir, '.claude-plugin')
       await fs.mkdir(pluginDir, { recursive : true })
 
+      // Use v2 marketplace.json structure
       await fs.writeFile(
         path.join(pluginDir, 'marketplace.json'),
         JSON.stringify(
           {
-            name        : 'LinkedPlugin',
-            version     : '1.0.0',
-            description : 'Linked plugin',
-            skillPath   : '.claude-plugin/skill',
+            name    : 'linked-plugin-marketplace',
+            owner   : { name : 'Test Owner' },
+            plugins : [
+              {
+                name        : 'linked-plugin',
+                version     : '1.0.0',
+                description : 'Linked plugin',
+                source      : '.claude-plugin/skill',
+              },
+            ],
           },
           null,
           2
@@ -314,7 +342,19 @@ describe('Integration: Filesystem Paths', () => {
 
       const skillPath = path.join(actualPluginDir, '.claude-plugin/skill')
       await fs.mkdir(skillPath, { recursive : true })
-      await fs.writeFile(path.join(skillPath, 'SKILL.md'), '# LinkedPlugin')
+      await fs.writeFile(path.join(skillPath, 'SKILL.md'), '# linked-plugin')
+      await fs.writeFile(
+        path.join(skillPath, 'plugin.json'),
+        JSON.stringify(
+          {
+            name        : 'linked-plugin',
+            version     : '1.0.0',
+            description : 'Linked plugin',
+          },
+          null,
+          2
+        )
+      )
 
       // Create symlink to actual plugin
       const linkPath = path.join(nodeModules, 'linked-plugin')
@@ -360,10 +400,10 @@ describe('Integration: Filesystem Paths', () => {
       await fs.writeFile(path.join(projectDir, 'package.json'), JSON.stringify(packageJson, null, 2))
 
       await createTestPackage(projectDir, 'abs-plugin', {
-        name        : 'AbsPlugin',
+        name        : 'abs-plugin',
         version     : '1.0.0',
         description : 'Plugin for abs path test',
-        skillPath   : '.claude-plugin/skill',
+        source      : '.claude-plugin/skill',
       })
 
       const result = await runCLI(['sync'], projectDir, { env : { HOME : projectDir } })
@@ -379,9 +419,9 @@ describe('Integration: Filesystem Paths', () => {
       expect(path.isAbsolute(marketplace.source.path)).toBe(true)
       expect(marketplace.source.path).toBe(path.join(projectDir, 'node_modules/abs-plugin'))
 
-      // Skill path should be relative
-      expect(path.isAbsolute(marketplace.plugins.AbsPlugin.skillPath)).toBe(false)
-      expect(marketplace.plugins.AbsPlugin.skillPath).toBe('.claude-plugin/skill')
+      // Plugin source path should be relative
+      expect(path.isAbsolute(marketplace.plugins['abs-plugin'].source)).toBe(false)
+      expect(marketplace.plugins['abs-plugin'].source).toBe('.claude-plugin/skill')
     })
   })
 
@@ -400,10 +440,10 @@ describe('Integration: Filesystem Paths', () => {
       await fs.writeFile(path.join(deepPath, 'package.json'), JSON.stringify(packageJson, null, 2))
 
       await createTestPackage(deepPath, 'deep-plugin', {
-        name        : 'DeepPlugin',
+        name        : 'deep-plugin',
         version     : '1.0.0',
         description : 'Plugin in deep path',
-        skillPath   : '.claude-plugin/skill',
+        source      : '.claude-plugin/skill',
       })
 
       const result = await runCLI(['sync'], deepPath, { env : { HOME : deepPath } })
@@ -413,7 +453,7 @@ describe('Integration: Filesystem Paths', () => {
       const settingsPath = path.join(deepPath, '.claude/settings.json')
       const settings = await readJsonFile(settingsPath)
 
-      expect(settings.plugins.enabled).toContain('DeepPlugin@deep-plugin-marketplace')
+      expect(settings.plugins.enabled).toContain('deep-plugin@deep-plugin-marketplace')
     })
 
     it('should handle deeply nested skill paths', async () => {
@@ -441,17 +481,36 @@ describe('Integration: Filesystem Paths', () => {
       await fs.mkdir(pluginDir, { recursive : true })
 
       const deepSkillPath = 'plugins/skills/ai/claude/main'
+      // Use v2 marketplace.json structure
       const marketplaceJson = {
-        name        : 'NestedSkillPlugin',
-        version     : '1.0.0',
-        description : 'Plugin with deep skill path',
-        skillPath   : deepSkillPath,
+        name    : 'nested-skill-plugin-marketplace',
+        owner   : { name : 'Test Owner' },
+        plugins : [
+          {
+            name        : 'nested-skill-plugin',
+            version     : '1.0.0',
+            description : 'Plugin with deep skill path',
+            source      : deepSkillPath,
+          },
+        ],
       }
       await fs.writeFile(path.join(pluginDir, 'marketplace.json'), JSON.stringify(marketplaceJson, null, 2))
 
       const skillPath = path.join(packagePath, deepSkillPath)
       await fs.mkdir(skillPath, { recursive : true })
-      await fs.writeFile(path.join(skillPath, 'SKILL.md'), '# NestedSkillPlugin')
+      await fs.writeFile(path.join(skillPath, 'SKILL.md'), '# nested-skill-plugin')
+      await fs.writeFile(
+        path.join(skillPath, 'plugin.json'),
+        JSON.stringify(
+          {
+            name        : 'nested-skill-plugin',
+            version     : '1.0.0',
+            description : 'Plugin with deep skill path',
+          },
+          null,
+          2
+        )
+      )
 
       const result = await runCLI(['sync'], projectDir, { env : { HOME : projectDir } })
 
@@ -461,7 +520,7 @@ describe('Integration: Filesystem Paths', () => {
       const settings = await readJsonFile(settingsPath)
 
       const marketplace = settings.plugins.marketplaces['nested-skill-plugin-marketplace']
-      expect(marketplace.plugins.NestedSkillPlugin.skillPath).toBe(deepSkillPath)
+      expect(marketplace.plugins['nested-skill-plugin'].source).toBe(deepSkillPath)
     })
   })
 
@@ -480,10 +539,10 @@ describe('Integration: Filesystem Paths', () => {
       await fs.writeFile(path.join(projectDir, 'package.json'), JSON.stringify(packageJson, null, 2))
 
       await createTestPackage(projectDir, 'MyMixedCase-Plugin', {
-        name        : 'MixedCasePlugin',
+        name        : 'mixed-case-plugin',
         version     : '1.0.0',
         description : 'Plugin with mixed case',
-        skillPath   : '.claude-plugin/skill',
+        source      : '.claude-plugin/skill',
       })
 
       const result = await runCLI(['sync'], projectDir, { env : { HOME : projectDir } })
@@ -493,11 +552,8 @@ describe('Integration: Filesystem Paths', () => {
       const settingsPath = path.join(projectDir, '.claude/settings.json')
       const settings = await readJsonFile(settingsPath)
 
-      // Marketplace name should respect original casing (converted to kebab-case if needed)
-      expect(
-        settings.plugins.marketplaces['MyMixedCase-Plugin-marketplace']
-          || settings.plugins.marketplaces['mymixedcase-plugin-marketplace']
-      ).toBeDefined()
+      // Marketplace name is converted to lowercase kebab-case
+      expect(settings.plugins.marketplaces['mymixedcase-plugin-marketplace']).toBeDefined()
     })
   })
 })

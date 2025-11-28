@@ -44,10 +44,10 @@ describe('Integration: Multi-Project', () => {
             {
               packageName : 'plugin-alpha',
               declaration : {
-                name        : 'AlphaPlugin',
+                name        : 'alpha-plugin',
                 version     : '1.0.0',
                 description : 'Alpha plugin for project A',
-                skillPath   : '.claude-plugin/skill',
+                source      : '.claude-plugin/skill',
               },
             },
           ],
@@ -59,10 +59,10 @@ describe('Integration: Multi-Project', () => {
             {
               packageName : 'plugin-beta',
               declaration : {
-                name        : 'BetaPlugin',
+                name        : 'beta-plugin',
                 version     : '1.0.0',
                 description : 'Beta plugin for project B',
-                skillPath   : '.claude-plugin/skill',
+                source      : '.claude-plugin/skill',
               },
             },
           ],
@@ -81,8 +81,8 @@ describe('Integration: Multi-Project', () => {
       const settingsPath = path.join(sharedHome, '.claude/settings.json')
       const settings = await readJsonFile(settingsPath)
 
-      expect(settings.plugins.enabled).toContain('AlphaPlugin@plugin-alpha-marketplace')
-      expect(settings.plugins.enabled).toContain('BetaPlugin@plugin-beta-marketplace')
+      expect(settings.plugins.enabled).toContain('alpha-plugin@plugin-alpha-marketplace')
+      expect(settings.plugins.enabled).toContain('beta-plugin@plugin-beta-marketplace')
 
       // Verify both marketplaces exist
       expect(settings.plugins.marketplaces['plugin-alpha-marketplace']).toBeDefined()
@@ -115,10 +115,10 @@ describe('Integration: Multi-Project', () => {
             {
               packageName : 'common-plugin',
               declaration : {
-                name        : 'CommonPlugin',
+                name        : 'common-plugin',
                 version     : '1.0.0',
                 description : 'Common plugin v1',
-                skillPath   : '.claude-plugin/skill',
+                source      : '.claude-plugin/skill',
               },
             },
           ],
@@ -130,10 +130,10 @@ describe('Integration: Multi-Project', () => {
             {
               packageName : 'common-plugin',
               declaration : {
-                name        : 'CommonPlugin',
+                name        : 'common-plugin',
                 version     : '2.0.0',
                 description : 'Common plugin v2',
-                skillPath   : '.claude-plugin/skill',
+                source      : '.claude-plugin/skill',
               },
             },
           ],
@@ -148,7 +148,7 @@ describe('Integration: Multi-Project', () => {
       const settings = await readJsonFile(settingsPath)
 
       // Should have only one enabled entry (last one wins)
-      const commonPluginEntries = settings.plugins.enabled.filter((p) => p.startsWith('CommonPlugin@'))
+      const commonPluginEntries = settings.plugins.enabled.filter((p) => p.startsWith('common-plugin@'))
       expect(commonPluginEntries.length).toBe(1)
 
       // Should have one marketplace
@@ -156,7 +156,7 @@ describe('Integration: Multi-Project', () => {
 
       // Verify the latest version is in the marketplace
       const marketplace = settings.plugins.marketplaces['common-plugin-marketplace']
-      expect(marketplace.plugins.CommonPlugin.version).toBe('2.0.0')
+      expect(marketplace.plugins['common-plugin'].version).toBe('2.0.0')
       expect(marketplace.source.path).toBe(path.join(projectY, 'node_modules/common-plugin'))
     })
   })
@@ -181,10 +181,10 @@ describe('Integration: Multi-Project', () => {
             {
               packageName : 'plugin-one',
               declaration : {
-                name        : 'PluginOne',
+                name        : 'plugin-one',
                 version     : '1.0.0',
                 description : 'Plugin One',
-                skillPath   : '.claude-plugin/skill',
+                source      : '.claude-plugin/skill',
               },
             },
           ],
@@ -196,10 +196,10 @@ describe('Integration: Multi-Project', () => {
             {
               packageName : 'plugin-two',
               declaration : {
-                name        : 'PluginTwo',
+                name        : 'plugin-two',
                 version     : '1.0.0',
                 description : 'Plugin Two',
-                skillPath   : '.claude-plugin/skill',
+                source      : '.claude-plugin/skill',
               },
             },
           ],
@@ -214,13 +214,13 @@ describe('Integration: Multi-Project', () => {
       const settingsA = await readJsonFile(path.join(homeA, '.claude/settings.json'))
       const settingsB = await readJsonFile(path.join(homeB, '.claude/settings.json'))
 
-      // A should only have PluginOne
-      expect(settingsA.plugins.enabled).toContain('PluginOne@plugin-one-marketplace')
-      expect(settingsA.plugins.enabled).not.toContain('PluginTwo@plugin-two-marketplace')
+      // A should only have plugin-one
+      expect(settingsA.plugins.enabled).toContain('plugin-one@plugin-one-marketplace')
+      expect(settingsA.plugins.enabled).not.toContain('plugin-two@plugin-two-marketplace')
 
-      // B should only have PluginTwo
-      expect(settingsB.plugins.enabled).toContain('PluginTwo@plugin-two-marketplace')
-      expect(settingsB.plugins.enabled).not.toContain('PluginOne@plugin-one-marketplace')
+      // B should only have plugin-two
+      expect(settingsB.plugins.enabled).toContain('plugin-two@plugin-two-marketplace')
+      expect(settingsB.plugins.enabled).not.toContain('plugin-one@plugin-one-marketplace')
     })
   })
 
@@ -242,10 +242,10 @@ describe('Integration: Multi-Project', () => {
             {
               packageName : 'view-plugin-a',
               declaration : {
-                name        : 'ViewPluginA',
+                name        : 'view-plugin-a',
                 version     : '1.0.0',
                 description : 'View Plugin A',
-                skillPath   : '.claude-plugin/skill',
+                source      : '.claude-plugin/skill',
               },
             },
           ],
@@ -257,10 +257,10 @@ describe('Integration: Multi-Project', () => {
             {
               packageName : 'view-plugin-b',
               declaration : {
-                name        : 'ViewPluginB',
+                name        : 'view-plugin-b',
                 version     : '1.0.0',
                 description : 'View Plugin B',
-                skillPath   : '.claude-plugin/skill',
+                source      : '.claude-plugin/skill',
               },
             },
           ],
@@ -274,15 +274,15 @@ describe('Integration: Multi-Project', () => {
       // View from project A (without --all flag)
       const viewResultA = await runCLI(['plugins', 'view'], projectA, { env : { HOME : sharedHome } })
       expect(viewResultA.exitCode).toBe(0)
-      expect(viewResultA.stdout).toContain('ViewPluginA')
+      expect(viewResultA.stdout).toContain('view-plugin-a')
       // Should not contain plugins from other projects in default view
       // (depends on implementation - may show all or just project-specific)
 
       // View with --all flag should show everything
       const viewAllResult = await runCLI(['plugins', 'view', '--all'], projectA, { env : { HOME : sharedHome } })
       expect(viewAllResult.exitCode).toBe(0)
-      expect(viewAllResult.stdout).toContain('ViewPluginA')
-      expect(viewAllResult.stdout).toContain('ViewPluginB')
+      expect(viewAllResult.stdout).toContain('view-plugin-a')
+      expect(viewAllResult.stdout).toContain('view-plugin-b')
     })
   })
 
@@ -304,19 +304,19 @@ describe('Integration: Multi-Project', () => {
             {
               packageName : 'shared-plugin',
               declaration : {
-                name        : 'SharedPlugin',
+                name        : 'shared-plugin',
                 version     : '1.0.0',
                 description : 'Shared by both',
-                skillPath   : '.claude-plugin/skill',
+                source      : '.claude-plugin/skill',
               },
             },
             {
               packageName : 'unique-a',
               declaration : {
-                name        : 'UniqueA',
+                name        : 'unique-a',
                 version     : '1.0.0',
                 description : 'Unique to A',
-                skillPath   : '.claude-plugin/skill',
+                source      : '.claude-plugin/skill',
               },
             },
           ],
@@ -328,19 +328,19 @@ describe('Integration: Multi-Project', () => {
             {
               packageName : 'shared-plugin',
               declaration : {
-                name        : 'SharedPlugin',
+                name        : 'shared-plugin',
                 version     : '1.0.0',
                 description : 'Shared by both',
-                skillPath   : '.claude-plugin/skill',
+                source      : '.claude-plugin/skill',
               },
             },
             {
               packageName : 'unique-b',
               declaration : {
-                name        : 'UniqueB',
+                name        : 'unique-b',
                 version     : '1.0.0',
                 description : 'Unique to B',
-                skillPath   : '.claude-plugin/skill',
+                source      : '.claude-plugin/skill',
               },
             },
           ],
@@ -355,9 +355,9 @@ describe('Integration: Multi-Project', () => {
       const settings = await readJsonFile(settingsPath)
 
       // Should have all three plugins enabled
-      expect(settings.plugins.enabled).toContain('SharedPlugin@shared-plugin-marketplace')
-      expect(settings.plugins.enabled).toContain('UniqueA@unique-a-marketplace')
-      expect(settings.plugins.enabled).toContain('UniqueB@unique-b-marketplace')
+      expect(settings.plugins.enabled).toContain('shared-plugin@shared-plugin-marketplace')
+      expect(settings.plugins.enabled).toContain('unique-a@unique-a-marketplace')
+      expect(settings.plugins.enabled).toContain('unique-b@unique-b-marketplace')
 
       // Verify all marketplaces
       expect(settings.plugins.marketplaces['shared-plugin-marketplace']).toBeDefined()
@@ -383,10 +383,10 @@ describe('Integration: Multi-Project', () => {
             {
               packageName : 'evolving-plugin',
               declaration : {
-                name        : 'EvolvingPlugin',
+                name        : 'evolving-plugin',
                 version     : '1.0.0',
                 description : 'Old version',
-                skillPath   : '.claude-plugin/skill',
+                source      : '.claude-plugin/skill',
               },
             },
           ],
@@ -405,10 +405,10 @@ describe('Integration: Multi-Project', () => {
             {
               packageName : 'evolving-plugin',
               declaration : {
-                name        : 'EvolvingPlugin',
+                name        : 'evolving-plugin',
                 version     : '2.0.0',
                 description : 'New version',
-                skillPath   : '.claude-plugin/skill',
+                source      : '.claude-plugin/skill',
               },
             },
           ],
@@ -423,7 +423,7 @@ describe('Integration: Multi-Project', () => {
 
       // Should have updated to new version
       const marketplace = settings.plugins.marketplaces['evolving-plugin-marketplace']
-      expect(marketplace.plugins.EvolvingPlugin.version).toBe('2.0.0')
+      expect(marketplace.plugins['evolving-plugin'].version).toBe('2.0.0')
       expect(marketplace.source.path).toBe(path.join(projectNew, 'node_modules/evolving-plugin'))
     })
   })

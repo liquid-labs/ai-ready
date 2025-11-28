@@ -42,10 +42,10 @@ describe('Integration: Plugin Updates', () => {
 
       // Create v1.0.0 plugin
       await createTestPackage(projectDir, 'evolving-plugin', {
-        name        : 'EvolvingPlugin',
+        name        : 'evolving-plugin',
         version     : '1.0.0',
         description : 'Plugin version 1.0.0',
-        skillPath   : '.claude-plugin/skill',
+        source      : './',
       })
 
       // Initial sync
@@ -55,14 +55,16 @@ describe('Integration: Plugin Updates', () => {
       const settingsPath = path.join(projectDir, '.claude/settings.json')
       let settings = await readJsonFile(settingsPath)
 
-      expect(settings.plugins.marketplaces['evolving-plugin-marketplace'].plugins.EvolvingPlugin.version).toBe('1.0.0')
+      expect(settings.plugins.marketplaces['evolving-plugin-marketplace'].plugins['evolving-plugin'].version).toBe(
+        '1.0.0'
+      )
 
       // Update to v2.0.0
       await createTestPackage(projectDir, 'evolving-plugin', {
-        name        : 'EvolvingPlugin',
+        name        : 'evolving-plugin',
         version     : '2.0.0',
         description : 'Plugin version 2.0.0',
-        skillPath   : '.claude-plugin/skill',
+        source      : './',
       })
 
       // Sync again
@@ -72,10 +74,12 @@ describe('Integration: Plugin Updates', () => {
       settings = await readJsonFile(settingsPath)
 
       // Verify version updated
-      expect(settings.plugins.marketplaces['evolving-plugin-marketplace'].plugins.EvolvingPlugin.version).toBe('2.0.0')
+      expect(settings.plugins.marketplaces['evolving-plugin-marketplace'].plugins['evolving-plugin'].version).toBe(
+        '2.0.0'
+      )
 
       // Verify plugin remains enabled
-      expect(settings.plugins.enabled).toContain('EvolvingPlugin@evolving-plugin-marketplace')
+      expect(settings.plugins.enabled).toContain('evolving-plugin@evolving-plugin-marketplace')
     })
 
     it('should handle major version upgrades', async () => {
@@ -93,20 +97,20 @@ describe('Integration: Plugin Updates', () => {
 
       // Create v1.0.0
       await createTestPackage(projectDir, 'major-plugin', {
-        name        : 'MajorPlugin',
+        name        : 'major-plugin',
         version     : '1.5.3',
         description : 'V1 plugin',
-        skillPath   : '.claude-plugin/skill',
+        source      : './',
       })
 
       await runCLI(['sync'], projectDir, { env : { HOME : projectDir } })
 
       // Upgrade to v5.0.0
       await createTestPackage(projectDir, 'major-plugin', {
-        name        : 'MajorPlugin',
+        name        : 'major-plugin',
         version     : '5.0.0',
         description : 'V5 plugin with breaking changes',
-        skillPath   : '.claude-plugin/skill',
+        source      : './',
       })
 
       await runCLI(['sync'], projectDir, { env : { HOME : projectDir } })
@@ -114,7 +118,7 @@ describe('Integration: Plugin Updates', () => {
       const settingsPath = path.join(projectDir, '.claude/settings.json')
       const settings = await readJsonFile(settingsPath)
 
-      expect(settings.plugins.marketplaces['major-plugin-marketplace'].plugins.MajorPlugin.version).toBe('5.0.0')
+      expect(settings.plugins.marketplaces['major-plugin-marketplace'].plugins['major-plugin'].version).toBe('5.0.0')
     })
 
     it('should handle downgrades (version rollback)', async () => {
@@ -132,20 +136,20 @@ describe('Integration: Plugin Updates', () => {
 
       // Create v3.0.0
       await createTestPackage(projectDir, 'rollback-plugin', {
-        name        : 'RollbackPlugin',
+        name        : 'rollback-plugin',
         version     : '3.0.0',
         description : 'V3 plugin',
-        skillPath   : '.claude-plugin/skill',
+        source      : './',
       })
 
       await runCLI(['sync'], projectDir, { env : { HOME : projectDir } })
 
       // Rollback to v2.0.0
       await createTestPackage(projectDir, 'rollback-plugin', {
-        name        : 'RollbackPlugin',
+        name        : 'rollback-plugin',
         version     : '2.0.0',
         description : 'V2 plugin (rolled back)',
-        skillPath   : '.claude-plugin/skill',
+        source      : './',
       })
 
       await runCLI(['sync'], projectDir, { env : { HOME : projectDir } })
@@ -153,12 +157,14 @@ describe('Integration: Plugin Updates', () => {
       const settingsPath = path.join(projectDir, '.claude/settings.json')
       const settings = await readJsonFile(settingsPath)
 
-      expect(settings.plugins.marketplaces['rollback-plugin-marketplace'].plugins.RollbackPlugin.version).toBe('2.0.0')
+      expect(settings.plugins.marketplaces['rollback-plugin-marketplace'].plugins['rollback-plugin'].version).toBe(
+        '2.0.0'
+      )
     })
   })
 
-  describe('Skill path changes', () => {
-    it('should update skillPath when plugin structure changes', async () => {
+  describe('Source path changes', () => {
+    it('should update source when plugin structure changes', async () => {
       const projectDir = path.join(testDir, 'skillpath-change')
       await fs.mkdir(projectDir, { recursive : true })
 
@@ -171,12 +177,12 @@ describe('Integration: Plugin Updates', () => {
       }
       await fs.writeFile(path.join(projectDir, 'package.json'), JSON.stringify(packageJson, null, 2))
 
-      // Create with original skill path
+      // Create with original source path
       await createTestPackage(projectDir, 'path-plugin', {
-        name        : 'PathPlugin',
+        name        : 'path-plugin',
         version     : '1.0.0',
         description : 'Plugin with original path',
-        skillPath   : '.claude-plugin/skill',
+        source      : './',
       })
 
       await runCLI(['sync'], projectDir, { env : { HOME : projectDir } })
@@ -184,24 +190,22 @@ describe('Integration: Plugin Updates', () => {
       const settingsPath = path.join(projectDir, '.claude/settings.json')
       let settings = await readJsonFile(settingsPath)
 
-      expect(settings.plugins.marketplaces['path-plugin-marketplace'].plugins.PathPlugin.skillPath).toBe(
-        '.claude-plugin/skill'
-      )
+      expect(settings.plugins.marketplaces['path-plugin-marketplace'].plugins['path-plugin'].source).toBe('./')
 
-      // Update with new skill path
+      // Update with new source path
       await createTestPackage(projectDir, 'path-plugin', {
-        name        : 'PathPlugin',
+        name        : 'path-plugin',
         version     : '2.0.0',
         description : 'Plugin with new path',
-        skillPath   : 'skills/main',
+        source      : 'skills/main',
       })
 
       await runCLI(['sync'], projectDir, { env : { HOME : projectDir } })
 
       settings = await readJsonFile(settingsPath)
 
-      expect(settings.plugins.marketplaces['path-plugin-marketplace'].plugins.PathPlugin.skillPath).toBe('skills/main')
-      expect(settings.plugins.marketplaces['path-plugin-marketplace'].plugins.PathPlugin.version).toBe('2.0.0')
+      expect(settings.plugins.marketplaces['path-plugin-marketplace'].plugins['path-plugin'].source).toBe('skills/main')
+      expect(settings.plugins.marketplaces['path-plugin-marketplace'].plugins['path-plugin'].version).toBe('2.0.0')
     })
   })
 
@@ -220,20 +224,20 @@ describe('Integration: Plugin Updates', () => {
       await fs.writeFile(path.join(projectDir, 'package.json'), JSON.stringify(packageJson, null, 2))
 
       await createTestPackage(projectDir, 'desc-plugin', {
-        name        : 'DescPlugin',
+        name        : 'desc-plugin',
         version     : '1.0.0',
         description : 'Original description',
-        skillPath   : '.claude-plugin/skill',
+        source      : './',
       })
 
       await runCLI(['sync'], projectDir, { env : { HOME : projectDir } })
 
       // Update description (same version)
       await createTestPackage(projectDir, 'desc-plugin', {
-        name        : 'DescPlugin',
+        name        : 'desc-plugin',
         version     : '1.0.0',
         description : 'Updated description with more details',
-        skillPath   : '.claude-plugin/skill',
+        source      : './',
       })
 
       await runCLI(['sync'], projectDir, { env : { HOME : projectDir } })
@@ -243,7 +247,7 @@ describe('Integration: Plugin Updates', () => {
       const settingsPath = path.join(projectDir, '.claude/settings.json')
       const settings = await readJsonFile(settingsPath)
 
-      expect(settings.plugins.enabled).toContain('DescPlugin@desc-plugin-marketplace')
+      expect(settings.plugins.enabled).toContain('desc-plugin@desc-plugin-marketplace')
     })
   })
 
@@ -263,10 +267,10 @@ describe('Integration: Plugin Updates', () => {
 
       // Create with original name
       await createTestPackage(projectDir, 'renamed-plugin', {
-        name        : 'OriginalName',
+        name        : 'original-name',
         version     : '1.0.0',
         description : 'Plugin with original name',
-        skillPath   : '.claude-plugin/skill',
+        source      : './',
       })
 
       await runCLI(['sync'], projectDir, { env : { HOME : projectDir } })
@@ -274,15 +278,15 @@ describe('Integration: Plugin Updates', () => {
       const settingsPath = path.join(projectDir, '.claude/settings.json')
       let settings = await readJsonFile(settingsPath)
 
-      expect(settings.plugins.enabled).toContain('OriginalName@renamed-plugin-marketplace')
-      expect(settings.plugins.marketplaces['renamed-plugin-marketplace'].plugins.OriginalName).toBeDefined()
+      expect(settings.plugins.enabled).toContain('original-name@renamed-plugin-marketplace')
+      expect(settings.plugins.marketplaces['renamed-plugin-marketplace'].plugins['original-name']).toBeDefined()
 
       // Rename plugin (package name stays same)
       await createTestPackage(projectDir, 'renamed-plugin', {
-        name        : 'NewName',
+        name        : 'new-name',
         version     : '2.0.0',
         description : 'Plugin with new name',
-        skillPath   : '.claude-plugin/skill',
+        source      : './',
       })
 
       await runCLI(['sync'], projectDir, { env : { HOME : projectDir } })
@@ -290,13 +294,13 @@ describe('Integration: Plugin Updates', () => {
       settings = await readJsonFile(settingsPath)
 
       // New name should be added
-      expect(settings.plugins.marketplaces['renamed-plugin-marketplace'].plugins.NewName).toBeDefined()
+      expect(settings.plugins.marketplaces['renamed-plugin-marketplace'].plugins['new-name']).toBeDefined()
 
       // Old name may or may not be removed depending on implementation
       // At minimum, new name should be enabled
       expect(
-        settings.plugins.enabled.includes('NewName@renamed-plugin-marketplace')
-          || settings.plugins.enabled.includes('OriginalName@renamed-plugin-marketplace')
+        settings.plugins.enabled.includes('new-name@renamed-plugin-marketplace')
+          || settings.plugins.enabled.includes('original-name@renamed-plugin-marketplace')
       ).toBe(true)
     })
   })
@@ -316,10 +320,10 @@ describe('Integration: Plugin Updates', () => {
       await fs.writeFile(path.join(projectDir, 'package.json'), JSON.stringify(packageJson, null, 2))
 
       await createTestPackage(projectDir, 'stable-plugin', {
-        name        : 'StablePlugin',
+        name        : 'stable-plugin',
         version     : '1.0.0',
         description : 'V1',
-        skillPath   : '.claude-plugin/skill',
+        source      : './',
       })
 
       await runCLI(['sync'], projectDir, { env : { HOME : projectDir } })
@@ -327,7 +331,7 @@ describe('Integration: Plugin Updates', () => {
       const settingsPath = path.join(projectDir, '.claude/settings.json')
       let settings = await readJsonFile(settingsPath)
 
-      expect(settings.plugins.enabled).toContain('StablePlugin@stable-plugin-marketplace')
+      expect(settings.plugins.enabled).toContain('stable-plugin@stable-plugin-marketplace')
 
       // Update through multiple versions sequentially
       const versions = ['1.1.0', '1.2.0', '2.0.0', '2.1.0']
@@ -335,10 +339,10 @@ describe('Integration: Plugin Updates', () => {
         await previousPromise
 
         await createTestPackage(projectDir, 'stable-plugin', {
-          name        : 'StablePlugin',
+          name        : 'stable-plugin',
           version,
           description : `V${version}`,
-          skillPath   : '.claude-plugin/skill',
+          source      : './',
         })
 
         await runCLI(['sync'], projectDir, { env : { HOME : projectDir } })
@@ -346,7 +350,7 @@ describe('Integration: Plugin Updates', () => {
         settings = await readJsonFile(settingsPath)
 
         // Should remain enabled
-        expect(settings.plugins.enabled).toContain('StablePlugin@stable-plugin-marketplace')
+        expect(settings.plugins.enabled).toContain('stable-plugin@stable-plugin-marketplace')
       }, Promise.resolve())
     })
 
@@ -364,10 +368,10 @@ describe('Integration: Plugin Updates', () => {
       await fs.writeFile(path.join(projectDir, 'package.json'), JSON.stringify(packageJson, null, 2))
 
       await createTestPackage(projectDir, 'disabled-plugin', {
-        name        : 'DisabledPlugin',
+        name        : 'disabled-plugin',
         version     : '1.0.0',
         description : 'V1',
-        skillPath   : '.claude-plugin/skill',
+        source      : './',
       })
 
       await runCLI(['sync'], projectDir, { env : { HOME : projectDir } })
@@ -377,17 +381,17 @@ describe('Integration: Plugin Updates', () => {
 
       // Manually disable
       settings.plugins.enabled = settings.plugins.enabled.filter(
-        (p) => p !== 'DisabledPlugin@disabled-plugin-marketplace'
+        (p) => p !== 'disabled-plugin@disabled-plugin-marketplace'
       )
-      settings.plugins.disabled.push('DisabledPlugin@disabled-plugin-marketplace')
+      settings.plugins.disabled.push('disabled-plugin@disabled-plugin-marketplace')
       await fs.writeFile(settingsPath, JSON.stringify(settings, null, 2))
 
       // Update version
       await createTestPackage(projectDir, 'disabled-plugin', {
-        name        : 'DisabledPlugin',
+        name        : 'disabled-plugin',
         version     : '2.0.0',
         description : 'V2',
-        skillPath   : '.claude-plugin/skill',
+        source      : './',
       })
 
       await runCLI(['sync'], projectDir, { env : { HOME : projectDir } })
@@ -395,11 +399,13 @@ describe('Integration: Plugin Updates', () => {
       settings = await readJsonFile(settingsPath)
 
       // Should remain disabled
-      expect(settings.plugins.disabled).toContain('DisabledPlugin@disabled-plugin-marketplace')
-      expect(settings.plugins.enabled).not.toContain('DisabledPlugin@disabled-plugin-marketplace')
+      expect(settings.plugins.disabled).toContain('disabled-plugin@disabled-plugin-marketplace')
+      expect(settings.plugins.enabled).not.toContain('disabled-plugin@disabled-plugin-marketplace')
 
       // Version should still be updated in marketplace
-      expect(settings.plugins.marketplaces['disabled-plugin-marketplace'].plugins.DisabledPlugin.version).toBe('2.0.0')
+      expect(settings.plugins.marketplaces['disabled-plugin-marketplace'].plugins['disabled-plugin'].version).toBe(
+        '2.0.0'
+      )
     })
   })
 })

@@ -13,12 +13,14 @@ const createProvider = (name, overrides = {}) => ({
   marketplaceDeclaration : {
     name    : overrides.marketplaceName || `${name}-marketplace`,
     owner   : { name : 'Test Owner' },
-    plugins : overrides.plugins || [{
-      name        : overrides.pluginName || name,
-      source      : overrides.source || './plugin',
-      version     : overrides.pluginVersion || '1.0.0',
-      description : overrides.description || `${name} plugin`,
-    }],
+    plugins : overrides.plugins || [
+      {
+        name        : overrides.pluginName || name,
+        source      : overrides.source || './plugin',
+        version     : overrides.pluginVersion || '1.0.0',
+        description : overrides.description || `${name} plugin`,
+      },
+    ],
   },
 })
 
@@ -127,7 +129,13 @@ describe('claude-settings', () => {
 
   describe('updateSettings', () => {
     it('should add new plugin to enabled list', async () => {
-      const providers = [createProvider('test', { packageName : 'test-package', marketplaceName : 'test-marketplace', pluginName : 'test-plugin' })]
+      const providers = [
+        createProvider('test', {
+          packageName     : 'test-package',
+          marketplaceName : 'test-marketplace',
+          pluginName      : 'test-plugin',
+        }),
+      ]
       const changes = await updateSettings(settingsPath, providers)
 
       expect(changes.added).toEqual(['test-plugin'])
@@ -144,7 +152,13 @@ describe('claude-settings', () => {
       }
       await fs.writeFile(settingsPath, JSON.stringify(existingSettings), 'utf8')
 
-      const providers = [createProvider('test', { packageName : 'test-package', marketplaceName : 'test-marketplace', pluginName : 'test-plugin' })]
+      const providers = [
+        createProvider('test', {
+          packageName     : 'test-package',
+          marketplaceName : 'test-marketplace',
+          pluginName      : 'test-plugin',
+        }),
+      ]
       const changes = await updateSettings(settingsPath, providers)
 
       expect(changes.added).toEqual([])
@@ -170,7 +184,14 @@ describe('claude-settings', () => {
       }
       await fs.writeFile(settingsPath, JSON.stringify(existingSettings), 'utf8')
 
-      const providers = [createProvider('test', { packageName : 'test-package', path : '/new/path', marketplaceName : 'test-marketplace', pluginName : 'test-plugin' })]
+      const providers = [
+        createProvider('test', {
+          packageName     : 'test-package',
+          path            : '/new/path',
+          marketplaceName : 'test-marketplace',
+          pluginName      : 'test-plugin',
+        }),
+      ]
       const changes = await updateSettings(settingsPath, providers)
 
       expect(changes.added).toEqual([])
@@ -184,7 +205,13 @@ describe('claude-settings', () => {
     it('should handle multiple providers', async () => {
       const providers = [
         createProvider('plugin-a', { packageName : 'package-a', path : '/path/a', marketplaceName : 'marketplace-a' }),
-        createProvider('plugin-b', { packageName : 'package-b', path : '/path/b', version : '2.0.0', marketplaceName : 'marketplace-b', pluginVersion : '2.0.0' }),
+        createProvider('plugin-b', {
+          packageName     : 'package-b',
+          path            : '/path/b',
+          version         : '2.0.0',
+          marketplaceName : 'marketplace-b',
+          pluginVersion   : '2.0.0',
+        }),
       ]
       const changes = await updateSettings(settingsPath, providers)
 
@@ -197,15 +224,17 @@ describe('claude-settings', () => {
     })
 
     it('should handle marketplace with multiple plugins', async () => {
-      const providers = [createProvider('multi', {
-        packageName     : 'multi-package',
-        path            : '/path/multi',
-        marketplaceName : 'multi-marketplace',
-        plugins         : [
-          { name : 'plugin-a', source : './plugins/a', version : '1.0.0' },
-          { name : 'plugin-b', source : './plugins/b', version : '2.0.0' },
-        ],
-      })]
+      const providers = [
+        createProvider('multi', {
+          packageName     : 'multi-package',
+          path            : '/path/multi',
+          marketplaceName : 'multi-marketplace',
+          plugins         : [
+            { name : 'plugin-a', source : './plugins/a', version : '1.0.0' },
+            { name : 'plugin-b', source : './plugins/b', version : '2.0.0' },
+          ],
+        }),
+      ]
       const changes = await updateSettings(settingsPath, providers)
 
       expect(changes.added).toEqual(['plugin-a', 'plugin-b'])
@@ -234,7 +263,14 @@ describe('claude-settings', () => {
       const mtime1 = (await fs.stat(settingsPath)).mtimeMs
       await new Promise((resolve) => setTimeout(resolve, 10))
 
-      const providers = [createProvider('test', { packageName : 'test-package', path : '/path/to/test-package', marketplaceName : 'test-marketplace', pluginName : 'test-plugin' })]
+      const providers = [
+        createProvider('test', {
+          packageName     : 'test-package',
+          path            : '/path/to/test-package',
+          marketplaceName : 'test-marketplace',
+          pluginName      : 'test-plugin',
+        }),
+      ]
       await updateSettings(settingsPath, providers)
 
       const mtime2 = (await fs.stat(settingsPath)).mtimeMs
@@ -245,10 +281,20 @@ describe('claude-settings', () => {
       const initialSettings = { plugins : { enabled : [], disabled : [], marketplaces : {} } }
       await fs.writeFile(settingsPath, JSON.stringify(initialSettings), 'utf8')
 
-      const providers = [createProvider('test', { packageName : 'test-package', path : '/path/to/test-package', marketplaceName : 'test-marketplace', pluginName : 'test-plugin' })]
+      const providers = [
+        createProvider('test', {
+          packageName     : 'test-package',
+          path            : '/path/to/test-package',
+          marketplaceName : 'test-marketplace',
+          pluginName      : 'test-plugin',
+        }),
+      ]
       await updateSettings(settingsPath, providers)
 
-      const backupExists = await fs.access(`${settingsPath}.bak`).then(() => true).catch(() => false)
+      const backupExists = await fs
+        .access(`${settingsPath}.bak`)
+        .then(() => true)
+        .catch(() => false)
       expect(backupExists).toBe(true)
 
       const backupContent = await fs.readFile(`${settingsPath}.bak`, 'utf8')
@@ -263,7 +309,14 @@ describe('claude-settings', () => {
       }
       await fs.writeFile(settingsPath, JSON.stringify(existingSettings), 'utf8')
 
-      const providers = [createProvider('test', { packageName : 'test-package', path : '/path/to/test-package', marketplaceName : 'test-marketplace', pluginName : 'test-plugin' })]
+      const providers = [
+        createProvider('test', {
+          packageName     : 'test-package',
+          path            : '/path/to/test-package',
+          marketplaceName : 'test-marketplace',
+          pluginName      : 'test-plugin',
+        }),
+      ]
       await updateSettings(settingsPath, providers)
 
       const settings = await readSettings(settingsPath)
@@ -313,28 +366,58 @@ describe('claude-settings', () => {
   describe('getPluginStates', () => {
     it('should return states for all plugins in providers', () => {
       const providers = [
-        createProvider('plugin-a', { packageName : 'package-a', path : '/path/a', marketplaceName : 'marketplace-a', description : 'Plugin A' }),
-        createProvider('plugin-b', { packageName : 'package-b', path : '/path/b', version : '2.0.0', marketplaceName : 'marketplace-b', pluginVersion : '2.0.0', description : 'Plugin B' }),
+        createProvider('plugin-a', {
+          packageName     : 'package-a',
+          path            : '/path/a',
+          marketplaceName : 'marketplace-a',
+          description     : 'Plugin A',
+        }),
+        createProvider('plugin-b', {
+          packageName     : 'package-b',
+          path            : '/path/b',
+          version         : '2.0.0',
+          marketplaceName : 'marketplace-b',
+          pluginVersion   : '2.0.0',
+          description     : 'Plugin B',
+        }),
       ]
-      const settings = { plugins : { enabled : ['plugin-a@marketplace-a'], disabled : ['plugin-b@marketplace-b'], marketplaces : {} } }
+      const settings = {
+        plugins : { enabled : ['plugin-a@marketplace-a'], disabled : ['plugin-b@marketplace-b'], marketplaces : {} },
+      }
 
       const states = getPluginStates(providers, settings)
 
       expect(states).toHaveLength(2)
-      expect(states[0]).toMatchObject({ name : 'plugin-a', status : PLUGIN_STATUSES.ENABLED, source : './plugin', version : '1.0.0', description : 'Plugin A', marketplace : 'marketplace-a' })
-      expect(states[1]).toMatchObject({ name : 'plugin-b', status : PLUGIN_STATUSES.DISABLED, source : './plugin', version : '2.0.0', description : 'Plugin B', marketplace : 'marketplace-b' })
+      expect(states[0]).toMatchObject({
+        name        : 'plugin-a',
+        status      : PLUGIN_STATUSES.ENABLED,
+        source      : './plugin',
+        version     : '1.0.0',
+        description : 'Plugin A',
+        marketplace : 'marketplace-a',
+      })
+      expect(states[1]).toMatchObject({
+        name        : 'plugin-b',
+        status      : PLUGIN_STATUSES.DISABLED,
+        source      : './plugin',
+        version     : '2.0.0',
+        description : 'Plugin B',
+        marketplace : 'marketplace-b',
+      })
     })
 
     it('should handle marketplace with multiple plugins', () => {
-      const providers = [createProvider('multi', {
-        packageName     : 'multi-package',
-        path            : '/path/multi',
-        marketplaceName : 'multi-marketplace',
-        plugins         : [
-          { name : 'plugin-a', source : './plugins/a', version : '1.0.0', description : 'Plugin A' },
-          { name : 'plugin-b', source : './plugins/b', version : '2.0.0', description : 'Plugin B' },
-        ],
-      })]
+      const providers = [
+        createProvider('multi', {
+          packageName     : 'multi-package',
+          path            : '/path/multi',
+          marketplaceName : 'multi-marketplace',
+          plugins         : [
+            { name : 'plugin-a', source : './plugins/a', version : '1.0.0', description : 'Plugin A' },
+            { name : 'plugin-b', source : './plugins/b', version : '2.0.0', description : 'Plugin B' },
+          ],
+        }),
+      ]
       const settings = { plugins : { enabled : ['plugin-a@multi-marketplace'], disabled : [], marketplaces : {} } }
 
       const states = getPluginStates(providers, settings)

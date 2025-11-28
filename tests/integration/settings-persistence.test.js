@@ -38,7 +38,7 @@ describe('Integration: Settings Persistence', () => {
       // Run view to check status
       const viewResult = await runCLI(['plugins', 'view'], projectDir, { env : { HOME : projectDir } })
       expect(viewResult.exitCode).toBe(0)
-      expect(viewResult.stdout).toContain('TestPlugin')
+      expect(viewResult.stdout).toContain('test-plugin')
       expect(viewResult.stdout).toContain('enabled')
     })
 
@@ -84,7 +84,7 @@ describe('Integration: Settings Persistence', () => {
       const settingsPath = path.join(projectDir, '.claude/settings.json')
       const settings = await readJsonFile(settingsPath)
 
-      const pluginToDisable = 'TestPlugin@test-plugin-marketplace'
+      const pluginToDisable = 'test-plugin@test-plugin-marketplace'
       settings.plugins.enabled = settings.plugins.enabled.filter((p) => p !== pluginToDisable)
       settings.plugins.disabled.push(pluginToDisable)
 
@@ -143,7 +143,7 @@ describe('Integration: Settings Persistence', () => {
       const settingsPath = path.join(projectDir, '.claude/settings.json')
       let settings = await readJsonFile(settingsPath)
 
-      const pluginKey = 'TestPlugin@test-plugin-marketplace'
+      const pluginKey = 'test-plugin@test-plugin-marketplace'
       settings.plugins.enabled = settings.plugins.enabled.filter((p) => p !== pluginKey)
       settings.plugins.disabled.push(pluginKey)
 
@@ -213,7 +213,7 @@ describe('Integration: Settings Persistence', () => {
       settings.plugins.marketplaces['my-custom-marketplace'] = {
         source  : { type : 'directory', path : '/some/custom/path' },
         plugins : {
-          CustomPlugin : {
+          'custom-plugin' : {
             version   : '1.0.0',
             skillPath : 'skills/',
           },
@@ -249,7 +249,7 @@ describe('Integration: Settings Persistence', () => {
       settings.plugins.marketplaces['external-marketplace'] = {
         source  : { type : 'directory', path : '/external/path' },
         plugins : {
-          ExternalPlugin : {
+          'external-plugin' : {
             version   : '1.0.0',
             skillPath : 'ext/',
           },
@@ -282,7 +282,7 @@ describe('Integration: Settings Persistence', () => {
       const settingsPath = path.join(projectDir, '.claude/settings.json')
       const settings = await readJsonFile(settingsPath)
 
-      const pluginKey = 'TestPlugin@test-plugin-marketplace'
+      const pluginKey = 'test-plugin@test-plugin-marketplace'
       settings.plugins.enabled = settings.plugins.enabled.filter((p) => p !== pluginKey)
       settings.plugins.disabled.push(pluginKey)
 
@@ -292,7 +292,7 @@ describe('Integration: Settings Persistence', () => {
       const viewResult = await runCLI(['plugins', 'view'], projectDir, { env : { HOME : projectDir } })
 
       expect(viewResult.exitCode).toBe(0)
-      expect(viewResult.stdout).toContain('TestPlugin')
+      expect(viewResult.stdout).toContain('test-plugin')
       expect(viewResult.stdout).toContain('disabled')
     })
   })
