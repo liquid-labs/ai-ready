@@ -112,36 +112,60 @@ export async function setupTestEnv(options = {}) {
  * Create a test package with .claude-plugin/marketplace.json
  * @param {string} baseDir - Base test directory
  * @param {string} packageName - Package name (supports scoped: @org/pkg)
- * @param {object} pluginDeclaration - marketplace.json content
+ * @param {object} pluginConfig - Plugin configuration
+ * @param {string} pluginConfig.name - Plugin name (kebab-case)
+ * @param {string} [pluginConfig.version] - Plugin version
+ * @param {string} [pluginConfig.description] - Plugin description
+ * @param {string} [pluginConfig.source] - Plugin source path
  * @returns {Promise<string>} Path to created package
  */
-export async function createTestPackage(baseDir, packageName, pluginDeclaration) {
+export async function createTestPackage(baseDir, packageName, pluginConfig) {
   const nodeModulesPath = path.join(baseDir, 'node_modules')
   const packagePath = path.join(nodeModulesPath, packageName)
 
   // Create package directory
   await fs.mkdir(packagePath, { recursive : true })
 
+  // Derive marketplace name from package name (strip scope, add -marketplace)
+  const basePackageName = packageName.replace(/^@[^/]+\//, '')
+  const marketplaceName = `${basePackageName}-marketplace`
+
   // Write package.json
   const packageJson = {
     name        : packageName,
-    version     : pluginDeclaration.version || '1.0.0',
-    description : pluginDeclaration.description || 'Test package',
+    version     : pluginConfig.version || '1.0.0',
+    description : pluginConfig.description || 'Test package',
   }
   await fs.writeFile(path.join(packagePath, 'package.json'), JSON.stringify(packageJson, null, 2))
+
+  // Create valid marketplace.json structure
+  const marketplaceDeclaration = {
+    name    : marketplaceName,
+    owner   : { name : 'Test Owner' },
+    plugins : [
+      {
+        name        : pluginConfig.name,
+        source      : pluginConfig.source || './',
+        version     : pluginConfig.version || '1.0.0',
+        description : pluginConfig.description || 'Test plugin',
+      },
+    ],
+  }
 
   // Write .claude-plugin/marketplace.json
   const pluginDir = path.join(packagePath, '.claude-plugin')
   await fs.mkdir(pluginDir, { recursive : true })
-  await fs.writeFile(path.join(pluginDir, 'marketplace.json'), JSON.stringify(pluginDeclaration, null, 2))
+  await fs.writeFile(path.join(pluginDir, 'marketplace.json'), JSON.stringify(marketplaceDeclaration, null, 2))
 
-  // Create skill directory with SKILL.md
-  const skillPath = path.join(packagePath, pluginDeclaration.skillPath || '.claude-plugin/skill')
-  await fs.mkdir(skillPath, { recursive : true })
-  await fs.writeFile(
-    path.join(skillPath, 'SKILL.md'),
-    `# ${pluginDeclaration.name}\n\n${pluginDeclaration.description}`
-  )
+  // Create plugin directory with plugin.json
+  const pluginSourcePath = path.join(packagePath, pluginConfig.source || './')
+  await fs.mkdir(pluginSourcePath, { recursive : true })
+  const pluginManifest = {
+    name        : pluginConfig.name,
+    version     : pluginConfig.version || '1.0.0',
+    description : pluginConfig.description || 'Test plugin',
+  }
+  await fs.writeFile(path.join(pluginSourcePath, 'plugin.json'), JSON.stringify(pluginManifest, null, 2))
 
   return packagePath
 }

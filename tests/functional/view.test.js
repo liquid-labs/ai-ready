@@ -19,19 +19,19 @@ describe('air plugins view (functional)', () => {
     // Setup Claude settings
     await setupClaudeSettings(homeDir)
 
-    // Create test plugins
+    // Create test plugins (names must be kebab-case per schema)
     await createTestPackage(testDir, 'test-plugin', {
-      name        : 'TestPlugin',
+      name        : 'test-plugin',
       version     : '1.0.0',
       description : 'A test plugin for functional testing',
-      skillPath   : '.claude-plugin/skill',
+      source      : './',
     })
 
     await createTestPackage(testDir, '@scoped/plugin', {
-      name        : 'ScopedPlugin',
+      name        : 'scoped-plugin',
       version     : '2.0.0',
       description : 'A scoped test plugin',
-      skillPath   : '.claude-plugin/skill',
+      source      : './',
     })
   })
 
@@ -46,7 +46,6 @@ describe('air plugins view (functional)', () => {
       })
 
       expect(exitCode).toBe(0)
-      expect(stdout).toContain('TestPlugin')
       expect(stdout).toContain('test-plugin')
     })
 
@@ -65,7 +64,7 @@ describe('air plugins view (functional)', () => {
       })
 
       expect(exitCode).toBe(0)
-      expect(stdout).toContain('ScopedPlugin')
+      expect(stdout).toContain('scoped-plugin')
       expect(stdout).toContain('@scoped/plugin')
     })
   })
@@ -82,8 +81,8 @@ describe('air plugins view (functional)', () => {
       })
 
       expect(exitCode).toBe(0)
-      expect(stdout).toContain('TestPlugin')
-      expect(stdout).toContain('ScopedPlugin')
+      expect(stdout).toContain('test-plugin')
+      expect(stdout).toContain('scoped-plugin')
     })
 
     it('should work even without local project', async () => {
@@ -208,7 +207,7 @@ describe('air plugins view (functional)', () => {
       })
 
       expect(exitCode).toBe(0)
-      expect(stdout).toContain('TestPlugin')
+      expect(stdout).toContain('test-plugin')
     })
 
     it('should handle invalid path gracefully', async () => {
@@ -218,7 +217,7 @@ describe('air plugins view (functional)', () => {
 
       // Should succeed with no plugins (graceful degradation)
       expect(exitCode).toBe(0)
-      expect(stdout.toLowerCase()).toMatch(/no.*plugins? found/i)
+      expect(stdout.toLowerCase()).toMatch(/no.*plugin.*found|no.*marketplaces? found/i)
     })
   })
 })
